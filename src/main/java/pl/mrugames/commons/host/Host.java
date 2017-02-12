@@ -11,10 +11,12 @@ public class Host implements Runnable {
 
     private final String name;
     private final int port;
+    private final ClientFactory clientFactory;
 
-    public Host(String name, int port) {
+    public Host(String name, int port, ClientFactory clientFactory) {
         this.name = name;
         this.port = port;
+        this.clientFactory = clientFactory;
     }
 
     @Override
@@ -37,6 +39,6 @@ public class Host implements Runnable {
     }
 
     void next(final ServerSocket socket) throws IOException {
-        socket.accept();
+        clientFactory.create(socket.accept());
     }
 }
