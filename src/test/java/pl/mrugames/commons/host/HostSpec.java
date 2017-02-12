@@ -9,16 +9,18 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.*;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(BlockJUnit4ClassRunner.class)
 public class HostSpec {
     private Host host;
     private ServerSocket serverSocket;
-    private ExecutorService executor;
     private ClientFactory clientFactory;
+    private Socket socket;
 
     @Before
     public void before() throws IOException {
@@ -26,20 +28,21 @@ public class HostSpec {
 
         host = spy(new Host("Test", 12345, clientFactory));
         serverSocket = mock(ServerSocket.class);
-        executor = Executors.newSingleThreadExecutor();
+
+        socket = mock(Socket.class);
     }
 
     @After
     public void after() throws InterruptedException {
-        executor.shutdownNow();
-        executor.awaitTermination(1, TimeUnit.SECONDS);
+        host.interrupt();
+        host.join();
 
-        if (!executor.isTerminated()) {
+        if (host.isAlive()) {
             throw new RuntimeException("Host hadn't been shutdown properly!");
         }
     }
 
-    @Test
+    @Test(timeout = 1000)
     public void whenNexMethodThrowsException_thenThreadLoopIsNotBroken() throws IOException, InterruptedException, BrokenBarrierException {
         CountDownLatch latch = new CountDownLatch(3);
 
@@ -48,9 +51,26 @@ public class HostSpec {
             throw new Exception();
         }).when(host).next(any());
 
-        executor.execute(host);
+        host.start();
 
         latch.await();
+    }
+
+    @Test(timeout = 1000)
+    public void givenHostIsRunWithRealSocket_whenShutDown_thenHostIsShutdownGracefully() throws IOException, InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        doAnswer(a -> {
+            latch.countDown(); // make sure that method got called before interrupt
+            return a.callRealMethod();
+        }).when(host).next(any());
+
+        host.start();
+
+        latch.await();
+
+        host.interrupt();
+        host.join();
     }
 
     @Test
@@ -61,11 +81,26 @@ public class HostSpec {
 
     @Test
     public void whenSocketAccept_thenClientExecutorIsCalled() throws IOException {
-        Socket socket = mock(Socket.class);
         doReturn(socket).when(serverSocket).accept();
         host.next(serverSocket);
 
         verify(clientFactory).create(socket);
+    }
+
+    @Test
+    public void whenInterrupt_thenSocketClose() throws IOException {
+        host.setSocket(serverSocket);
+        host.interrupt();
+        verify(serverSocket).close();
+    }
+
+    @Test
+    public void whenCallFactoryMethod_thenThreadIsStarted() throws InterruptedException {
+        Host host = Host.createAndExecute("Test", 12345, clientFactory);
+        assertThat(host.isAlive()).isTrue();
+
+        host.interrupt();
+        host.join();
     }
 
 }
