@@ -8,6 +8,7 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.concurrent.*;
 
 import static org.mockito.Mockito.*;
@@ -17,10 +18,13 @@ public class HostSpec {
     private Host host;
     private ServerSocket serverSocket;
     private ExecutorService executor;
+    private ClientFactory clientFactory;
 
     @Before
     public void before() throws IOException {
-        host = spy(new Host("Test", 12345));
+        clientFactory = mock(ClientFactory.class);
+
+        host = spy(new Host("Test", 12345, clientFactory));
         serverSocket = mock(ServerSocket.class);
         executor = Executors.newSingleThreadExecutor();
     }
@@ -53,6 +57,15 @@ public class HostSpec {
     public void whenNext_thenSocketAccept() throws IOException {
         host.next(serverSocket);
         verify(serverSocket).accept();
+    }
+
+    @Test
+    public void whenSocketAccept_thenClientExecutorIsCalled() throws IOException {
+        Socket socket = mock(Socket.class);
+        doReturn(socket).when(serverSocket).accept();
+        host.next(serverSocket);
+
+        verify(clientFactory).create(socket);
     }
 
 }
