@@ -15,14 +15,7 @@ public class Host extends Thread {
 
     private volatile ServerSocket socket;
 
-    public static Host createAndExecute(String name, int port, ClientFactory clientFactory) {
-        Host host = new Host(name, port, clientFactory);
-        host.start();
-
-        return host;
-    }
-
-    Host(String name, int port, ClientFactory clientFactory) {
+    public Host(String name, int port, ClientFactory clientFactory) {
         super(name);
         this.name = name;
         this.port = port;

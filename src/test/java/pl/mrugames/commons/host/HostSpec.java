@@ -12,7 +12,6 @@ import java.net.Socket;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(BlockJUnit4ClassRunner.class)
@@ -74,6 +73,25 @@ public class HostSpec {
     }
 
     @Test
+    public void whenRun_thenSetSocket() throws InterruptedException, IOException {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        doAnswer(a -> {
+            latch.countDown(); // make sure that method got called before interrupt
+            return a.callRealMethod();
+        }).when(host).next(any());
+
+        host.start();
+
+        latch.await();
+
+        verify(host).setSocket(any(ServerSocket.class));
+
+        host.interrupt();
+        host.join();
+    }
+
+    @Test
     public void whenNext_thenSocketAccept() throws IOException {
         host.next(serverSocket);
         verify(serverSocket).accept();
@@ -92,15 +110,6 @@ public class HostSpec {
         host.setSocket(serverSocket);
         host.interrupt();
         verify(serverSocket).close();
-    }
-
-    @Test
-    public void whenCallFactoryMethod_thenThreadIsStarted() throws InterruptedException {
-        Host host = Host.createAndExecute("Test", 12345, clientFactory);
-        assertThat(host.isAlive()).isTrue();
-
-        host.interrupt();
-        host.join();
     }
 
 }
