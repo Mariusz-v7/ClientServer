@@ -22,16 +22,21 @@ public class ClientSpec {
     private CountDownLatch latch;
     private ExecutorService executor;
     private ExecutorService ioExecutor;
+    private ClientWriter writer;
+    private ClientReader reader;
 
     @Before
     public void before() throws InterruptedException {
         latch = new CountDownLatch(1);
 
+        writer = mock(ClientWriter.class);
+        reader = mock(ClientReader.class);
+
         executor = Executors.newSingleThreadExecutor();
         ioExecutor = spy(Executors.newFixedThreadPool(2));
 
         socket = mock(Socket.class);
-        client = spy(new Client("test", socket, ioExecutor));
+        client = spy(new Client("test", socket, ioExecutor, writer, reader));
 
         doAnswer(a -> {
             latch.countDown();
@@ -75,5 +80,17 @@ public class ClientSpec {
     public void whenInit_thenIOExecutorShutdown() {
         client.init();
         verify(ioExecutor).shutdown();
+    }
+
+    @Test
+    public void whenInit_thenWriterIsExecuted() {
+        client.init();
+        verify(ioExecutor).execute(writer);
+    }
+
+    @Test
+    public void whenInit_thenReaderIsExecuted() {
+        client.init();
+        verify(ioExecutor).execute(reader);
     }
 }
