@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
+import pl.mrugames.commons.client.ClientFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;

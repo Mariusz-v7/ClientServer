@@ -1,4 +1,4 @@
-package pl.mrugames.commons.host;
+package pl.mrugames.commons.client;
 
 import java.net.Socket;
 
