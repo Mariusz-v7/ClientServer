@@ -21,15 +21,24 @@ public class HostSpec {
     private ServerSocket serverSocket;
     private ClientFactory clientFactory;
     private Socket socket;
+    private CountDownLatch latch;
 
     @Before
     public void before() throws IOException {
+        latch = new CountDownLatch(1);
+
         clientFactory = mock(ClientFactory.class);
 
         host = spy(new Host("Test", 12345, clientFactory));
         serverSocket = mock(ServerSocket.class);
 
         socket = mock(Socket.class);
+
+        doAnswer(a -> {
+            latch.countDown();
+            return a.callRealMethod();
+        }).when(host).next(any());
+
     }
 
     @After
@@ -58,13 +67,6 @@ public class HostSpec {
 
     @Test(timeout = 1000)
     public void givenHostIsRunWithRealSocket_whenShutDown_thenHostIsShutdownGracefully() throws IOException, InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-
-        doAnswer(a -> {
-            latch.countDown(); // make sure that method got called before interrupt
-            return a.callRealMethod();
-        }).when(host).next(any());
-
         host.start();
 
         latch.await();
@@ -75,13 +77,6 @@ public class HostSpec {
 
     @Test
     public void whenRun_thenSetSocket() throws InterruptedException, IOException {
-        CountDownLatch latch = new CountDownLatch(1);
-
-        doAnswer(a -> {
-            latch.countDown(); // make sure that method got called before interrupt
-            return a.callRealMethod();
-        }).when(host).next(any());
-
         host.start();
 
         latch.await();
@@ -99,7 +94,7 @@ public class HostSpec {
     }
 
     @Test
-    public void whenSocketAccept_thenClientExecutorIsCalled() throws IOException {
+    public void whenSocketAccept_thenClientFactoryIsCalled() throws IOException {
         doReturn(socket).when(serverSocket).accept();
         host.next(serverSocket);
 
