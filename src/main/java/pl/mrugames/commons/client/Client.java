@@ -43,4 +43,14 @@ public class Client implements Runnable {
     synchronized void initAndWAit() throws InterruptedException {
         wait();
     }
+
+    /**
+     * This constructor should be used only in tests.
+     */
+    Client(String name, Socket socket, ExecutorService ioExecutor) {
+        this.name = name;
+        this.socket = socket;
+        this.ioExecutor = ioExecutor;
+    }
+
 }
