@@ -19,16 +19,16 @@ import static org.mockito.Mockito.*;
 public class ClientSpec {
     private Client client;
     private Socket socket;
-    private ExecutorService executor;
     private CountDownLatch latch;
+    private ExecutorService executor;
 
     @Before
     public void before() throws InterruptedException {
         latch = new CountDownLatch(1);
 
+        executor = spy(Executors.newFixedThreadPool(2));
         socket = mock(Socket.class);
-        client = spy(new Client("test", socket));
-        executor = Executors.newSingleThreadExecutor();
+        client = spy(new Client("test", socket, executor));
 
         doAnswer(a -> {
             latch.countDown();
