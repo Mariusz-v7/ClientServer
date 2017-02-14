@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(BlockJUnit4ClassRunner.class)
@@ -75,6 +76,19 @@ public class ClientSpec {
 
         verify(ioExecutor).shutdownNow();
         verify(ioExecutor).awaitTermination(anyLong(), any());
+    }
+
+    @Test(timeout = 1000)
+    public void whenHandleIOThreadException_thenClientThreadShouldBeInterrupted() throws InterruptedException {
+        executor.execute(client);
+
+        latch.await();
+
+        Thread clientThread = client.getThisThread();
+
+        client.handleIOThreadException(null, new Exception());
+
+        assertThat(clientThread.isInterrupted()).isTrue();
     }
 
     @Test

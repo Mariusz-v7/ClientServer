@@ -18,17 +18,21 @@ class Client implements Runnable {
     private final ClientWriter writer;
     private final ClientReader reader;
 
+    private volatile Thread thisThread;
+
     Client(String name, Socket socket, ClientWriter writer, ClientReader reader) {
         this.name = name;
         this.socket = socket;
         this.writer = writer;
         this.reader = reader;
-        this.ioExecutor = Executors.newFixedThreadPool(2);
+        this.ioExecutor = Executors.newFixedThreadPool(2, this::threadFactory);
     }
 
     @Override
     public void run() {
         logger.info("[{}] New client has connected from address: {}", name, socket.getLocalSocketAddress());
+
+        thisThread = Thread.currentThread();
 
         try {
             init();
@@ -63,6 +67,22 @@ class Client implements Runnable {
         ioExecutor.execute(writer);
         ioExecutor.execute(reader);
         ioExecutor.shutdown();
+    }
+
+    void handleIOThreadException(Thread thread, Throwable exception) {
+        thisThread.interrupt();
+    }
+
+    private Thread threadFactory(Runnable runnable) {
+        Thread thread = new Thread(runnable, name + "-I/O");
+
+        thread.setUncaughtExceptionHandler(this::handleIOThreadException);
+
+        return thread;
+    }
+
+    Thread getThisThread() {
+        return thisThread;
     }
 
     /**
