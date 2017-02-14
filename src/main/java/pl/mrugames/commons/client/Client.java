@@ -68,6 +68,7 @@ class Client implements Runnable {
     /**
      * This constructor should be used only in tests.
      */
+    @Deprecated
     Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriter writer, ClientReader reader) {
         this.name = name;
         this.socket = socket;

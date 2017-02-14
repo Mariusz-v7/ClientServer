@@ -26,6 +26,7 @@ public class ClientSpec {
     private ClientReader reader;
 
     @Before
+    @SuppressWarnings("deprecation")
     public void before() throws InterruptedException {
         latch = new CountDownLatch(1);
 
