@@ -10,7 +10,6 @@ import java.net.ServerSocket;
 public class Host extends Thread {
     private final static Logger logger = LoggerFactory.getLogger(Host.class);
 
-    private final String name;
     private final int port;
     private final ClientFactory clientFactory;
 
@@ -18,14 +17,13 @@ public class Host extends Thread {
 
     public Host(String name, int port, ClientFactory clientFactory) {
         super(name);
-        this.name = name;
         this.port = port;
         this.clientFactory = clientFactory;
     }
 
     @Override
     public void run() {
-        logger.info("[Host {}] Host has started!", name);
+        logger.info("[Host {}] Host has started!", getName());
 
         try (ServerSocket socket = new ServerSocket(port)) {
             setSocket(socket);
@@ -34,26 +32,26 @@ public class Host extends Thread {
                 try {
                     next(socket);
                 } catch (Exception e) {
-                    logger.error("[Host {}] Failed to initialize client", name);
+                    logger.error("[Host {}] Failed to initialize client", getName());
                 }
             }
         } catch (IOException e) {
-            logger.error("[Host {}] Failed to create socket: {}", name, e.getMessage());
+            logger.error("[Host {}] Failed to create socket: {}", getName(), e.getMessage());
         }
 
-        logger.info("[Host {}] Host has shutdown!", name);
+        logger.info("[Host {}] Host has shutdown!", getName());
     }
 
     @Override
     public void interrupt() {
         try {
-            logger.info("[Host {}] is being shutdown!", name);
+            logger.info("[Host {}] is being shutdown!", getName());
 
             if (socket != null)
                 socket.close();
 
         } catch (IOException e) {
-            logger.error("[Host {}] failed to close socket!", name);
+            logger.error("[Host {}] failed to close socket!", getName());
         } finally {
             super.interrupt();
         }
