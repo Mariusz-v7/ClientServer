@@ -15,10 +15,14 @@ public class Client implements Runnable {
     private final String name;
     private final Socket socket;
     private final ExecutorService ioExecutor;
+    private final ClientWriter writer;
+    private final ClientReader reader;
 
-    Client(String name, Socket socket) {
+    Client(String name, Socket socket, ClientWriter writer, ClientReader reader) {
         this.name = name;
         this.socket = socket;
+        this.writer = writer;
+        this.reader = reader;
         this.ioExecutor = Executors.newFixedThreadPool(2);
     }
 
@@ -53,16 +57,20 @@ public class Client implements Runnable {
     }
 
     void init() {
+        ioExecutor.execute(writer);
+        ioExecutor.execute(reader);
         ioExecutor.shutdown();
     }
 
     /**
      * This constructor should be used only in tests.
      */
-    Client(String name, Socket socket, ExecutorService ioExecutor) {
+    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriter writer, ClientReader reader) {
         this.name = name;
         this.socket = socket;
         this.ioExecutor = ioExecutor;
+        this.reader = reader;
+        this.writer = writer;
     }
 
 }
