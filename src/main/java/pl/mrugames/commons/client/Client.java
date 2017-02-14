@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Client implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(Client.class);
@@ -26,7 +27,10 @@ public class Client implements Runnable {
         logger.info("[{}] New client has connected from address: {}", name, socket.getLocalSocketAddress());
 
         try {
-            initAndWAit();
+            init();
+            synchronized (this) {
+                wait();
+            }
         } catch (InterruptedException e) {
             logger.info("[{}] Client is being shutdown", name);
         } finally {
@@ -37,11 +41,19 @@ public class Client implements Runnable {
             }
         }
 
+        ioExecutor.shutdownNow();
+
+        try {
+            ioExecutor.awaitTermination(30, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            logger.error("[{}] Failed to shutdown IO threads!");
+        }
+
         logger.info("[{}] Client has been shutdown!", name);
     }
 
-    synchronized void initAndWAit() throws InterruptedException {
-        wait();
+    void init() {
+        ioExecutor.shutdown();
     }
 
     /**

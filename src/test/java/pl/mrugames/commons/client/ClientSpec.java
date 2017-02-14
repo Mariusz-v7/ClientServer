@@ -21,19 +21,22 @@ public class ClientSpec {
     private Socket socket;
     private CountDownLatch latch;
     private ExecutorService executor;
+    private ExecutorService ioExecutor;
 
     @Before
     public void before() throws InterruptedException {
         latch = new CountDownLatch(1);
 
-        executor = spy(Executors.newFixedThreadPool(2));
+        executor = Executors.newSingleThreadExecutor();
+        ioExecutor = spy(Executors.newFixedThreadPool(2));
+
         socket = mock(Socket.class);
-        client = spy(new Client("test", socket, executor));
+        client = spy(new Client("test", socket, ioExecutor));
 
         doAnswer(a -> {
             latch.countDown();
             return a.callRealMethod();
-        }).when(client).initAndWAit();
+        }).when(client).init();
 
     }
 
@@ -53,5 +56,24 @@ public class ClientSpec {
         executor.awaitTermination(1, TimeUnit.SECONDS);
 
         verify(socket).close();
+    }
+
+    @Test
+    public void whenInterrupted_thenIOExecutorShutdownNowAndAwaitTermination() throws InterruptedException {
+        executor.execute(client);
+
+        latch.await();
+
+        executor.shutdownNow();
+        executor.awaitTermination(1, TimeUnit.SECONDS);
+
+        verify(ioExecutor).shutdownNow();
+        verify(ioExecutor).awaitTermination(anyLong(), any());
+    }
+
+    @Test
+    public void whenInit_thenIOExecutorShutdown() {
+        client.init();
+        verify(ioExecutor).shutdown();
     }
 }
