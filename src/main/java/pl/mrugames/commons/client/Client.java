@@ -17,13 +17,15 @@ class Client implements Runnable {
     private final ExecutorService ioExecutor;
     private final ClientWriter writer;
     private final ClientReader reader;
+    private final Runnable onShutdown;
 
-    Client(String name, Socket socket, ClientWriter writer, ClientReader reader) {
+    Client(String name, Socket socket, ClientWriter writer, ClientReader reader, Runnable onShutdown) {
         this.name = name;
         this.socket = socket;
         this.writer = writer;
         this.reader = reader;
         this.ioExecutor = Executors.newFixedThreadPool(2, this::threadFactory);
+        this.onShutdown = onShutdown;
     }
 
     @Override
@@ -48,6 +50,8 @@ class Client implements Runnable {
             } catch (InterruptedException e) {
                 logger.error("[{}] Failed to shutdown IO threads!");
             }
+
+            onShutdown.run();
 
             logger.info("[{}] Client has been shutdown!", name);
         }
@@ -84,12 +88,13 @@ class Client implements Runnable {
      * This constructor should be used only in tests.
      */
     @Deprecated
-    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriter writer, ClientReader reader) {
+    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriter writer, ClientReader reader, Runnable onShutdown) {
         this.name = name;
         this.socket = socket;
         this.ioExecutor = ioExecutor;
         this.reader = reader;
         this.writer = writer;
+        this.onShutdown = onShutdown;
     }
 
 }

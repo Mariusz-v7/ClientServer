@@ -24,6 +24,7 @@ public class ClientSpec {
     private ExecutorService ioExecutor;
     private ClientWriter writer;
     private ClientReader reader;
+    private Runnable onShutdown;
 
     @Before
     @SuppressWarnings("deprecation")
@@ -33,11 +34,13 @@ public class ClientSpec {
         writer = mock(ClientWriter.class);
         reader = mock(ClientReader.class);
 
+        onShutdown = mock(Runnable.class);
+
         executor = Executors.newSingleThreadExecutor();
         ioExecutor = spy(Executors.newFixedThreadPool(2));
 
         socket = mock(Socket.class);
-        client = spy(new Client("test", socket, ioExecutor, writer, reader));
+        client = spy(new Client("test", socket, ioExecutor, writer, reader, onShutdown));
 
         doAnswer(a -> {
             executionLatch.countDown();
@@ -68,11 +71,17 @@ public class ClientSpec {
     }
 
     @Test
-    public void whenInterrupted_thenIOExecutorShutdownNowAndAwaitTermination() throws InterruptedException {
+    public void whenClientIsShutdown_thenIOExecutorShutdownNowAndAwaitTermination() throws InterruptedException {
         executeAndAwaitTermination();
 
         verify(ioExecutor).shutdownNow();
         verify(ioExecutor).awaitTermination(30L, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void whenClientIsShutdown_thenOnShutdownIsInvoked() throws InterruptedException {
+        executeAndAwaitTermination();
+        verify(onShutdown).run();
     }
 
     @Test(timeout = 1000)
