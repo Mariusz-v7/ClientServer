@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
 public class ClientSpec {
     private Client client;
     private Socket socket;
-    private CountDownLatch latch;
+    private CountDownLatch executionLatch;
     private ExecutorService executor;
     private ExecutorService ioExecutor;
     private ClientWriter writer;
@@ -28,7 +28,7 @@ public class ClientSpec {
     @Before
     @SuppressWarnings("deprecation")
     public void before() throws InterruptedException {
-        latch = new CountDownLatch(1);
+        executionLatch = new CountDownLatch(1);
 
         writer = mock(ClientWriter.class);
         reader = mock(ClientReader.class);
@@ -40,7 +40,7 @@ public class ClientSpec {
         client = spy(new Client("test", socket, ioExecutor, writer, reader));
 
         doAnswer(a -> {
-            latch.countDown();
+            executionLatch.countDown();
             return a.callRealMethod();
         }).when(client).init();
 
@@ -52,40 +52,33 @@ public class ClientSpec {
         executor.awaitTermination(1, TimeUnit.SECONDS);
     }
 
-    @Test(timeout = 1000)
-    public void whenInterrupted_thenSockedClosed() throws InterruptedException, IOException {
+    private void executeAndAwaitTermination() throws InterruptedException {
         executor.execute(client);
 
-        latch.await();
+        executionLatch.await();
 
         executor.shutdownNow();
         executor.awaitTermination(1, TimeUnit.SECONDS);
+    }
 
+    @Test(timeout = 1000)
+    public void whenInterrupted_thenSockedClosed() throws InterruptedException, IOException {
+        executeAndAwaitTermination();
         verify(socket).close();
     }
 
     @Test
     public void whenInterrupted_thenIOExecutorShutdownNowAndAwaitTermination() throws InterruptedException {
-        executor.execute(client);
-
-        latch.await();
-
-        executor.shutdownNow();
-        executor.awaitTermination(1, TimeUnit.SECONDS);
+        executeAndAwaitTermination();
 
         verify(ioExecutor).shutdownNow();
-        verify(ioExecutor).awaitTermination(30l, TimeUnit.SECONDS);
+        verify(ioExecutor).awaitTermination(30L, TimeUnit.SECONDS);
     }
 
     @Test(timeout = 1000)
     public void whenHandleIOThreadException_IOExecutorIsShutDownNow() throws InterruptedException {
-        executor.execute(client);
-
-        latch.await();
-
         client.handleIOThreadException(null, new Exception());
-
-        verify(ioExecutor, atLeastOnce()).shutdownNow();
+        verify(ioExecutor).shutdownNow();
     }
 
     @Test
@@ -104,5 +97,30 @@ public class ClientSpec {
     public void whenInit_thenReaderIsExecuted() {
         client.init();
         verify(ioExecutor).execute(reader);
+    }
+
+    private void executeWithException() throws InterruptedException {
+        doThrow(Exception.class).when(client).init();
+        executor.execute(client);
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void givenInitThrowsException_whenRun_thenExecutorShutdownNow() throws InterruptedException {
+        executeWithException();
+        verify(ioExecutor).shutdownNow();
+    }
+
+    @Test
+    public void givenInitThrowsException_whenRun_thenSocketClose() throws IOException, InterruptedException {
+        executeWithException();
+        verify(socket).close();
+    }
+
+    @Test
+    public void givenInitThrowsException_whenRun_thenAwaitTermination() throws IOException, InterruptedException {
+        executeWithException();
+        verify(ioExecutor).awaitTermination(30, TimeUnit.SECONDS);
     }
 }

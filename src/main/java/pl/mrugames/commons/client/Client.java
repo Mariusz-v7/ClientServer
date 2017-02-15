@@ -44,17 +44,17 @@ class Client implements Runnable {
             } catch (IOException e) {
                 logger.error("[{}] Failed to close socket", name);
             }
+
+            ioExecutor.shutdownNow();
+
+            try {
+                ioExecutor.awaitTermination(30, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                logger.error("[{}] Failed to shutdown IO threads!");
+            }
+
+            logger.info("[{}] Client has been shutdown!", name);
         }
-
-        ioExecutor.shutdownNow();
-
-        try {
-            ioExecutor.awaitTermination(30, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            logger.error("[{}] Failed to shutdown IO threads!");
-        }
-
-        logger.info("[{}] Client has been shutdown!", name);
     }
 
     void init() {
