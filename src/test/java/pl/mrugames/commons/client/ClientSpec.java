@@ -5,8 +5,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
-import pl.mrugames.commons.client.io.ClientReader;
-import pl.mrugames.commons.client.io.ClientWriter;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -24,8 +22,8 @@ public class ClientSpec {
     private CountDownLatch executionLatch;
     private ExecutorService executor;
     private ExecutorService ioExecutor;
-    private ClientWriter writer;
-    private ClientReader reader;
+    private ClientWriterThread writer;
+    private ClientReaderThread reader;
     private Runnable onShutdown;
 
     @Before
@@ -33,8 +31,8 @@ public class ClientSpec {
     public void before() throws InterruptedException {
         executionLatch = new CountDownLatch(1);
 
-        writer = mock(ClientWriter.class);
-        reader = mock(ClientReader.class);
+        writer = mock(ClientWriterThread.class);
+        reader = mock(ClientReaderThread.class);
 
         onShutdown = mock(Runnable.class);
 

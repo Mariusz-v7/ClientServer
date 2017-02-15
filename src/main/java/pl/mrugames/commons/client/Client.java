@@ -2,8 +2,7 @@ package pl.mrugames.commons.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.commons.client.io.ClientReader;
-import pl.mrugames.commons.client.io.ClientWriter;
+import pl.mrugames.commons.client.io.IOExceptionWrapper;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -17,11 +16,11 @@ class Client implements Runnable {
     private final String name;
     private final Socket socket;
     private final ExecutorService ioExecutor;
-    private final ClientWriter writer;
-    private final ClientReader reader;
+    private final ClientWriterThread writer;
+    private final ClientReaderThread reader;
     private final Runnable onShutdown;
 
-    Client(String name, Socket socket, ClientWriter writer, ClientReader reader, Runnable onShutdown) {
+    Client(String name, Socket socket, ClientWriterThread writer, ClientReaderThread reader, Runnable onShutdown) {
         this.name = name;
         this.socket = socket;
         this.writer = writer;
@@ -68,6 +67,11 @@ class Client implements Runnable {
     void handleIOThreadException(Thread thread, Throwable exception) {
         closeSocket();
         ioExecutor.shutdownNow();
+
+        if (exception instanceof IOExceptionWrapper) {
+            exception = exception.getCause();
+        }
+
         logger.error("[{}][{}] exception in I/O thread, {}", name, thread.getName(), exception.getMessage());
     }
 
@@ -91,7 +95,7 @@ class Client implements Runnable {
      * This constructor should be used only in tests.
      */
     @Deprecated
-    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriter writer, ClientReader reader, Runnable onShutdown) {
+    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriterThread writer, ClientReaderThread reader, Runnable onShutdown) {
         this.name = name;
         this.socket = socket;
         this.ioExecutor = ioExecutor;
