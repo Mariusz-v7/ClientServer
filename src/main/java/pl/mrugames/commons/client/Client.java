@@ -66,6 +66,7 @@ class Client implements Runnable {
     void handleIOThreadException(Thread thread, Throwable exception) {
         closeSocket();
         ioExecutor.shutdownNow();
+        logger.error("[{}][{}] exception in I/O thread, {}", name, thread.getName(), exception.getMessage());
     }
 
     private Thread threadFactory(Runnable runnable) {
