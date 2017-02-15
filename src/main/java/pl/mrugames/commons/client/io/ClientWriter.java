@@ -1,4 +1,4 @@
-package pl.mrugames.commons.client;
+package pl.mrugames.commons.client.io;
 
 public interface ClientWriter extends Runnable {
 }
