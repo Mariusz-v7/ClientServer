@@ -18,8 +18,6 @@ class Client implements Runnable {
     private final ClientWriter writer;
     private final ClientReader reader;
 
-    private volatile Thread thisThread;
-
     Client(String name, Socket socket, ClientWriter writer, ClientReader reader) {
         this.name = name;
         this.socket = socket;
@@ -32,16 +30,12 @@ class Client implements Runnable {
     public void run() {
         logger.info("[{}] New client has connected from address: {}", name, socket.getLocalSocketAddress());
 
-        thisThread = Thread.currentThread();
-
         try {
             init();
 
-            synchronized (this) {
-                wait();
-            }
+            ioExecutor.awaitTermination(1000000, TimeUnit.DAYS);
 
-            logger.info("[{}] Client is being shutdown", name);  // when woke up by notify()
+            logger.info("[{}] Client is being shutdown", name);  // when woke up when I/O threads finished
         } catch (InterruptedException e) {
             logger.info("[{}] Client is being shutdown", name);  // when woke up by interrupt()
         } finally {
@@ -70,7 +64,7 @@ class Client implements Runnable {
     }
 
     void handleIOThreadException(Thread thread, Throwable exception) {
-        thisThread.interrupt();
+        ioExecutor.shutdownNow();
     }
 
     private Thread threadFactory(Runnable runnable) {
@@ -79,10 +73,6 @@ class Client implements Runnable {
         thread.setUncaughtExceptionHandler(this::handleIOThreadException);
 
         return thread;
-    }
-
-    Thread getThisThread() {
-        return thisThread;
     }
 
     /**
