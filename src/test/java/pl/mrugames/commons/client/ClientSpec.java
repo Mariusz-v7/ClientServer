@@ -88,13 +88,13 @@ public class ClientSpec {
 
     @Test(timeout = 1000)
     public void whenHandleIOThreadException_thenIOExecutorIsShutDownNow() throws InterruptedException {
-        client.handleIOThreadException(null, new Exception());
+        client.handleIOThreadException(Thread.currentThread(), new Exception());
         verify(ioExecutor).shutdownNow();
     }
 
     @Test
     public void whenHandleIOThreadException_thenSocketClose() throws IOException {
-        client.handleIOThreadException(null, new Exception());
+        client.handleIOThreadException(Thread.currentThread(), new Exception());
         verify(socket).close();
     }
 
