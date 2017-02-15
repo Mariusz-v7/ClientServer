@@ -2,6 +2,8 @@ package pl.mrugames.commons.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.commons.client.io.ClientReader;
+import pl.mrugames.commons.client.io.ClientWriter;
 
 import java.io.IOException;
 import java.net.Socket;
