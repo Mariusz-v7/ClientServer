@@ -1,7 +1,6 @@
 package pl.mrugames.commons.client;
 
 import pl.mrugames.commons.client.io.ClientReader;
-import pl.mrugames.commons.client.io.IOExceptionWrapper;
 
 import java.io.InputStream;
 import java.util.concurrent.BlockingQueue;
