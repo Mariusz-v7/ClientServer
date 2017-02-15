@@ -1,7 +1,6 @@
 package pl.mrugames.commons.client;
 
 import pl.mrugames.commons.client.io.ClientWriter;
-import pl.mrugames.commons.client.io.IOExceptionWrapper;
 
 import java.io.OutputStream;
 import java.util.concurrent.BlockingQueue;
