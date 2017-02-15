@@ -39,11 +39,7 @@ class Client implements Runnable {
         } catch (InterruptedException e) {
             logger.info("[{}] Client is being shutdown", name);  // when woke up by interrupt()
         } finally {
-            try {
-                socket.close();
-            } catch (IOException e) {
-                logger.error("[{}] Failed to close socket", name);
-            }
+            closeSocket();
 
             ioExecutor.shutdownNow();
 
@@ -64,6 +60,7 @@ class Client implements Runnable {
     }
 
     void handleIOThreadException(Thread thread, Throwable exception) {
+        closeSocket();
         ioExecutor.shutdownNow();
     }
 
@@ -73,6 +70,14 @@ class Client implements Runnable {
         thread.setUncaughtExceptionHandler(this::handleIOThreadException);
 
         return thread;
+    }
+
+    private void closeSocket() {
+        try {
+            socket.close();
+        } catch (IOException e) {
+            logger.error("[{}] Failed to close socket", name);
+        }
     }
 
     /**
