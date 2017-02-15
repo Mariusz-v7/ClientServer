@@ -36,6 +36,7 @@ public class ClientWriterThreadSpec {
         latch = new CountDownLatch(1);
 
         originalStream = mock(OutputStream.class);
+        finalStream = mock(OutputStream.class);
         queue = spy(new LinkedBlockingQueue<>());
 
         clientWriter = mock(ClientWriter.class);

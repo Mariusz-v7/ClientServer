@@ -14,7 +14,7 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
     private final long timeout;
     private final TimeUnit timeoutUnit;
 
-    public ClientWriterThread(OutputStream originalOutputStream, BlockingQueue<FrameType> toSend, ClientWriter<FrameType, StreamType> clientWriter, long timeout, TimeUnit timeoutUnit) {
+    ClientWriterThread(OutputStream originalOutputStream, BlockingQueue<FrameType> toSend, ClientWriter<FrameType, StreamType> clientWriter, long timeout, TimeUnit timeoutUnit) {
         this.originalOutputStream = originalOutputStream;
         this.toSend = toSend;
         this.clientWriter = clientWriter;
