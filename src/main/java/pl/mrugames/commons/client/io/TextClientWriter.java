@@ -5,6 +5,16 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
 public class TextClientWriter implements ClientWriter<String, BufferedWriter> {
+    private static TextClientWriter instance;
+
+    public static synchronized TextClientWriter getInstance() {
+        if (instance == null)
+            instance = new TextClientWriter();
+
+        return instance;
+    }
+
+    TextClientWriter() {}
 
     @Override
     public BufferedWriter prepare(OutputStream originalOutputStream) throws Exception {
