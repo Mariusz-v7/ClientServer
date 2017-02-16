@@ -15,15 +15,13 @@ class Client implements Runnable {
     private final ExecutorService ioExecutor;
     private final ClientWriterThread writer;
     private final ClientReaderThread reader;
-    private final Runnable onShutdown;
 
-    Client(String name, Socket socket, ClientWriterThread writer, ClientReaderThread reader, Runnable onShutdown) {
+    Client(String name, Socket socket, ClientWriterThread writer, ClientReaderThread reader) {
         this.name = name;
         this.socket = socket;
         this.writer = writer;
         this.reader = reader;
-        this.ioExecutor = Executors.newFixedThreadPool(2, this::threadFactory);
-        this.onShutdown = onShutdown;
+        this.ioExecutor = Executors.newFixedThreadPool(2, r -> new Thread(r, name + "-IO"));
     }
 
     @Override
@@ -48,8 +46,6 @@ class Client implements Runnable {
                 logger.error("[{}] Failed to shutdown IO threads!", name);
             }
 
-            onShutdown.run();
-
             logger.info("[{}] Client has been shutdown!", name);
         }
     }
@@ -60,25 +56,6 @@ class Client implements Runnable {
         ioExecutor.shutdown();
 
         return CompletableFuture.anyOf(writerFuture, readerFuture);
-    }
-
-    void handleIOThreadException(Thread thread, Throwable exception) {
-        closeSocket();
-        ioExecutor.shutdownNow();
-
-        if (exception instanceof IOExceptionWrapper) {
-            exception = exception.getCause();
-        }
-
-        logger.error("[{}][{}] exception in I/O thread, {}", name, thread.getName(), exception.getMessage());
-    }
-
-    private Thread threadFactory(Runnable runnable) {
-        Thread thread = new Thread(runnable, name + "-I/O");
-
-        thread.setUncaughtExceptionHandler(this::handleIOThreadException);
-
-        return thread;
     }
 
     private void closeSocket() {
@@ -93,13 +70,12 @@ class Client implements Runnable {
      * This constructor should be used only in tests.
      */
     @Deprecated
-    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriterThread writer, ClientReaderThread reader, Runnable onShutdown) {
+    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriterThread writer, ClientReaderThread reader) {
         this.name = name;
         this.socket = socket;
         this.ioExecutor = ioExecutor;
         this.reader = reader;
         this.writer = writer;
-        this.onShutdown = onShutdown;
     }
 
 }
