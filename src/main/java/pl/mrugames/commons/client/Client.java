@@ -57,10 +57,12 @@ class Client implements Runnable {
         }
     }
 
-    void init() {
-        completionService.submit(writer, null);
-        completionService.submit(reader, null);
+    CompletableFuture<Object> init() {
+        CompletableFuture<Void> writerFuture = CompletableFuture.runAsync(writer, ioExecutor);
+        CompletableFuture<Void> readerFuture = CompletableFuture.runAsync(reader, ioExecutor);
         ioExecutor.shutdown();
+
+        return CompletableFuture.anyOf(writerFuture, readerFuture);
     }
 
     void handleIOThreadException(Thread thread, Throwable exception) {
