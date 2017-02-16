@@ -5,9 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 class Client implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(Client.class);
@@ -15,6 +13,7 @@ class Client implements Runnable {
     private final String name;
     private final Socket socket;
     private final ExecutorService ioExecutor;
+    private final CompletionService<Boolean> completionService;
     private final ClientWriterThread writer;
     private final ClientReaderThread reader;
     private final Runnable onShutdown;
@@ -26,6 +25,7 @@ class Client implements Runnable {
         this.reader = reader;
         this.ioExecutor = Executors.newFixedThreadPool(2, this::threadFactory);
         this.onShutdown = onShutdown;
+        this.completionService = new ExecutorCompletionService<>(ioExecutor);
     }
 
     @Override
@@ -35,7 +35,7 @@ class Client implements Runnable {
         try {
             init();
 
-            ioExecutor.awaitTermination(1000000, TimeUnit.DAYS);
+            completionService.take();
 
             logger.info("[{}] Client is being shutdown", name);  // when woke up when I/O threads finished
         } catch (InterruptedException e) {
@@ -58,8 +58,8 @@ class Client implements Runnable {
     }
 
     void init() {
-        ioExecutor.execute(writer);
-        ioExecutor.execute(reader);
+        completionService.submit(writer, true);
+        completionService.submit(reader, true);
         ioExecutor.shutdown();
     }
 
@@ -94,13 +94,14 @@ class Client implements Runnable {
      * This constructor should be used only in tests.
      */
     @Deprecated
-    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriterThread writer, ClientReaderThread reader, Runnable onShutdown) {
+    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriterThread writer, ClientReaderThread reader, Runnable onShutdown, CompletionService<Boolean> completionService) {
         this.name = name;
         this.socket = socket;
         this.ioExecutor = ioExecutor;
         this.reader = reader;
         this.writer = writer;
         this.onShutdown = onShutdown;
+        this.completionService = completionService;
     }
 
 }
