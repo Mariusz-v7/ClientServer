@@ -13,7 +13,7 @@ class Client implements Runnable {
     private final String name;
     private final Socket socket;
     private final ExecutorService ioExecutor;
-    private final CompletionService<Boolean> completionService;
+    private final CompletionService<?> completionService;
     private final ClientWriterThread writer;
     private final ClientReaderThread reader;
     private final Runnable onShutdown;
@@ -58,8 +58,8 @@ class Client implements Runnable {
     }
 
     void init() {
-        completionService.submit(writer, true);
-        completionService.submit(reader, true);
+        completionService.submit(writer, null);
+        completionService.submit(reader, null);
         ioExecutor.shutdown();
     }
 
@@ -94,7 +94,7 @@ class Client implements Runnable {
      * This constructor should be used only in tests.
      */
     @Deprecated
-    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriterThread writer, ClientReaderThread reader, Runnable onShutdown, CompletionService<Boolean> completionService) {
+    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriterThread writer, ClientReaderThread reader, Runnable onShutdown, CompletionService<?> completionService) {
         this.name = name;
         this.socket = socket;
         this.ioExecutor = ioExecutor;
