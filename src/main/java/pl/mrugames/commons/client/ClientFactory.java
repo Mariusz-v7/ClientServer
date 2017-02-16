@@ -58,14 +58,14 @@ public class ClientFactory<WF, WS, RF, RS> {
             ClientReaderThread readerThread = new ClientReaderThread(name, socket.getInputStream(), in, clientReaderSupplier.get());
 
             clientWorker = clientWorkerFactory.create(name, comm);
-            client = new Client(name, socket, writerThread, readerThread, clientWorker::onClientDown);
+            client = new Client(name, socket, writerThread, readerThread);
 
         } catch (Exception e) {
             logger.error("[{}] Failed to initialize client, {}", clientName, e.getMessage());
         }
 
         if (clientWorker != null && client != null) {
-            clientExecutor.submit(client);
+            clientExecutor.submit(client); // TODO : run as completable future and after completion kill the other thread
             workerExecutor.submit(clientWorker);
         } else {
             logger.error("[{}] Failed to initialize client or worker.", clientName);
