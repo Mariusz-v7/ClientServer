@@ -22,7 +22,7 @@ public class ClientSpec {
     private ClientWriterThread writer;
     private ClientReaderThread reader;
     private Runnable onShutdown;
-    private CompletionService<Boolean> completionService;
+    private CompletionService<?> completionService;
 
     @Before
     @SuppressWarnings("deprecation")
@@ -104,13 +104,13 @@ public class ClientSpec {
     @Test
     public void whenInit_thenWriterIsExecuted() {
         client.init();
-        verify(completionService).submit(writer, true);
+        verify(completionService).submit(writer, null);
     }
 
     @Test
     public void whenInit_thenReaderIsExecuted() {
         client.init();
-        verify(completionService).submit(reader, true);
+        verify(completionService).submit(reader, null);
     }
 
     private void executeWithException() throws InterruptedException {
