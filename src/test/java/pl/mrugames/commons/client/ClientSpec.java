@@ -2,7 +2,6 @@ package pl.mrugames.commons.client;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -21,7 +20,6 @@ public class ClientSpec {
     private Client client;
     private Socket socket;
     private CountDownLatch executionLatch;
-    private ExecutorService executor;
     private ExecutorService ioExecutor;
     private ClientWriterThread writer;
     private ClientReaderThread reader;
@@ -37,7 +35,6 @@ public class ClientSpec {
         writer = mock(ClientWriterThread.class);
         reader = mock(ClientReaderThread.class);
 
-        executor = Executors.newSingleThreadExecutor();
         ioExecutor = spy(Executors.newFixedThreadPool(2));
 
         socket = mock(Socket.class);
@@ -49,64 +46,46 @@ public class ClientSpec {
         }).when(client).init();
 
     }
-
-    @After
-    public void after() throws InterruptedException {
-        executor.shutdownNow();
-        executor.awaitTermination(1, TimeUnit.SECONDS);
-    }
-
-    private void executeAndAwaitTermination() throws InterruptedException {
-        executor.execute(client);
-
-        executionLatch.await();
-
-        executor.shutdownNow();
-        executor.awaitTermination(1, TimeUnit.SECONDS);
-    }
-
     @Test(timeout = 1000)
-    public void whenInterrupted_thenSockedClosed() throws InterruptedException, IOException {
-        executeAndAwaitTermination();
+    public void givenInitReturnsCompletedFuture_whenRun_thenCloseSocket() throws InterruptedException, IOException {
+        doReturn(CompletableFuture.completedFuture(null)).when(client).init();
+        client.run();
+
         verify(socket).close();
     }
 
     @Test
-    public void whenClientIsShutdown_thenIOExecutorShutdownNowAndAwaitTermination() throws InterruptedException {
-        executeAndAwaitTermination();
+    public void givenInitReturnsCompletedFuture_whenRun_thenIOExecutorShutdownNowAndAwaitTermination() throws InterruptedException {
+        doReturn(CompletableFuture.completedFuture(null)).when(client).init();
+        client.run();
 
         verify(ioExecutor).shutdownNow();
         verify(ioExecutor).awaitTermination(30L, TimeUnit.SECONDS);
     }
 
-    private void executeWithException() throws InterruptedException {
-        doThrow(Exception.class).when(client).init();
-        executor.execute(client);
-        executor.shutdown();
-        executor.awaitTermination(1, TimeUnit.SECONDS);
-    }
-
     @Test
     public void givenInitThrowsException_whenRun_thenExecutorShutdownNow() throws InterruptedException {
-        executeWithException();
+        doThrow(new RuntimeException()).when(client).init();
+        client.run();
+
         verify(ioExecutor).shutdownNow();
     }
 
     @Test
     public void givenInitThrowsException_whenRun_thenSocketClose() throws IOException, InterruptedException {
-        executeWithException();
+        doThrow(new RuntimeException()).when(client).init();
+        client.run();
+
         verify(socket).close();
     }
 
     @Test
     public void givenInitThrowsException_whenRun_thenAwaitTermination() throws IOException, InterruptedException {
-        executeWithException();
+        doThrow(new RuntimeException()).when(client).init();
+        client.run();
+
         verify(ioExecutor).awaitTermination(30, TimeUnit.SECONDS);
     }
-
-
-    /////
-    /////
 
     @Test(timeout = 1000)
     public void givenReaderThreadStops_whenInit_thenReturnedFutureFinishes() throws ExecutionException, InterruptedException {
@@ -155,8 +134,8 @@ public class ClientSpec {
     }
 
     @Test
-    public void whenInit_thenIOThreadsAreRun() {
-        client.init();
+    public void whenInit_thenIOThreadsAreRun() throws ExecutionException, InterruptedException {
+        client.init().get();
 
         verify(reader).run();
         verify(writer).run();

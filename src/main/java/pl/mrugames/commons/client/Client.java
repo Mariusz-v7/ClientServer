@@ -35,10 +35,16 @@ class Client implements Runnable {
             logger.info("[{}] Client is being shutdown due to interruption", name);  // when woke up by interrupt()
         } catch (ExecutionException e) {
             logger.info("[{}] Client is being shutdown due to exception in the I/O threads, {}", name, e.getMessage());
+        } catch (Exception e) {
+            logger.info("[{}] Client is being shutdown due to exception, {}, {}", name, e.getClass().getSimpleName(), e.getMessage());
         } finally {
-            closeSocket();
-
             ioExecutor.shutdownNow();
+
+            try {
+                socket.close();
+            } catch (IOException e) {
+                logger.error("[{}] Failed to close socket", name);
+            }
 
             try {
                 ioExecutor.awaitTermination(30, TimeUnit.SECONDS);
@@ -56,14 +62,6 @@ class Client implements Runnable {
         ioExecutor.shutdown();
 
         return CompletableFuture.anyOf(writerFuture, readerFuture);
-    }
-
-    private void closeSocket() {
-        try {
-            socket.close();
-        } catch (IOException e) {
-            logger.error("[{}] Failed to close socket", name);
-        }
     }
 
     /**
