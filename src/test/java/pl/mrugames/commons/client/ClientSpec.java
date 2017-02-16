@@ -96,12 +96,6 @@ public class ClientSpec {
     }
 
     @Test
-    public void whenInit_thenIOExecutorShutdown() {
-        client.init();
-        verify(ioExecutor).shutdown();
-    }
-
-    @Test
     public void whenInit_thenWriterIsExecuted() {
         client.init();
         verify(completionService).submit(writer, null);
@@ -137,4 +131,48 @@ public class ClientSpec {
         executeWithException();
         verify(ioExecutor).awaitTermination(30, TimeUnit.SECONDS);
     }
+
+
+    /////
+    /////
+
+    @Test(timeout = 1000)
+    public void givenReaderThreadStops_whenInit_thenReturnedFutureFinishes() throws ExecutionException, InterruptedException {
+        doNothing().when(reader).run();
+
+        doAnswer(a -> {
+            TimeUnit.DAYS.sleep(1);
+            return null;
+        }).when(writer).run();
+
+        client.init().get();
+    }
+
+    @Test(timeout = 1000)
+    public void givenWriterThreadStops_whenInit_thenReturnedFutureFinishes() throws ExecutionException, InterruptedException {
+        doNothing().when(writer).run();
+
+        doAnswer(a -> {
+            TimeUnit.DAYS.sleep(1);
+            return null;
+        }).when(reader).run();
+
+        client.init().get();
+    }
+
+    @Test
+    public void whenInit_thenIOTasksAreSubmittedToTheIOExecutor() throws ExecutionException, InterruptedException {
+        doNothing().when(writer).run();
+        doNothing().when(reader).run();
+
+        client.init().get();
+        verify(ioExecutor, times(2)).execute(any());
+    }
+
+    @Test
+    public void whenInit_thenIOExecutorShutdown() {
+        client.init();
+        verify(ioExecutor).shutdown();
+    }
+
 }
