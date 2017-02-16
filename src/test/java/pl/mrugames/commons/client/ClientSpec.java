@@ -22,7 +22,6 @@ public class ClientSpec {
     private ClientWriterThread writer;
     private ClientReaderThread reader;
     private Runnable onShutdown;
-    private CompletionService<?> completionService;
 
     @Before
     @SuppressWarnings("deprecation")
@@ -36,10 +35,9 @@ public class ClientSpec {
 
         executor = Executors.newSingleThreadExecutor();
         ioExecutor = spy(Executors.newFixedThreadPool(2));
-        completionService = spy(new ExecutorCompletionService<>(ioExecutor));
 
         socket = mock(Socket.class);
-        client = spy(new Client("test", socket, ioExecutor, writer, reader, onShutdown, completionService));
+        client = spy(new Client("test", socket, ioExecutor, writer, reader, onShutdown));
 
         doAnswer(a -> {
             executionLatch.countDown();
@@ -93,18 +91,6 @@ public class ClientSpec {
     public void whenHandleIOThreadException_thenSocketClose() throws IOException {
         client.handleIOThreadException(Thread.currentThread(), new Exception());
         verify(socket).close();
-    }
-
-    @Test
-    public void whenInit_thenWriterIsExecuted() {
-        client.init();
-        verify(completionService).submit(writer, null);
-    }
-
-    @Test
-    public void whenInit_thenReaderIsExecuted() {
-        client.init();
-        verify(completionService).submit(reader, null);
     }
 
     private void executeWithException() throws InterruptedException {
@@ -162,9 +148,6 @@ public class ClientSpec {
 
     @Test
     public void whenInit_thenIOTasksAreSubmittedToTheIOExecutor() throws ExecutionException, InterruptedException {
-        doNothing().when(writer).run();
-        doNothing().when(reader).run();
-
         client.init().get();
         verify(ioExecutor, times(2)).execute(any());
     }
@@ -173,6 +156,24 @@ public class ClientSpec {
     public void whenInit_thenIOExecutorShutdown() {
         client.init();
         verify(ioExecutor).shutdown();
+    }
+
+    @Test
+    public void whenRun_thenThreadWaitsForIOThreads() throws ExecutionException, InterruptedException {
+        CompletableFuture future = spy(CompletableFuture.completedFuture(null));
+        doReturn(future).when(client).init();
+
+        client.run();
+
+        verify(future).get();
+    }
+
+    @Test
+    public void whenInit_thenIOThreadsAreRun() {
+        client.init();
+
+        verify(reader).run();
+        verify(writer).run();
     }
 
 }

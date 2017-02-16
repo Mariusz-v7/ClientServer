@@ -13,7 +13,6 @@ class Client implements Runnable {
     private final String name;
     private final Socket socket;
     private final ExecutorService ioExecutor;
-    private final CompletionService<?> completionService;
     private final ClientWriterThread writer;
     private final ClientReaderThread reader;
     private final Runnable onShutdown;
@@ -25,7 +24,6 @@ class Client implements Runnable {
         this.reader = reader;
         this.ioExecutor = Executors.newFixedThreadPool(2, this::threadFactory);
         this.onShutdown = onShutdown;
-        this.completionService = new ExecutorCompletionService<>(ioExecutor);
     }
 
     @Override
@@ -33,13 +31,12 @@ class Client implements Runnable {
         logger.info("[{}] New client has connected from address: {}", name, socket.getLocalSocketAddress());
 
         try {
-            init();
-
-            completionService.take();
-
+            init().get();
             logger.info("[{}] Client is being shutdown", name);  // when woke up when I/O threads finished
         } catch (InterruptedException e) {
-            logger.info("[{}] Client is being shutdown", name);  // when woke up by interrupt()
+            logger.info("[{}] Client is being shutdown due to interruption", name);  // when woke up by interrupt()
+        } catch (ExecutionException e) {
+            logger.info("[{}] Client is being shutdown due to exception in the I/O threads, {}", name, e.getMessage());
         } finally {
             closeSocket();
 
@@ -96,14 +93,13 @@ class Client implements Runnable {
      * This constructor should be used only in tests.
      */
     @Deprecated
-    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriterThread writer, ClientReaderThread reader, Runnable onShutdown, CompletionService<?> completionService) {
+    Client(String name, Socket socket, ExecutorService ioExecutor, ClientWriterThread writer, ClientReaderThread reader, Runnable onShutdown) {
         this.name = name;
         this.socket = socket;
         this.ioExecutor = ioExecutor;
         this.reader = reader;
         this.writer = writer;
         this.onShutdown = onShutdown;
-        this.completionService = completionService;
     }
 
 }
