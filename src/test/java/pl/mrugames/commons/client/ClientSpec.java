@@ -8,10 +8,7 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static org.mockito.Mockito.*;
 
@@ -25,6 +22,7 @@ public class ClientSpec {
     private ClientWriterThread writer;
     private ClientReaderThread reader;
     private Runnable onShutdown;
+    private CompletionService<Boolean> completionService;
 
     @Before
     @SuppressWarnings("deprecation")
@@ -38,9 +36,10 @@ public class ClientSpec {
 
         executor = Executors.newSingleThreadExecutor();
         ioExecutor = spy(Executors.newFixedThreadPool(2));
+        completionService = spy(new ExecutorCompletionService<>(ioExecutor));
 
         socket = mock(Socket.class);
-        client = spy(new Client("test", socket, ioExecutor, writer, reader, onShutdown));
+        client = spy(new Client("test", socket, ioExecutor, writer, reader, onShutdown, completionService));
 
         doAnswer(a -> {
             executionLatch.countDown();
@@ -105,13 +104,13 @@ public class ClientSpec {
     @Test
     public void whenInit_thenWriterIsExecuted() {
         client.init();
-        verify(ioExecutor).execute(writer);
+        verify(completionService).submit(writer, true);
     }
 
     @Test
     public void whenInit_thenReaderIsExecuted() {
         client.init();
-        verify(ioExecutor).execute(reader);
+        verify(completionService).submit(reader, true);
     }
 
     private void executeWithException() throws InterruptedException {
