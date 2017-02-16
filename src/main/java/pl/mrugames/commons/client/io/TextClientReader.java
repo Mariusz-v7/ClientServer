@@ -5,6 +5,16 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 public class TextClientReader implements ClientReader<String, BufferedReader> {
+    private static TextClientReader instance;
+
+    public static synchronized TextClientReader getInstance() {
+        if (instance == null)
+            instance = new TextClientReader();
+
+        return instance;
+    }
+
+    TextClientReader() {}
 
     @Override
     public BufferedReader prepare(InputStream originalInputStream) throws Exception {
