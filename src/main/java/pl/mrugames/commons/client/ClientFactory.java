@@ -53,9 +53,9 @@ public class ClientFactory<WF, WS, RF, RS> {
             socket.setSoTimeout(timeout);
 
             @SuppressWarnings("unchecked")
-            ClientWriterThread writerThread = new ClientWriterThread(socket.getOutputStream(), out, clientWriterSupplier.get(), timeout, TimeUnit.SECONDS);
+            ClientWriterThread writerThread = new ClientWriterThread(name, socket.getOutputStream(), out, clientWriterSupplier.get(), timeout, TimeUnit.SECONDS);
             @SuppressWarnings("unchecked")
-            ClientReaderThread readerThread = new ClientReaderThread(socket.getInputStream(), in, clientReaderSupplier.get());
+            ClientReaderThread readerThread = new ClientReaderThread(name, socket.getInputStream(), in, clientReaderSupplier.get());
 
             clientWorker = clientWorkerFactory.create(name, comm);
             client = new Client(name, socket, writerThread, readerThread, clientWorker::onClientDown);
