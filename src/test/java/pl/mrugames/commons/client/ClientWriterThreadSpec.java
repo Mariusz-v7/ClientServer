@@ -48,7 +48,7 @@ public class ClientWriterThreadSpec {
             return null;
         }).when(clientWriter).next(any(), any());
 
-        clientWriterThread = new ClientWriterThread(originalStream, queue, clientWriter, 10, TimeUnit.MILLISECONDS);
+        clientWriterThread = new ClientWriterThread("Writer", originalStream, queue, clientWriter, 10, TimeUnit.MILLISECONDS);
 
         executor = Executors.newSingleThreadExecutor();
 

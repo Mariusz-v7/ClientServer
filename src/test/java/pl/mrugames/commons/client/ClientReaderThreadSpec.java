@@ -40,7 +40,7 @@ public class ClientReaderThreadSpec {
             return frame;
         }).when(clientReader).next(finalStream);
 
-        readerThread = new ClientReaderThread<>(originalStream, queue, clientReader);
+        readerThread = new ClientReaderThread<>("Reader", originalStream, queue, clientReader);
 
         executor = Executors.newSingleThreadExecutor();
     }
