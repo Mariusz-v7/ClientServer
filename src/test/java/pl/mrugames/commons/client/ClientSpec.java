@@ -135,10 +135,21 @@ public class ClientSpec {
 
     @Test
     public void whenInit_thenIOThreadsAreRun() throws ExecutionException, InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(2);
+
+        doAnswer(a -> {
+            countDownLatch.countDown();
+            return null;
+        }).when(reader).run();
+
+        doAnswer(a -> {
+            countDownLatch.countDown();
+            return null;
+        }).when(writer).run();
+
         client.init().get();
 
-        verify(reader).run();
-        verify(writer).run();
+        countDownLatch.await();
     }
 
     private BaseMatcher<Throwable> getBaseMatcherForNestedException(String exceptionMessage) {
