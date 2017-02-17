@@ -38,22 +38,26 @@ class Client implements Runnable {
         } catch (Exception e) {
             logger.info("[{}] Client is being shutdown due to exception, {}, {}", name, e.getClass().getSimpleName(), e.getMessage());
         } finally {
-            ioExecutor.shutdownNow();
-
-            try {
-                socket.close();
-            } catch (IOException e) {
-                logger.error("[{}] Failed to close socket", name);
-            }
-
-            try {
-                ioExecutor.awaitTermination(30, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                logger.error("[{}] Failed to shutdown IO threads!", name);
-            }
-
-            logger.info("[{}] Client has been shutdown!", name);
+            close();
         }
+    }
+
+    private void close() {
+        ioExecutor.shutdownNow();
+
+        try {
+            socket.close();
+        } catch (IOException e) {
+            logger.error("[{}] Failed to close socket", name);
+        }
+
+        try {
+            ioExecutor.awaitTermination(30, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            logger.error("[{}] Failed to shutdown IO threads!", name);
+        }
+
+        logger.info("[{}] Client has been shutdown!", name);
     }
 
     CompletableFuture<Object> init() {
