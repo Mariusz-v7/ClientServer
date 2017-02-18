@@ -5,9 +5,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-class Client implements Runnable {
+class Client {
     private final static Logger logger = LoggerFactory.getLogger(Client.class);
 
     private final String name;
@@ -24,25 +27,21 @@ class Client implements Runnable {
         this.ioExecutor = Executors.newFixedThreadPool(2, r -> new Thread(r, name + "-IO"));
     }
 
-    @Override
-    public void run() {
+    CompletableFuture<Object> run() {
         logger.info("[{}] New client has connected from address: {}", name, socket.getLocalSocketAddress());
 
-        try {
-            init().get();
-            logger.info("[{}] Client is being shutdown", name);  // when woke up when I/O threads finished
-        } catch (InterruptedException e) {
-            logger.info("[{}] Client is being shutdown due to interruption", name);  // when woke up by interrupt()
-        } catch (ExecutionException e) {
-            logger.info("[{}] Client is being shutdown due to exception in the I/O threads, {}", name, e.getMessage());
-        } catch (Exception e) {
-            logger.info("[{}] Client is being shutdown due to exception, {}, {}", name, e.getClass().getSimpleName(), e.getMessage());
-        } finally {
-            close();
-        }
+        return init().whenComplete(this::onComplete).exceptionally(e -> null);
     }
 
-    private void close() {
+    void onComplete(Object value, Throwable throwable) {
+        if (throwable != null) {
+            logger.error("[{}] Exception in client execution, {}", name, throwable.getMessage());
+        }
+
+        close();
+    }
+
+    void close() {
         ioExecutor.shutdownNow();
 
         try {
