@@ -46,6 +46,7 @@ public class ClientSpec {
         }).when(client).init();
 
     }
+
     @Test(timeout = 1000)
     public void givenInitReturnsCompletedFuture_whenRun_thenCloseSocket() throws InterruptedException, IOException {
         doReturn(CompletableFuture.completedFuture(null)).when(client).init();
@@ -61,30 +62,6 @@ public class ClientSpec {
 
         verify(ioExecutor).shutdownNow();
         verify(ioExecutor).awaitTermination(30L, TimeUnit.SECONDS);
-    }
-
-    @Test
-    public void givenInitThrowsException_whenRun_thenExecutorShutdownNow() throws InterruptedException {
-        doThrow(new RuntimeException()).when(client).init();
-        client.run();
-
-        verify(ioExecutor).shutdownNow();
-    }
-
-    @Test
-    public void givenInitThrowsException_whenRun_thenSocketClose() throws IOException, InterruptedException {
-        doThrow(new RuntimeException()).when(client).init();
-        client.run();
-
-        verify(socket).close();
-    }
-
-    @Test
-    public void givenInitThrowsException_whenRun_thenAwaitTermination() throws IOException, InterruptedException {
-        doThrow(new RuntimeException()).when(client).init();
-        client.run();
-
-        verify(ioExecutor).awaitTermination(30, TimeUnit.SECONDS);
     }
 
     @Test(timeout = 1000)
@@ -121,16 +98,6 @@ public class ClientSpec {
     public void whenInit_thenIOExecutorShutdown() {
         client.init();
         verify(ioExecutor).shutdown();
-    }
-
-    @Test
-    public void whenRun_thenThreadWaitsForIOThreads() throws ExecutionException, InterruptedException {
-        CompletableFuture future = spy(CompletableFuture.completedFuture(null));
-        doReturn(future).when(client).init();
-
-        client.run();
-
-        verify(future).get();
     }
 
     @Test
@@ -196,4 +163,99 @@ public class ClientSpec {
         client.init().get();
     }
 
+    private void sleepThread(Runnable runnable) {
+        doAnswer(a -> {
+            TimeUnit.DAYS.sleep(1);
+            return null;
+        }).when(runnable).run();
+    }
+
+    private void exceptionThread(Runnable runnable, Throwable exception) {
+        doThrow(exception).when(runnable).run();
+    }
+
+    @Test
+    public void givenWriterThreadThrowsException_whenRun_thenCallOnCompleteWithException() {
+        RuntimeException runtimeException = new RuntimeException("SOME EXCEPTION");
+
+        sleepThread(reader);
+        exceptionThread(writer, runtimeException);
+
+        client.run().join();
+
+        verify(client).onComplete(isNull(), any());
+    }
+
+    @Test
+    public void givenReaderThreadThrowsException_whenRun_thenCallOnCompleteWithException() {
+        RuntimeException runtimeException = new RuntimeException("SOME EXCEPTION");
+
+        sleepThread(writer);
+        exceptionThread(reader, runtimeException);
+
+        client.run().join();
+
+        verify(client).onComplete(isNull(), any());
+    }
+
+    @Test
+    public void givenWriterThreadEndsException_whenRun_thenCallOnCompleteWithoutException() {
+        sleepThread(reader);
+        doNothing().when(writer).run();
+
+        client.run().join();
+
+        verify(client).onComplete(any(), isNull(Throwable.class));
+    }
+
+    @Test
+    public void givenReaderThreadEndsException_whenRun_thenCallOnCompleteWithoutException() {
+        sleepThread(writer);
+        doNothing().when(reader).run();
+
+        client.run().join();
+
+        verify(client).onComplete(any(), isNull(Throwable.class));
+    }
+
+    @Test
+    public void givenIOThreadsWork_whenClose_thenCallOnComplete() throws ExecutionException, InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(2);
+
+        doAnswer(a -> {
+            countDownLatch.countDown();
+            TimeUnit.DAYS.sleep(1);
+            return null;
+        }).when(reader).run();
+
+        doAnswer(a -> {
+            countDownLatch.countDown();
+            TimeUnit.DAYS.sleep(1);
+            return null;
+        }).when(writer).run();
+
+        Future future = client.run();
+
+        countDownLatch.await();
+
+        client.close();
+
+        try {
+            future.get();
+        } catch (Exception e) {}
+
+        verify(client).onComplete(any(), any());
+    }
+
+    @Test
+    public void whenOnCompleteWithException_thenCallClose() {
+        client.onComplete(null, new Exception());
+        verify(client).close();
+    }
+
+    @Test
+    public void whenOnCompleteWithoutException_thenCallClose() {
+        client.onComplete(null, null);
+        verify(client).close();
+    }
 }

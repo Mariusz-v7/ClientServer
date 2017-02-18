@@ -65,7 +65,7 @@ public class ClientFactory<WF, WS, RF, RS> {
         }
 
         if (clientWorker != null && client != null) {
-            clientExecutor.submit(client); // TODO : run as completable future and after completion kill the other thread
+//            clientExecutor.submit(client); // TODO : run as completable future and after completion kill the other thread
             workerExecutor.submit(clientWorker);
         } else {
             logger.error("[{}] Failed to initialize client or worker.", clientName);
