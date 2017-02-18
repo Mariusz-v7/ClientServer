@@ -64,7 +64,7 @@ public class ClientFactory<WF, WS, RF, RS> {
             ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::shutdown);
 
             workerExecutor.submit(clientWorker);
-            client.run().whenCompleteAsync((v, t) -> clientWorker.onClientDown());
+            client.run().whenCompleteAsync((v, t) -> clientWorker.onClientTermination());
         } catch (Exception e) {
             logger.error("[{}] Failed to initialize client, {}", clientName, e.getMessage());
         }
