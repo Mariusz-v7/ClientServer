@@ -5,10 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 class Client {
     private final static Logger logger = LoggerFactory.getLogger(Client.class);
@@ -30,30 +27,52 @@ class Client {
     CompletableFuture<Object> run() {
         logger.info("[{}] New client has connected from address: {}", name, socket.getLocalSocketAddress());
 
-        return init().whenComplete(this::onComplete).exceptionally(e -> null);
+        return init().whenCompleteAsync(this::onComplete).exceptionally(e -> null);
     }
 
     void onComplete(Object value, Throwable throwable) {
         if (throwable != null) {
+            if (throwable instanceof CompletionException) {
+                throwable = throwable.getCause();
+            }
+
+            if (throwable instanceof IOExceptionWrapper) {
+                throwable = throwable.getCause();
+            }
+
             logger.error("[{}] Exception in client execution, {}", name, throwable.getMessage());
         }
 
         close();
     }
 
+    void shutdown() {
+        ioExecutor.shutdownNow();
+    }
+
     void close() {
         ioExecutor.shutdownNow();
 
         try {
+            logger.info("[{}] Closing socket", name);
             socket.close();
+            logger.info("[{}] Socket has been closed", name);
         } catch (IOException e) {
             logger.error("[{}] Failed to close socket", name);
         }
 
         try {
-            ioExecutor.awaitTermination(30, TimeUnit.SECONDS);
+            logger.info("[{}] Shutting down IO threads", name);
+            Thread.interrupted(); // clear the flag
+            boolean result = ioExecutor.awaitTermination(30, TimeUnit.SECONDS);
+
+            if (result) {
+                logger.info("[{}] IO threads has been shutdown", name);
+            } else {
+                logger.error("[{}] Failed to shutdown IO threads!", name);
+            }
         } catch (InterruptedException e) {
-            logger.error("[{}] Failed to shutdown IO threads!", name);
+            logger.error("[{}] Failed to shutdown IO threads due to interruption!", name);
         }
 
         logger.info("[{}] Client has been shutdown!", name);

@@ -24,5 +24,6 @@ public class TextClientWriter implements ClientWriter<String, BufferedWriter> {
     @Override
     public void next(BufferedWriter outputStream, String frameToSend) throws Exception {
         outputStream.write(frameToSend);
+        outputStream.flush();
     }
 }
