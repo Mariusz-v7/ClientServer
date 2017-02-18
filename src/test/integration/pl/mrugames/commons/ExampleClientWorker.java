@@ -53,7 +53,7 @@ public class ExampleClientWorker implements ClientWorker {
 
                 if (received.equals("exit")) {
                     comm.send("Good Bye!\n");
-                    break;
+                    shutdownSwitch.run();
                 } else if (received.equals("shutdown")) {
                     comm.send("Shutdown procedure initiated!\n");
                     onShutdownCommand.run();

@@ -17,7 +17,7 @@ public class Example {
 
         ClientFactory clientFactory = new ClientFactory<>(
                 "Example Client",
-                20,
+                3,
                 60,
                 TextClientWriter::getInstance,
                 TextClientReader::getInstance,
