@@ -35,9 +35,9 @@ class ClientReaderThread<FrameType, StreamType extends AutoCloseable> implements
             }
         } catch (Exception e) {
             throw new IOExceptionWrapper(e);
+        } finally {
+            logger.info("[{}] Reader thread has been stopped!", name);
         }
-
-        logger.info("[{}] Reader thread stopped!", name);
     }
 
 }

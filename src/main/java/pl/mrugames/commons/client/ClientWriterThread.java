@@ -48,8 +48,8 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
             }
         } catch (Exception e) {
             throw new IOExceptionWrapper(e);
+        } finally {
+            logger.info("[{}] Writer thread has been stopped!", name);
         }
-
-        logger.info("[{}] Writer thread stopped!", name);
     }
 }

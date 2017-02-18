@@ -21,13 +21,15 @@ public class ClientFactory<WF, WS, RF, RS> {
     private final ClientWorkerFactory clientWorkerFactory;
     private final AtomicLong id;
 
+    private volatile boolean shutdown;
+
     public ClientFactory(
             String clientName,
             int maxThreads,
             int timeout,
             Supplier<ClientWriter<WF, WS>> clientWriterSupplier,
             Supplier<ClientReader<RF, RS>> clientReaderSupplier,
-            ClientWorkerFactory clientWorkerFactory) {
+            ClientWorkerFactory<RF, WF> clientWorkerFactory) {
         this.clientName = clientName;
         this.workerExecutor = Executors.newFixedThreadPool(maxThreads, this::factory);
         this.timeout = timeout;
@@ -38,8 +40,12 @@ public class ClientFactory<WF, WS, RF, RS> {
     }
 
     public void create(Socket socket) {
+        if (shutdown) {
+            throw new IllegalStateException(String.format("[%s] Factory is shut down, and cannot accept more clients!", clientName));
+        }
+
         try {
-            socket.setSoTimeout(timeout);
+            socket.setSoTimeout((int) TimeUnit.SECONDS.toMillis(timeout));
 
             BlockingQueue<RF> in = new LinkedBlockingQueue<>();
             BlockingQueue<WF> out = new LinkedBlockingQueue<>();
@@ -54,22 +60,46 @@ public class ClientFactory<WF, WS, RF, RS> {
             ClientReaderThread readerThread = new ClientReaderThread(name, socket.getInputStream(), in, clientReaderSupplier.get());
 
             Client client = new Client(name, socket, writerThread, readerThread);
-            ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::close);
+            @SuppressWarnings("unchecked")
+            ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::shutdown);
 
-            client.run().whenComplete((v, t) -> clientWorker.onClientDown());
             workerExecutor.submit(clientWorker);
+            client.run().whenCompleteAsync((v, t) -> clientWorker.onClientDown());
         } catch (Exception e) {
             logger.error("[{}] Failed to initialize client, {}", clientName, e.getMessage());
         }
     }
 
     private Thread factory(Runnable runnable) {
-        Thread thread = new Thread(runnable, clientName + " - pool");
+        Thread thread = new Thread(runnable, clientName + " - factory");
         thread.setUncaughtExceptionHandler((t, e) -> {
             logger.error("[{}] Error in client thread, {}", t.getName(), e.getMessage());
             t.interrupt();
         });
         return thread;
+    }
+
+    public void shutdown() {
+        logger.info("[{}] Factory is being shutdown!", clientName);
+
+        shutdown = true;
+
+        workerExecutor.shutdownNow();
+
+        try {
+            logger.info("[{}] Shutting down worker threads!", clientName);
+            Thread.interrupted(); /// clear the flag
+            boolean result = workerExecutor.awaitTermination(30, TimeUnit.SECONDS);
+            if (result) {
+                logger.info("[{}] Worker threads has been shutdown!", clientName);
+            } else {
+                logger.error("[{}] Failed to shutdown worker threads", clientName);
+            }
+        } catch (InterruptedException e) {
+            logger.error("[{}] Failed to shutdown worker threads due to interruption", clientName);
+        }
+
+        logger.info("[{}] Factory has been shutdown!", clientName);
     }
 
 }

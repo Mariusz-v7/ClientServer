@@ -28,7 +28,7 @@ public class Host extends Thread {
         try (ServerSocket socket = new ServerSocket(port)) {
             setSocket(socket);
 
-            while (!Thread.currentThread().isInterrupted()) {
+            while (!isInterrupted()) {
                 try {
                     next(socket);
                 } catch (Exception e) {
@@ -37,13 +37,17 @@ public class Host extends Thread {
             }
         } catch (IOException e) {
             logger.error("[Host {}] Failed to create socket: {}", getName(), e.getMessage());
+        } finally {
+            clientFactory.shutdown();
         }
 
-        logger.info("[Host {}] Host has shutdown!", getName());
+        logger.info("[Host {}] Host has been shutdown!", getName());
     }
 
     @Override
     public void interrupt() {
+        super.interrupt();
+
         try {
             logger.info("[Host {}] is being shutdown!", getName());
 
@@ -52,8 +56,6 @@ public class Host extends Thread {
 
         } catch (IOException e) {
             logger.error("[Host {}] failed to close socket!", getName());
-        } finally {
-            super.interrupt();
         }
     }
 
