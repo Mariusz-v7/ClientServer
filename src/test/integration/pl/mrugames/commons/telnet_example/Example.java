@@ -1,4 +1,4 @@
-package pl.mrugames.commons;
+package pl.mrugames.commons.telnet_example;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
