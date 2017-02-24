@@ -33,6 +33,11 @@ public class Host extends Thread {
                     next(socket);
                 } catch (Exception e) {
                     logger.error("[Host {}] Failed to initialize client", getName());
+
+                    if (socket.isClosed()) {
+                        logger.error("[Host {}] ServerSocket is closed", getName());
+                        break;
+                    }
                 }
             }
         } catch (IOException e) {
