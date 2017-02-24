@@ -1,4 +1,4 @@
-package pl.mrugames.commons;
+package pl.mrugames.commons.telnet_example;
 
 import pl.mrugames.commons.client.ClientWorker;
 import pl.mrugames.commons.client.ClientWorkerFactory;
