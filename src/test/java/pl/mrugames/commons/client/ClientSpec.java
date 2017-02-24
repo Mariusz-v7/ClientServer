@@ -9,7 +9,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
 
-import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.*;
 
@@ -45,14 +44,6 @@ public class ClientSpec {
             return a.callRealMethod();
         }).when(client).init();
 
-    }
-
-    @Test(timeout = 1000)
-    public void givenInitReturnsCompletedFuture_whenRun_thenCloseSocket() throws InterruptedException, IOException {
-        doReturn(CompletableFuture.completedFuture(null)).when(client).init();
-        client.run();
-
-        verify(socket).close();
     }
 
     @Test

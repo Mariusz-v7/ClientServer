@@ -39,7 +39,7 @@ public class ClientFactory<WF, WS, RF, RS> {
         this.id = new AtomicLong();
     }
 
-    public void create(Socket socket) {
+    public ClientWorker create(Socket socket) {
         if (shutdown) {
             throw new IllegalStateException(String.format("[%s] Factory is shut down, and cannot accept more clients!", clientName));
         }
@@ -62,11 +62,17 @@ public class ClientFactory<WF, WS, RF, RS> {
             Client client = new Client(name, socket, writerThread, readerThread);
             @SuppressWarnings("unchecked")
             ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::shutdown);
+            if (clientWorker == null) {
+                throw new NullPointerException("Client worker is null");
+            }
 
             workerExecutor.submit(clientWorker);
             client.run().whenCompleteAsync((v, t) -> clientWorker.onClientTermination());
+
+            return clientWorker;
         } catch (Exception e) {
             logger.error("[{}] Failed to initialize client, {}", clientName, e.getMessage());
+            return null;
         }
     }
 

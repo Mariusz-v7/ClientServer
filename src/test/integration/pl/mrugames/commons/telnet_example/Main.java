@@ -7,29 +7,29 @@ import pl.mrugames.commons.client.io.TextClientReader;
 import pl.mrugames.commons.client.io.TextClientWriter;
 import pl.mrugames.commons.host.Host;
 
-public class Example {
-    private final static Logger logger = LoggerFactory.getLogger(Example.class);
+public class Main {
+    private final static Logger logger = LoggerFactory.getLogger(Main.class);
     private static Host host;
 
     public static void main(String ...args) throws InterruptedException {
-        logger.info("Example started...");
+        logger.info("Main started...");
 
 
         ClientFactory clientFactory = new ClientFactory<>(
-                "Example Client",
+                "Main Client",
                 3,
                 60,
                 TextClientWriter::getInstance,
                 TextClientReader::getInstance,
-                new ExampleClientWorkerFactory(Example::shutdown)
+                new ExampleClientWorkerFactory(Main::shutdown)
         );
 
-        host = new Host("Example Host", 10000, clientFactory);
+        host = new Host("Main Host", 10000, clientFactory);
 
         host.start();
         host.join();
 
-        logger.info("Example finished...");
+        logger.info("Main finished...");
     }
 
     private static void shutdown() {
