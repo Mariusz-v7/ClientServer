@@ -6,12 +6,14 @@ import pl.mrugames.commons.client.ClientFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.concurrent.CountDownLatch;
 
 public class Host extends Thread {
     private final static Logger logger = LoggerFactory.getLogger(Host.class);
 
     private final int port;
     private final ClientFactory clientFactory;
+    private final CountDownLatch socketOpenSignal = new CountDownLatch(1);
 
     private volatile ServerSocket socket;
 
@@ -27,6 +29,7 @@ public class Host extends Thread {
 
         try (ServerSocket socket = new ServerSocket(port)) {
             setSocket(socket);
+            socketOpenSignal.countDown();
 
             while (!isInterrupted()) {
                 try {
@@ -70,5 +73,9 @@ public class Host extends Thread {
 
     void setSocket(ServerSocket socket) {
         this.socket = socket;
+    }
+
+    public void waitForSocketOpen() throws InterruptedException {
+        socketOpenSignal.await();
     }
 }
