@@ -151,4 +151,21 @@ public class TimeoutSpec {
 
         assertThat(diff).isCloseTo(timeoutSeconds * 1000, Percentage.withPercentage(95));
     }
+
+    @Test
+    public void givenNewClientConnects_whenBothClientAndHostKeepCommunicating_thenNoTimeout() throws IOException, InterruptedException {
+        mockHostToSendEverySecond();
+
+        Socket socket = new Socket("localhost", port);
+        clientConnected.await();
+
+        mockClientToSendEverySecond(socket);
+
+        TimeUnit.SECONDS.sleep(timeoutSeconds + 2);
+
+        assertThat(clientWorker.isShutdown()).isFalse();
+        assertThat(socket.isClosed()).isFalse();
+
+        socket.close();
+    }
 }

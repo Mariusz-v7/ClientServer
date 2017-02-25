@@ -32,6 +32,10 @@ public class SimpleClientWorker implements ClientWorker {
         shutdownSignal.await();
     }
 
+    boolean isShutdown() {
+        return shutdownSignal.getCount() == 0;
+    }
+
     Comm<String, String> getComm() {
         return comm;
     }
