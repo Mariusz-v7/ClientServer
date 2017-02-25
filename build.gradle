@@ -2,6 +2,7 @@ group 'pl.mrugames.commons'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'idea'
 
 sourceCompatibility = 1.8
 
@@ -18,4 +19,54 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile group: 'org.mockito', name: 'mockito-all', version: '2.0.2-beta'
     testCompile group: 'org.assertj', name: 'assertj-core', version: '3.6.2'
+}
+
+idea {
+    module {
+        testSourceDirs += file('src/test/integration')
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.4'
+}
+
+task fatJar(type: Jar) {
+    baseName = project.name + '-all'
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    with jar
+}
+
+task telnetExampleJar(type: Jar) {
+    baseName = project.name + '-telnet-example'
+    from {[
+            configurations.compile.collect {
+                it.isDirectory() ? it : zipTree(it)
+            },
+            sourceSets.test.output
+
+    ]}
+    manifest {
+        attributes 'Main-Class': 'pl.mrugames.commons.telnet_example.Main'
+    }
+    with jar
+}
+
+task clientExampleJar(type: Jar) {
+    baseName = project.name + '-client-example'
+    from {[
+            configurations.compile.collect {
+                it.isDirectory() ? it : zipTree(it)
+            },
+            sourceSets.test.output
+
+    ]}
+    manifest {
+        attributes 'Main-Class': 'pl.mrugames.commons.client_example.Main'
+    }
+    with jar
 }
