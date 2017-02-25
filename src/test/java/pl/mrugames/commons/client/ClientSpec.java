@@ -46,15 +46,6 @@ public class ClientSpec {
 
     }
 
-    @Test
-    public void givenInitReturnsCompletedFuture_whenRun_thenIOExecutorShutdownNowAndAwaitTermination() throws InterruptedException {
-        doReturn(CompletableFuture.completedFuture(null)).when(client).init();
-        client.run();
-
-        verify(ioExecutor).shutdownNow();
-        verify(ioExecutor).awaitTermination(30L, TimeUnit.SECONDS);
-    }
-
     @Test(timeout = 1000)
     public void givenReaderThreadStops_whenInit_thenReturnedFutureFinishes() throws ExecutionException, InterruptedException {
         doNothing().when(reader).run();
