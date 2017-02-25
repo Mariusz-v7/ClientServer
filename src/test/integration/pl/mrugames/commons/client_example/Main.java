@@ -13,7 +13,15 @@ public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String ...args) throws InterruptedException, IOException {
+        if (args.length != 2) {
+            logger.error("Please provide address and port");
+            return;
+        }
+
         logger.info("Main started...");
+
+        final String address = args[0];
+        final int port = Integer.valueOf(args[1]);
 
         ClientFactory clientFactory = new ClientFactory<>(
                 "Local Client",
@@ -24,7 +32,7 @@ public class Main {
                 new LocalClientWorkerFactory()
         );
 
-        LocalClientWorker localClientWorker = (LocalClientWorker) clientFactory.create(new Socket("localhost", 10000));
+        LocalClientWorker localClientWorker = (LocalClientWorker) clientFactory.create(new Socket(address, port));
 
         localClientWorker.getShutdownLatch().await();
 

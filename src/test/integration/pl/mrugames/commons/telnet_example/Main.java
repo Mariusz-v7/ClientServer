@@ -12,8 +12,14 @@ public class Main {
     private static Host host;
 
     public static void main(String ...args) throws InterruptedException {
-        logger.info("Main started...");
+        if (args.length != 1) {
+            logger.error("Please provide port");
+            return;
+        }
 
+        final int port = Integer.valueOf(args[0]);
+
+        logger.info("Main started...");
 
         ClientFactory clientFactory = new ClientFactory<>(
                 "Main Client",
@@ -24,7 +30,7 @@ public class Main {
                 new ExampleClientWorkerFactory(Main::shutdown)
         );
 
-        host = new Host("Main Host", 10000, clientFactory);
+        host = new Host("Main Host", port, clientFactory);
 
         host.start();
         host.join();
