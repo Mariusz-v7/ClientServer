@@ -19,6 +19,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="client-server_integration" target="1.8" />
       <module name="client-server_main" target="1.8" />
       <module name="client-server_test" target="1.8" />
     </bytecodeTargetLevel>
