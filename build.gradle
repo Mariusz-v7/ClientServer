@@ -27,6 +27,14 @@ idea {
     }
 }
 
+sourceSets {
+    test {
+        java {
+            srcDir 'src/test/integration'
+        }
+    }
+}
+
 task wrapper(type: Wrapper) {
     gradleVersion = '3.4'
 }
@@ -43,28 +51,29 @@ task fatJar(type: Jar) {
 
 task telnetExampleJar(type: Jar) {
     baseName = project.name + '-telnet-example'
-    from {[
-            configurations.compile.collect {
-                it.isDirectory() ? it : zipTree(it)
-            },
-            sourceSets.test.output
 
-    ]}
+    from configurations.compile.collect {
+        it.isDirectory() ? it : zipTree(it)
+    }
+
+    from sourceSets.test.output
+
     manifest {
         attributes 'Main-Class': 'pl.mrugames.commons.telnet_example.Main'
     }
+
     with jar
 }
 
 task clientExampleJar(type: Jar) {
     baseName = project.name + '-client-example'
-    from {[
-            configurations.compile.collect {
-                it.isDirectory() ? it : zipTree(it)
-            },
-            sourceSets.test.output
 
-    ]}
+    from configurations.compile.collect {
+                it.isDirectory() ? it : zipTree(it)
+    }
+
+    from sourceSets.test.output
+
     manifest {
         attributes 'Main-Class': 'pl.mrugames.commons.client_example.Main'
     }
