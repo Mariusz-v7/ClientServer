@@ -16,6 +16,7 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,7 +47,8 @@ public class TimeoutSpec {
                 timeoutSeconds,
                 TextWriter::new,
                 TextReader::new,
-                workerFactory
+                workerFactory,
+                Collections.emptyList()
         );
 
         doAnswer(a -> {

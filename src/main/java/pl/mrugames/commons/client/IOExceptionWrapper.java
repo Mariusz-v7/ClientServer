@@ -1,7 +1,7 @@
 package pl.mrugames.commons.client;
 
-class IOExceptionWrapper extends RuntimeException {
-    IOExceptionWrapper(Throwable cause) {
+public class IOExceptionWrapper extends RuntimeException {
+    public IOExceptionWrapper(Throwable cause) {
         super(cause);
     }
 }

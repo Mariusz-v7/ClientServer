@@ -8,11 +8,13 @@ import pl.mrugames.commons.client.io.TextWriter;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Collections;
+import java.util.concurrent.ExecutionException;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String ...args) throws InterruptedException, IOException {
+    public static void main(String... args) throws InterruptedException, IOException, ExecutionException {
         if (args.length != 2) {
             logger.error("Please provide address and port");
             return;
@@ -28,10 +30,11 @@ public class Main {
                 60,
                 TextWriter::new,
                 TextReader::new,
-                new LocalClientWorkerFactory()
+                new LocalClientWorkerFactory(),
+                Collections.emptyList()
         );
 
-        LocalClientWorker localClientWorker = (LocalClientWorker) clientFactory.create(new Socket(address, port));
+        LocalClientWorker localClientWorker = (LocalClientWorker) clientFactory.create(new Socket(address, port)).get();
 
         localClientWorker.getShutdownLatch().await();
 

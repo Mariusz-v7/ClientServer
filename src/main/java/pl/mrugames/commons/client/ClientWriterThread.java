@@ -18,6 +18,9 @@ class ClientWriterThread<FrameType> implements Runnable {
     private final long timeout;
     private final TimeUnit timeoutUnit;
 
+    @SuppressWarnings("unchecked")
+    private final FrameType TERMINATOR = (FrameType) new Object();
+
     private volatile boolean interrupted;
     private volatile CountDownLatch shutdownSignal;
 
@@ -35,6 +38,7 @@ class ClientWriterThread<FrameType> implements Runnable {
 
     void interrupt() {
         interrupted = true;
+        toSend.add(TERMINATOR);  // instead of interrupting the thread, add terminator to the queue
     }
 
     void join() throws InterruptedException {
@@ -51,6 +55,11 @@ class ClientWriterThread<FrameType> implements Runnable {
         try {
             while (!interrupted && !Thread.currentThread().isInterrupted()) {
                 FrameType frame = toSend.poll(timeout, timeoutUnit);
+                if (frame == TERMINATOR) {
+                    logger.info("[{}] Terminator received", name);
+                    break;
+                }
+
                 if (frame != null) {
                     clientWriter.next(frame);
                 } else {

@@ -7,6 +7,8 @@ import pl.mrugames.commons.client.io.TextReader;
 import pl.mrugames.commons.client.io.TextWriter;
 import pl.mrugames.commons.host.Host;
 
+import java.util.Collections;
+
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
     private static Host host;
@@ -26,7 +28,8 @@ public class Main {
                 60,
                 TextWriter::new,
                 TextReader::new,
-                new ExampleClientWorkerFactory(Main::shutdown)
+                new ExampleClientWorkerFactory(Main::shutdown),
+                Collections.emptyList()
         );
 
         host = new Host("Main Host", port, clientFactory);

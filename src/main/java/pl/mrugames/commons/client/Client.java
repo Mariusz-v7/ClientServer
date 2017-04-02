@@ -62,6 +62,7 @@ class Client {
             logger.error("[{}] Failed to close socket", name);
         }
 
+        Thread.interrupted();  // clear the flag
         try {
             logger.info("[{}] Waiting for reader and writer to shutdown", name);
             reader.join();
