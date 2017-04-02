@@ -23,7 +23,6 @@ public class Main {
 
         ClientFactory clientFactory = new ClientFactory<>(
                 "Main Client",
-                3,
                 60,
                 TextClientWriter::getInstance,
                 TextClientReader::getInstance,

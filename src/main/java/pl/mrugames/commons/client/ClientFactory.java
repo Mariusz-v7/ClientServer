@@ -14,7 +14,7 @@ public class ClientFactory<WF, WS, RF, RS> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final String clientName;
-    private final ExecutorService workerExecutor;
+    private final ExecutorService threadPool;
     private final int timeout;
     private final Supplier<ClientWriter<WF, WS>> clientWriterSupplier;
     private final Supplier<ClientReader<RF, RS>> clientReaderSupplier;
@@ -25,13 +25,12 @@ public class ClientFactory<WF, WS, RF, RS> {
 
     public ClientFactory(
             String clientName,
-            int maxThreads,
             int timeout,
             Supplier<ClientWriter<WF, WS>> clientWriterSupplier,
             Supplier<ClientReader<RF, RS>> clientReaderSupplier,
             ClientWorkerFactory<RF, WF> clientWorkerFactory) {
         this.clientName = clientName;
-        this.workerExecutor = Executors.newFixedThreadPool(maxThreads, this::factory);
+        this.threadPool = Executors.newCachedThreadPool(this::factory);
         this.timeout = timeout;
         this.clientWriterSupplier = clientWriterSupplier;
         this.clientReaderSupplier = clientReaderSupplier;
@@ -59,15 +58,16 @@ public class ClientFactory<WF, WS, RF, RS> {
             @SuppressWarnings("unchecked")
             ClientReaderThread readerThread = new ClientReaderThread(name, socket.getInputStream(), in, clientReaderSupplier.get());
 
-            Client client = new Client(workerExecutor, name, socket, writerThread, readerThread);
+            Client client = new Client(threadPool, name, socket, writerThread, readerThread);
             @SuppressWarnings("unchecked")
             ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::close);
             if (clientWorker == null) {
                 throw new NullPointerException("Client worker is null");
             }
 
-            workerExecutor.submit(clientWorker);
-            client.start().whenCompleteAsync((v, t) -> clientWorker.onClientTermination());
+            threadPool.submit(clientWorker);
+            client.start()
+                    .whenCompleteAsync((v, t) -> clientWorker.onClientTermination(), threadPool);
 
             return clientWorker;
         } catch (Exception e) {
@@ -77,7 +77,7 @@ public class ClientFactory<WF, WS, RF, RS> {
     }
 
     private Thread factory(Runnable runnable) {
-        Thread thread = new Thread(runnable, clientName + " - factory");
+        Thread thread = new Thread(runnable, "client-factory-pool-" + clientName);
         thread.setUncaughtExceptionHandler((t, e) -> {
             logger.error("[{}] Error in client thread, {}", t.getName(), e.getMessage());
             t.interrupt();
@@ -90,12 +90,12 @@ public class ClientFactory<WF, WS, RF, RS> {
 
         shutdown = true;
 
-        workerExecutor.shutdownNow();
+        threadPool.shutdownNow();
 
         try {
-            logger.info("[{}] Shutting down worker threads!", clientName);
+            logger.info("[{}] Shutting down thread pool!", clientName);
             Thread.interrupted(); /// clear the flag
-            boolean result = workerExecutor.awaitTermination(30, TimeUnit.SECONDS);
+            boolean result = threadPool.awaitTermination(30, TimeUnit.SECONDS);
             if (result) {
                 logger.info("[{}] Worker threads has been shutdown!", clientName);
             } else {

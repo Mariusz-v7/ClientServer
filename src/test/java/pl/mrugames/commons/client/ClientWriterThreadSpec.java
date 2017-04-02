@@ -14,7 +14,6 @@ import pl.mrugames.commons.client.io.ClientWriter;
 import java.io.OutputStream;
 import java.util.concurrent.*;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(BlockJUnit4ClassRunner.class)
@@ -49,7 +48,7 @@ public class ClientWriterThreadSpec {
             return null;
         }).when(clientWriter).next(any(), any());
 
-        clientWriterThread = new ClientWriterThread("Writer", originalStream, queue, clientWriter, 10, TimeUnit.MILLISECONDS);
+        clientWriterThread = spy(new ClientWriterThread("Writer", originalStream, queue, clientWriter, 10, TimeUnit.MILLISECONDS));
 
         executor = Executors.newSingleThreadExecutor();
 
@@ -75,7 +74,8 @@ public class ClientWriterThreadSpec {
         expectedException.expect(IOExceptionWrapper.class);
         expectedException.expectCause(new BaseMatcher<Throwable>() {
             @Override
-            public void describeTo(Description description) {}
+            public void describeTo(Description description) {
+            }
 
             @Override
             public boolean matches(Object item) {
@@ -100,11 +100,19 @@ public class ClientWriterThreadSpec {
         clientWriterThread.join();
     }
 
-    @Test
-    public void whenRun_thenSetCurrentThread() {
+    @Test(timeout = 1000)
+    public void whenJoin_thenAwaitToExitFromRun() throws InterruptedException {
+        CountDownLatch runSignal = new CountDownLatch(1);
+        doAnswer(a -> {
+            runSignal.countDown();
+            return a.callRealMethod();
+        }).when(clientWriterThread).run();
+
+        executor.execute(clientWriterThread);
+        runSignal.await();
+
         clientWriterThread.interrupt();
-        clientWriterThread.run();
-        assertThat(clientWriterThread.getCurrentThread()).isSameAs(Thread.currentThread());
+        clientWriterThread.join();
     }
 
 }

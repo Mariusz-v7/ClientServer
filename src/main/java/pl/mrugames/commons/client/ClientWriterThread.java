@@ -6,6 +6,7 @@ import pl.mrugames.commons.client.io.ClientWriter;
 
 import java.io.OutputStream;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -20,7 +21,7 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
     private final TimeUnit timeoutUnit;
 
     private volatile boolean interrupted;
-    private volatile Thread currentThread;
+    private volatile CountDownLatch shutdownSignal;
 
     ClientWriterThread(String name,
                        OutputStream originalOutputStream,
@@ -38,20 +39,17 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
 
     void interrupt() {
         interrupted = true;
-        if (currentThread != null) {
-            currentThread.interrupt();
-        }
     }
 
     void join() throws InterruptedException {
-        if (currentThread != null) {
-            currentThread.join();
+        if (shutdownSignal != null) {
+            shutdownSignal.await();
         }
     }
 
     @Override
     public void run() {
-        currentThread = Thread.currentThread();
+        shutdownSignal = new CountDownLatch(1);
         logger.info("[{}] Writer thread started!", name);
 
         try (StreamType outputStream = clientWriter.prepare(originalOutputStream)) {
@@ -67,10 +65,7 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
             throw new IOExceptionWrapper(e);
         } finally {
             logger.info("[{}] Writer thread has been stopped!", name);
+            shutdownSignal.countDown();;
         }
-    }
-
-    Thread getCurrentThread() {
-        return currentThread;
     }
 }

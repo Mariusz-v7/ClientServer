@@ -40,7 +40,7 @@ public class ClientReaderThreadSpec {
             return frame;
         }).when(clientReader).next(finalStream);
 
-        readerThread = new ClientReaderThread<>("Reader", originalStream, queue, clientReader);
+        readerThread = spy(new ClientReaderThread<>("Reader", originalStream, queue, clientReader));
 
         executor = Executors.newSingleThreadExecutor();
     }
@@ -52,8 +52,9 @@ public class ClientReaderThreadSpec {
     }
 
     @Test
-    public void givenStreamReturnsFrame_whenRun_thenFrameIsAddedToQueue() {
+    public void givenStreamReturnsFrame_whenRun_thenFrameIsAddedToQueue() throws InterruptedException {
         executor.submit(readerThread);
+        latch.await();
         assertThat(queue).contains(frame);
     }
 
@@ -68,11 +69,19 @@ public class ClientReaderThreadSpec {
         readerThread.join();
     }
 
-    @Test
-    public void whenRun_thenSetCurrentThread() {
+    @Test(timeout = 1000)
+    public void whenJoin_thenAwaitToExitFromRun() throws InterruptedException {
+        CountDownLatch runSignal = new CountDownLatch(1);
+        doAnswer(a -> {
+            runSignal.countDown();
+            return a.callRealMethod();
+        }).when(readerThread).run();
+
+        executor.execute(readerThread);
+        runSignal.await();
+
         readerThread.interrupt();
-        readerThread.run();
-        assertThat(readerThread.getCurrentThread()).isSameAs(Thread.currentThread());
+        readerThread.join();
     }
 
 }

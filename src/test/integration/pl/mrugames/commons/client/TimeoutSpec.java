@@ -43,7 +43,6 @@ public class TimeoutSpec {
 
         ClientFactory clientFactory = new ClientFactory<>(
                 "Timeout Client",
-                1,
                 timeoutSeconds,
                 TextClientWriter::getInstance,
                 TextClientReader::getInstance,
@@ -100,15 +99,16 @@ public class TimeoutSpec {
 
     @Test(timeout = 1000)
     public void whenNewClientConnects_thenClientWorkerIsNotNull() throws IOException, InterruptedException {
-        new Socket("localhost", port);
+        Socket socket = new Socket("localhost", port);
         clientConnected.await();
 
         assertThat(clientWorker).isNotNull();
+        socket.close();
     }
 
     @Test
     public void givenNewClientConnects_whenNoReadNoWriteForGivenTime_thenClientIsShutDown() throws IOException, InterruptedException {
-        new Socket("localhost", port);
+        Socket socket = new Socket("localhost", port);
         clientConnected.await();
 
         LocalTime before = LocalTime.now();
@@ -118,6 +118,7 @@ public class TimeoutSpec {
         long diff = ChronoUnit.MILLIS.between(before, after);
 
         assertThat(diff).isCloseTo(timeoutSeconds * 1000, Percentage.withPercentage(95));
+        socket.close();
     }
 
     @Test
@@ -134,13 +135,14 @@ public class TimeoutSpec {
         long diff = ChronoUnit.MILLIS.between(before, after);
 
         assertThat(diff).isCloseTo(timeoutSeconds * 1000, Percentage.withPercentage(95));
+        socket.close();
     }
 
     @Test
     public void givenNewClientConnectsAndDoesNotWriteAnythingAndHostSendsEveryOneSecond_whenTimeoutElapses_thenClientIsShutDown() throws InterruptedException, IOException {
         mockHostToSendEverySecond();
 
-        new Socket("localhost", port);
+        Socket socket = new Socket("localhost", port);
         clientConnected.await();
 
         LocalTime before = LocalTime.now();
@@ -150,6 +152,7 @@ public class TimeoutSpec {
         long diff = ChronoUnit.MILLIS.between(before, after);
 
         assertThat(diff).isCloseTo(timeoutSeconds * 1000, Percentage.withPercentage(95));
+        socket.close();
     }
 
     @Test

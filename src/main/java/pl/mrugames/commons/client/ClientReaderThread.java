@@ -6,6 +6,7 @@ import pl.mrugames.commons.client.io.ClientReader;
 
 import java.io.InputStream;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 
 class ClientReaderThread<FrameType, StreamType extends AutoCloseable> implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientReaderThread.class);
@@ -16,7 +17,7 @@ class ClientReaderThread<FrameType, StreamType extends AutoCloseable> implements
     private final ClientReader<FrameType, StreamType> clientReader;
 
     private volatile boolean interrupted;
-    private volatile Thread currentThread;
+    private volatile CountDownLatch shutdownSignal;
 
     ClientReaderThread(String name,
                        InputStream originalInputStream,
@@ -30,34 +31,29 @@ class ClientReaderThread<FrameType, StreamType extends AutoCloseable> implements
 
     void interrupt() {
         interrupted = true;
-        if (currentThread != null) {
-            currentThread.interrupt();
-        }
     }
 
     void join() throws InterruptedException {
-        if (currentThread != null) {
-            currentThread.join();
+        if (shutdownSignal != null) {
+            shutdownSignal.await();
         }
     }
 
     @Override
     public void run() {
-        currentThread = Thread.currentThread();
+        shutdownSignal = new CountDownLatch(1);
         logger.info("[{}] Reader thread started!", name);
 
         try (StreamType inputStream = clientReader.prepare(originalInputStream)) {
-            while (!interrupted && !currentThread.isInterrupted()) {
+            while (!interrupted && !Thread.currentThread().isInterrupted()) {
                 received.add(clientReader.next(inputStream));
             }
         } catch (Exception e) {
             throw new IOExceptionWrapper(e);
         } finally {
             logger.info("[{}] Reader thread has been stopped!", name);
+            shutdownSignal.countDown();
         }
     }
 
-    Thread getCurrentThread() {
-        return currentThread;
-    }
 }
