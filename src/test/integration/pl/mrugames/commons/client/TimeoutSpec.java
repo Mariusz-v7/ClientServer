@@ -6,8 +6,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
-import pl.mrugames.commons.client.io.TextClientReader;
-import pl.mrugames.commons.client.io.TextClientWriter;
+import pl.mrugames.commons.client.io.TextReader;
+import pl.mrugames.commons.client.io.TextWriter;
 import pl.mrugames.commons.host.Host;
 
 import java.io.BufferedWriter;
@@ -44,8 +44,8 @@ public class TimeoutSpec {
         ClientFactory clientFactory = new ClientFactory<>(
                 "Timeout Client",
                 timeoutSeconds,
-                TextClientWriter::new,
-                TextClientReader::new,
+                TextWriter::new,
+                TextReader::new,
                 workerFactory
         );
 

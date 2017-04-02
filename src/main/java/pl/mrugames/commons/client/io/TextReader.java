@@ -4,10 +4,10 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-public class TextClientReader implements ClientReader<String> {
+public class TextReader implements ClientReader<String> {
     private final BufferedReader bufferedReader;
 
-    public TextClientReader(InputStream inputStream) {
+    public TextReader(InputStream inputStream) {
         bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
     }
 

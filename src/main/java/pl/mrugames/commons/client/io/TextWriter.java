@@ -4,10 +4,10 @@ import java.io.BufferedWriter;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
-public class TextClientWriter implements ClientWriter<String> {
+public class TextWriter implements ClientWriter<String> {
     private final BufferedWriter bufferedWriter;
 
-    public TextClientWriter(OutputStream outputStream) {
+    public TextWriter(OutputStream outputStream) {
         bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
     }
 

@@ -3,8 +3,8 @@ package pl.mrugames.commons.client_example;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.commons.client.ClientFactory;
-import pl.mrugames.commons.client.io.TextClientReader;
-import pl.mrugames.commons.client.io.TextClientWriter;
+import pl.mrugames.commons.client.io.TextReader;
+import pl.mrugames.commons.client.io.TextWriter;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -26,8 +26,8 @@ public class Main {
         ClientFactory clientFactory = new ClientFactory<>(
                 "Local Client",
                 60,
-                TextClientWriter::new,
-                TextClientReader::new,
+                TextWriter::new,
+                TextReader::new,
                 new LocalClientWorkerFactory()
         );
 
