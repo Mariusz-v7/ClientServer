@@ -26,8 +26,8 @@ public class Main {
         ClientFactory clientFactory = new ClientFactory<>(
                 "Local Client",
                 60,
-                TextClientWriter::getInstance,
-                TextClientReader::getInstance,
+                TextClientWriter::new,
+                TextClientReader::new,
                 new LocalClientWorkerFactory()
         );
 

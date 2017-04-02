@@ -4,26 +4,16 @@ import java.io.BufferedWriter;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
-public class TextClientWriter implements ClientWriter<String, BufferedWriter> {
-    private static TextClientWriter instance;
+public class TextClientWriter implements ClientWriter<String> {
+    private final BufferedWriter bufferedWriter;
 
-    public static synchronized TextClientWriter getInstance() {
-        if (instance == null)
-            instance = new TextClientWriter();
-
-        return instance;
-    }
-
-    TextClientWriter() {}
-
-    @Override
-    public BufferedWriter prepare(OutputStream originalOutputStream) throws Exception {
-        return new BufferedWriter(new OutputStreamWriter(originalOutputStream));
+    public TextClientWriter(OutputStream outputStream) {
+        bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
     }
 
     @Override
-    public void next(BufferedWriter outputStream, String frameToSend) throws Exception {
-        outputStream.write(frameToSend);
-        outputStream.flush();
+    public void next(String frameToSend) throws Exception {
+        bufferedWriter.write(frameToSend);
+        bufferedWriter.flush();
     }
 }

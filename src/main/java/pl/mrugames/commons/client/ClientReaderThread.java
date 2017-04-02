@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.commons.client.io.ClientReader;
 
-import java.io.InputStream;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
@@ -12,19 +11,16 @@ class ClientReaderThread<FrameType, StreamType extends AutoCloseable> implements
     private final static Logger logger = LoggerFactory.getLogger(ClientReaderThread.class);
 
     private final String name;
-    private final InputStream originalInputStream;
     private final BlockingQueue<FrameType> received;
-    private final ClientReader<FrameType, StreamType> clientReader;
+    private final ClientReader<FrameType> clientReader;
 
     private volatile boolean interrupted;
     private volatile CountDownLatch shutdownSignal;
 
     ClientReaderThread(String name,
-                       InputStream originalInputStream,
                        BlockingQueue<FrameType> received,
-                       ClientReader<FrameType, StreamType> clientReader) {
+                       ClientReader<FrameType> clientReader) {
         this.name = name;
-        this.originalInputStream = originalInputStream;
         this.received = received;
         this.clientReader = clientReader;
     }
@@ -44,9 +40,9 @@ class ClientReaderThread<FrameType, StreamType extends AutoCloseable> implements
         shutdownSignal = new CountDownLatch(1);
         logger.info("[{}] Reader thread started!", name);
 
-        try (StreamType inputStream = clientReader.prepare(originalInputStream)) {
+        try {
             while (!interrupted && !Thread.currentThread().isInterrupted()) {
-                received.add(clientReader.next(inputStream));
+                received.add(clientReader.next());
             }
         } catch (Exception e) {
             throw new IOExceptionWrapper(e);

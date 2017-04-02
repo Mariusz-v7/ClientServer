@@ -19,10 +19,9 @@ import static org.mockito.Mockito.*;
 @RunWith(BlockJUnit4ClassRunner.class)
 public class ClientWriterThreadSpec {
     private ClientWriterThread clientWriterThread;
-    private OutputStream originalStream;
     private OutputStream finalStream;
     private BlockingQueue<String> queue;
-    private ClientWriter<String, OutputStream> clientWriter;
+    private ClientWriter<String> clientWriter;
     private CountDownLatch latch;
     private ExecutorService executor;
     private String frame = "123";
@@ -35,20 +34,18 @@ public class ClientWriterThreadSpec {
     public void before() throws Exception {
         latch = new CountDownLatch(1);
 
-        originalStream = mock(OutputStream.class);
         finalStream = mock(OutputStream.class);
         queue = spy(new LinkedBlockingQueue<>());
 
         clientWriter = mock(ClientWriter.class);
-        doReturn(finalStream).when(clientWriter).prepare(originalStream);
 
         doAnswer(a -> {
             latch.countDown();
             queue.poll();
             return null;
-        }).when(clientWriter).next(any(), any());
+        }).when(clientWriter).next(any());
 
-        clientWriterThread = spy(new ClientWriterThread("Writer", originalStream, queue, clientWriter, 10, TimeUnit.MILLISECONDS));
+        clientWriterThread = spy(new ClientWriterThread("Writer", queue, clientWriter, 10, TimeUnit.MILLISECONDS));
 
         executor = Executors.newSingleThreadExecutor();
 
@@ -65,7 +62,7 @@ public class ClientWriterThreadSpec {
     public void givenQueueIsNotEmpty_whenRun_thenNextIsCalledWithFinalStream() throws Exception {
         executor.execute(clientWriterThread);
         latch.await();
-        verify(clientWriter).next(finalStream, frame);
+        verify(clientWriter).next(frame);
     }
 
     @Test
@@ -89,7 +86,7 @@ public class ClientWriterThreadSpec {
     @Test(timeout = 1000)
     @SuppressWarnings("unchecked")
     public void whenInterrupt_thenLoopShouldExit() {
-        clientWriterThread = new ClientWriterThread("Writer", originalStream, queue, clientWriter, 1000, TimeUnit.MILLISECONDS);
+        clientWriterThread = new ClientWriterThread("Writer", queue, clientWriter, 1000, TimeUnit.MILLISECONDS);
 
         clientWriterThread.interrupt();
         clientWriterThread.run();

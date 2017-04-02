@@ -24,8 +24,8 @@ public class Main {
         ClientFactory clientFactory = new ClientFactory<>(
                 "Main Client",
                 60,
-                TextClientWriter::getInstance,
-                TextClientReader::getInstance,
+                TextClientWriter::new,
+                TextClientReader::new,
                 new ExampleClientWorkerFactory(Main::shutdown)
         );
 

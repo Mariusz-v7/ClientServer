@@ -44,8 +44,8 @@ public class TimeoutSpec {
         ClientFactory clientFactory = new ClientFactory<>(
                 "Timeout Client",
                 timeoutSeconds,
-                TextClientWriter::getInstance,
-                TextClientReader::getInstance,
+                TextClientWriter::new,
+                TextClientReader::new,
                 workerFactory
         );
 

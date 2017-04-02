@@ -5,10 +5,12 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.commons.client.io.ClientReader;
 import pl.mrugames.commons.client.io.ClientWriter;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 public class ClientFactory<WF, WS, RF, RS> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -16,8 +18,8 @@ public class ClientFactory<WF, WS, RF, RS> {
     private final String clientName;
     private final ExecutorService threadPool;
     private final int timeout;
-    private final Supplier<ClientWriter<WF, WS>> clientWriterSupplier;
-    private final Supplier<ClientReader<RF, RS>> clientReaderSupplier;
+    private final Function<OutputStream, ClientWriter<WF>> clientWriterFactory;
+    private final Function<InputStream, ClientReader<RF>> clientReaderFactory;
     private final ClientWorkerFactory clientWorkerFactory;
     private final AtomicLong id;
 
@@ -26,14 +28,14 @@ public class ClientFactory<WF, WS, RF, RS> {
     public ClientFactory(
             String clientName,
             int timeout,
-            Supplier<ClientWriter<WF, WS>> clientWriterSupplier,
-            Supplier<ClientReader<RF, RS>> clientReaderSupplier,
+            Function<OutputStream, ClientWriter<WF>> clientWriterFactory,
+            Function<InputStream, ClientReader<RF>> clientReaderFactory,
             ClientWorkerFactory<RF, WF> clientWorkerFactory) {
         this.clientName = clientName;
         this.threadPool = Executors.newCachedThreadPool(this::factory);
         this.timeout = timeout;
-        this.clientWriterSupplier = clientWriterSupplier;
-        this.clientReaderSupplier = clientReaderSupplier;
+        this.clientWriterFactory = clientWriterFactory;
+        this.clientReaderFactory = clientReaderFactory;
         this.clientWorkerFactory = clientWorkerFactory;
         this.id = new AtomicLong();
     }
@@ -54,9 +56,9 @@ public class ClientFactory<WF, WS, RF, RS> {
             String name = clientName + " " + id.incrementAndGet();
 
             @SuppressWarnings("unchecked")
-            ClientWriterThread writerThread = new ClientWriterThread(name, socket.getOutputStream(), out, clientWriterSupplier.get(), timeout, TimeUnit.SECONDS);
+            ClientWriterThread writerThread = new ClientWriterThread(name, out, clientWriterFactory.apply(socket.getOutputStream()), timeout, TimeUnit.SECONDS);
             @SuppressWarnings("unchecked")
-            ClientReaderThread readerThread = new ClientReaderThread(name, socket.getInputStream(), in, clientReaderSupplier.get());
+            ClientReaderThread readerThread = new ClientReaderThread(name, in, clientReaderFactory.apply(socket.getInputStream()));
 
             Client client = new Client(threadPool, name, socket, writerThread, readerThread);
             @SuppressWarnings("unchecked")

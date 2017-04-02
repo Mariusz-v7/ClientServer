@@ -13,10 +13,8 @@ import static org.mockito.Mockito.*;
 
 public class ClientReaderThreadSpec {
     private ClientReaderThread<String, InputStream> readerThread;
-    private InputStream originalStream;
-    private InputStream finalStream;
     private BlockingQueue<String> queue;
-    private ClientReader<String, InputStream> clientReader;
+    private ClientReader<String> clientReader;
     private CountDownLatch latch;
     private ExecutorService executor;
     private String frame = "123";
@@ -26,21 +24,16 @@ public class ClientReaderThreadSpec {
     public void before() throws Exception {
         latch = new CountDownLatch(1);
 
-        originalStream = mock(InputStream.class);
-        finalStream = mock(InputStream.class);
-
         queue = spy(new LinkedBlockingQueue<>());
 
         clientReader = mock(ClientReader.class);
 
-        doReturn(finalStream).when(clientReader).prepare(originalStream);
-
         doAnswer(a -> {
             latch.countDown();
             return frame;
-        }).when(clientReader).next(finalStream);
+        }).when(clientReader).next();
 
-        readerThread = spy(new ClientReaderThread<>("Reader", originalStream, queue, clientReader));
+        readerThread = spy(new ClientReaderThread<>("Reader", queue, clientReader));
 
         executor = Executors.newSingleThreadExecutor();
     }

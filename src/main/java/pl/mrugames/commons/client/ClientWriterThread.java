@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.commons.client.io.ClientWriter;
 
-import java.io.OutputStream;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -14,9 +13,8 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
     private final static Logger logger = LoggerFactory.getLogger(ClientWriterThread.class);
 
     private final String name;
-    private final OutputStream originalOutputStream;
     private final BlockingQueue<FrameType> toSend;
-    private final ClientWriter<FrameType, StreamType> clientWriter;
+    private final ClientWriter<FrameType> clientWriter;
     private final long timeout;
     private final TimeUnit timeoutUnit;
 
@@ -24,13 +22,11 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
     private volatile CountDownLatch shutdownSignal;
 
     ClientWriterThread(String name,
-                       OutputStream originalOutputStream,
                        BlockingQueue<FrameType> toSend,
-                       ClientWriter<FrameType, StreamType> clientWriter,
+                       ClientWriter<FrameType> clientWriter,
                        long timeout,
                        TimeUnit timeoutUnit) {
         this.name = name;
-        this.originalOutputStream = originalOutputStream;
         this.toSend = toSend;
         this.clientWriter = clientWriter;
         this.timeout = timeout;
@@ -52,11 +48,11 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
         shutdownSignal = new CountDownLatch(1);
         logger.info("[{}] Writer thread started!", name);
 
-        try (StreamType outputStream = clientWriter.prepare(originalOutputStream)) {
+        try {
             while (!interrupted && !Thread.currentThread().isInterrupted()) {
                 FrameType frame = toSend.poll(timeout, timeoutUnit);
                 if (frame != null) {
-                    clientWriter.next(outputStream, frame);
+                    clientWriter.next(frame);
                 } else {
                     throw new TimeoutException("No frames to send since " + timeout + " " + timeoutUnit);
                 }

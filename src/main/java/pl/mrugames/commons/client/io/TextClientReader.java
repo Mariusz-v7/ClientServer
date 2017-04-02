@@ -4,26 +4,16 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-public class TextClientReader implements ClientReader<String, BufferedReader> {
-    private static TextClientReader instance;
+public class TextClientReader implements ClientReader<String> {
+    private final BufferedReader bufferedReader;
 
-    public static synchronized TextClientReader getInstance() {
-        if (instance == null)
-            instance = new TextClientReader();
-
-        return instance;
-    }
-
-    TextClientReader() {}
-
-    @Override
-    public BufferedReader prepare(InputStream originalInputStream) throws Exception {
-        return new BufferedReader(new InputStreamReader(originalInputStream));
+    public TextClientReader(InputStream inputStream) {
+        bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
     }
 
     @Override
-    public String next(BufferedReader inputStream) throws Exception {
-        return inputStream.readLine();
+    public String next() throws Exception {
+        return bufferedReader.readLine();
     }
 
 }
