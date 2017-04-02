@@ -42,7 +42,12 @@ class ClientReaderThread<FrameType> implements Runnable {
 
         try {
             while (!interrupted && !Thread.currentThread().isInterrupted()) {
-                received.add(clientReader.next());
+                FrameType frame = clientReader.next();
+                if (frame == null) {
+                    break;
+                }
+
+                received.add(frame);
             }
         } catch (Exception e) {
             throw new IOExceptionWrapper(e);

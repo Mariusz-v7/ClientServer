@@ -66,6 +66,8 @@ class ClientWriterThread<FrameType> implements Runnable {
                     throw new TimeoutException("No frames to send since " + timeout + " " + timeoutUnit);
                 }
             }
+        } catch (InterruptedException e) {
+            logger.warn("[{}] Thread has been interrupted", name);
         } catch (Exception e) {
             throw new IOExceptionWrapper(e);
         } finally {

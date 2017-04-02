@@ -18,6 +18,8 @@ class Client {
     private final ClientWriterThread writer;
     private final ClientReaderThread reader;
 
+    private volatile boolean closed;
+
     Client(ExecutorService executorService, String name, Socket socket, ClientWriterThread writer, ClientReaderThread reader) {
         this.name = name;
         this.socket = socket;
@@ -44,13 +46,19 @@ class Client {
                 throwable = throwable.getCause();
             }
 
-            logger.error("[{}] Exception in client execution, {}", name, throwable.getMessage());
+            logger.error("[{}] Exception in client execution, {}, {}", name, throwable.getClass(), throwable.getMessage(), throwable);
         }
 
         close();
     }
 
     void close() {
+        if (closed) {
+            return;  // avoid multiple calls
+        }
+
+        closed = true;
+
         reader.interrupt();
         writer.interrupt();
 
