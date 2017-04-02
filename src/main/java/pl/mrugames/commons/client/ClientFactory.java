@@ -61,6 +61,10 @@ public class ClientFactory<WF, RF> {
                 } catch (IOException e) {
                     throw new IOExceptionWrapper(e);
                 }
+            }).whenComplete((clientWorker, throwable) -> {
+                if (throwable != null) {
+                    logger.error("[{}] One of initializers has failed...", clientName, throwable);
+                }
             });
         } catch (Exception e) {
             logger.error("[{}] Failed to initialize client, {}", clientName, e.getMessage());
@@ -90,7 +94,13 @@ public class ClientFactory<WF, RF> {
 
         threadPool.submit(clientWorker);
         client.start()
-                .whenCompleteAsync((v, t) -> clientWorker.onClientTermination(), threadPool);
+                .whenCompleteAsync((v, t) -> {
+                    if (t != null) {
+                        logger.error("[{}] Exception in client", clientName, t);
+                    }
+
+                    clientWorker.onClientTermination();
+                }, threadPool);
 
         return clientWorker;
     }
