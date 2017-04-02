@@ -30,7 +30,7 @@ class Client {
         logger.info("[{}] New client has connected from address: {}", name, socket.getLocalSocketAddress());
 
         return init()
-                .whenCompleteAsync(this::onComplete, executorService)
+                .whenComplete(this::onComplete)
                 .exceptionally(e -> null);
     }
 
