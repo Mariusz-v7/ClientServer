@@ -56,4 +56,10 @@ public class ClientReaderThreadSpec {
         executor.submit(readerThread);
         assertThat(queue).contains(frame);
     }
+
+    @Test(timeout = 1000)
+    public void whenInterrupt_thenLoopShouldExit() {
+        readerThread.interrupt();
+        readerThread.run();
+    }
 }

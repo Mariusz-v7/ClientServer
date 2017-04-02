@@ -37,7 +37,7 @@ public class ClientSpec {
         ioExecutor = spy(Executors.newFixedThreadPool(2));
 
         socket = mock(Socket.class);
-        client = spy(new Client("test", socket, ioExecutor, writer, reader));
+        client = spy(new Client(ioExecutor, "test", socket, writer, reader));
 
         doAnswer(a -> {
             executionLatch.countDown();

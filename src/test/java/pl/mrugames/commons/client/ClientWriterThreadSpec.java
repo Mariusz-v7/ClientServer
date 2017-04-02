@@ -84,4 +84,13 @@ public class ClientWriterThreadSpec {
 
         clientWriterThread.run();
     }
+
+    @Test(timeout = 1000)
+    @SuppressWarnings("unchecked")
+    public void whenInterrupt_thenLoopShouldExit() {
+        clientWriterThread = new ClientWriterThread("Writer", originalStream, queue, clientWriter, 1000, TimeUnit.MILLISECONDS);
+
+        clientWriterThread.interrupt();
+        clientWriterThread.run();
+    }
 }

@@ -19,6 +19,8 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
     private final long timeout;
     private final TimeUnit timeoutUnit;
 
+    private volatile boolean interrupted;
+
     ClientWriterThread(String name,
                        OutputStream originalOutputStream,
                        BlockingQueue<FrameType> toSend,
@@ -33,12 +35,16 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
         this.timeoutUnit = timeoutUnit;
     }
 
+    void interrupt() {
+        interrupted = true;
+    }
+
     @Override
     public void run() {
         logger.info("[{}] Writer thread started!", name);
 
         try (StreamType outputStream = clientWriter.prepare(originalOutputStream)) {
-            while (!Thread.currentThread().isInterrupted()) {
+            while (!interrupted && !Thread.currentThread().isInterrupted()) {
                 FrameType frame = toSend.poll(timeout, timeoutUnit);
                 if (frame != null) {
                     clientWriter.next(outputStream, frame);

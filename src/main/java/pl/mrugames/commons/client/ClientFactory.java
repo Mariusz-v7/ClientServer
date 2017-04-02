@@ -59,7 +59,7 @@ public class ClientFactory<WF, WS, RF, RS> {
             @SuppressWarnings("unchecked")
             ClientReaderThread readerThread = new ClientReaderThread(name, socket.getInputStream(), in, clientReaderSupplier.get());
 
-            Client client = new Client(name, socket, writerThread, readerThread);
+            Client client = new Client(workerExecutor, name, socket, writerThread, readerThread);
             @SuppressWarnings("unchecked")
             ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::shutdown);
             if (clientWorker == null) {
