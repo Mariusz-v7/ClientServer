@@ -9,7 +9,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements Runnable {
+class ClientWriterThread<FrameType> implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientWriterThread.class);
 
     private final String name;
@@ -61,7 +61,7 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
             throw new IOExceptionWrapper(e);
         } finally {
             logger.info("[{}] Writer thread has been stopped!", name);
-            shutdownSignal.countDown();;
+            shutdownSignal.countDown();
         }
     }
 }

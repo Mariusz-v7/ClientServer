@@ -7,7 +7,7 @@ import pl.mrugames.commons.client.io.ClientReader;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
-class ClientReaderThread<FrameType, StreamType extends AutoCloseable> implements Runnable {
+class ClientReaderThread<FrameType> implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientReaderThread.class);
 
     private final String name;

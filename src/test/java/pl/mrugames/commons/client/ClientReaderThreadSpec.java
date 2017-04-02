@@ -5,14 +5,13 @@ import org.junit.Before;
 import org.junit.Test;
 import pl.mrugames.commons.client.io.ClientReader;
 
-import java.io.InputStream;
 import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 public class ClientReaderThreadSpec {
-    private ClientReaderThread<String, InputStream> readerThread;
+    private ClientReaderThread<String> readerThread;
     private BlockingQueue<String> queue;
     private ClientReader<String> clientReader;
     private CountDownLatch latch;

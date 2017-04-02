@@ -12,7 +12,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
-public class ClientFactory<WF, WS, RF, RS> {
+public class ClientFactory<WF, RF> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final String clientName;
