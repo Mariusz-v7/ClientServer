@@ -37,11 +37,11 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
     public void run() {
         logger.info("[{}] Writer thread started!", name);
 
-        try (StreamType inputStream = clientWriter.prepare(originalOutputStream)) {
+        try (StreamType outputStream = clientWriter.prepare(originalOutputStream)) {
             while (!Thread.currentThread().isInterrupted()) {
                 FrameType frame = toSend.poll(timeout, timeoutUnit);
                 if (frame != null) {
-                    clientWriter.next(inputStream, frame);
+                    clientWriter.next(outputStream, frame);
                 } else {
                     throw new TimeoutException("No frames to send since " + timeout + " " + timeoutUnit);
                 }
