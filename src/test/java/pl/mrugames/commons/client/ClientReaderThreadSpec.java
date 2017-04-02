@@ -62,4 +62,17 @@ public class ClientReaderThreadSpec {
         readerThread.interrupt();
         readerThread.run();
     }
+
+    @Test(timeout = 1000)
+    public void givenThreadNotStarted_whenJoin_thenExitImmediately() throws InterruptedException {
+        readerThread.join();
+    }
+
+    @Test
+    public void whenRun_thenSetCurrentThread() {
+        readerThread.interrupt();
+        readerThread.run();
+        assertThat(readerThread.getCurrentThread()).isSameAs(Thread.currentThread());
+    }
+
 }

@@ -16,6 +16,7 @@ class ClientReaderThread<FrameType, StreamType extends AutoCloseable> implements
     private final ClientReader<FrameType, StreamType> clientReader;
 
     private volatile boolean interrupted;
+    private volatile Thread currentThread;
 
     ClientReaderThread(String name,
                        InputStream originalInputStream,
@@ -29,14 +30,24 @@ class ClientReaderThread<FrameType, StreamType extends AutoCloseable> implements
 
     void interrupt() {
         interrupted = true;
+        if (currentThread != null) {
+            currentThread.interrupt();
+        }
+    }
+
+    void join() throws InterruptedException {
+        if (currentThread != null) {
+            currentThread.join();
+        }
     }
 
     @Override
     public void run() {
+        currentThread = Thread.currentThread();
         logger.info("[{}] Reader thread started!", name);
 
         try (StreamType inputStream = clientReader.prepare(originalInputStream)) {
-            while (!interrupted && !Thread.currentThread().isInterrupted()) {
+            while (!interrupted && !currentThread.isInterrupted()) {
                 received.add(clientReader.next(inputStream));
             }
         } catch (Exception e) {
@@ -46,4 +57,7 @@ class ClientReaderThread<FrameType, StreamType extends AutoCloseable> implements
         }
     }
 
+    Thread getCurrentThread() {
+        return currentThread;
+    }
 }

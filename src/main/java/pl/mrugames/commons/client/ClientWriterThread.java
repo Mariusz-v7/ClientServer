@@ -20,6 +20,7 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
     private final TimeUnit timeoutUnit;
 
     private volatile boolean interrupted;
+    private volatile Thread currentThread;
 
     ClientWriterThread(String name,
                        OutputStream originalOutputStream,
@@ -37,10 +38,20 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
 
     void interrupt() {
         interrupted = true;
+        if (currentThread != null) {
+            currentThread.interrupt();
+        }
+    }
+
+    void join() throws InterruptedException {
+        if (currentThread != null) {
+            currentThread.join();
+        }
     }
 
     @Override
     public void run() {
+        currentThread = Thread.currentThread();
         logger.info("[{}] Writer thread started!", name);
 
         try (StreamType outputStream = clientWriter.prepare(originalOutputStream)) {
@@ -57,5 +68,9 @@ class ClientWriterThread<FrameType, StreamType extends AutoCloseable> implements
         } finally {
             logger.info("[{}] Writer thread has been stopped!", name);
         }
+    }
+
+    Thread getCurrentThread() {
+        return currentThread;
     }
 }

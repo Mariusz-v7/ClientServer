@@ -26,7 +26,7 @@ class Client {
         this.executorService = executorService;
     }
 
-    CompletableFuture<Object> run() {
+    CompletableFuture<Object> start() {
         logger.info("[{}] New client has connected from address: {}", name, socket.getLocalSocketAddress());
 
         return init()
@@ -50,12 +50,9 @@ class Client {
         close();
     }
 
-    void shutdown() {
-
-    }
-
     void close() {
-//        ioExecutor.shutdownNow();
+        reader.interrupt();
+        writer.interrupt();
 
         try {
             logger.info("[{}] Closing socket", name);
@@ -65,19 +62,14 @@ class Client {
             logger.error("[{}] Failed to close socket", name);
         }
 
-//        try {
-//            logger.info("[{}] Shutting down IO threads", name);
-//            Thread.interrupted(); // clear the flag
-//            boolean result = ioExecutor.awaitTermination(30, TimeUnit.SECONDS);
-//
-//            if (result) {
-//                logger.info("[{}] IO threads has been shutdown", name);
-//            } else {
-//                logger.error("[{}] Failed to shutdown IO threads!", name);
-//            }
-//        } catch (InterruptedException e) {
-//            logger.error("[{}] Failed to shutdown IO threads due to interruption!", name);
-//        }
+        try {
+            logger.info("[{}] Waiting for reader and writer to shutdown", name);
+            reader.join();
+            writer.join();
+            logger.info("[{}] Reader and writer has been shutdown", name);
+        } catch (InterruptedException e) {
+            logger.warn("[{}] Interrupted during waiting for reader and writer", name);
+        }
 
         logger.info("[{}] Client has been shutdown!", name);
     }

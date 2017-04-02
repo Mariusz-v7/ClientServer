@@ -14,6 +14,7 @@ import pl.mrugames.commons.client.io.ClientWriter;
 import java.io.OutputStream;
 import java.util.concurrent.*;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.*;
 
 @RunWith(BlockJUnit4ClassRunner.class)
@@ -93,4 +94,17 @@ public class ClientWriterThreadSpec {
         clientWriterThread.interrupt();
         clientWriterThread.run();
     }
+
+    @Test(timeout = 1000)
+    public void givenThreadNotStarted_whenJoin_thenExitImmediately() throws InterruptedException {
+        clientWriterThread.join();
+    }
+
+    @Test
+    public void whenRun_thenSetCurrentThread() {
+        clientWriterThread.interrupt();
+        clientWriterThread.run();
+        assertThat(clientWriterThread.getCurrentThread()).isSameAs(Thread.currentThread());
+    }
+
 }

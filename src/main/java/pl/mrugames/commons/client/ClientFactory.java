@@ -61,13 +61,13 @@ public class ClientFactory<WF, WS, RF, RS> {
 
             Client client = new Client(workerExecutor, name, socket, writerThread, readerThread);
             @SuppressWarnings("unchecked")
-            ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::shutdown);
+            ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::close);
             if (clientWorker == null) {
                 throw new NullPointerException("Client worker is null");
             }
 
             workerExecutor.submit(clientWorker);
-            client.run().whenCompleteAsync((v, t) -> clientWorker.onClientTermination());
+            client.start().whenCompleteAsync((v, t) -> clientWorker.onClientTermination());
 
             return clientWorker;
         } catch (Exception e) {

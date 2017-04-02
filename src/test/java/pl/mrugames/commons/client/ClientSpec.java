@@ -9,6 +9,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
 
+import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.*;
 
@@ -74,12 +75,6 @@ public class ClientSpec {
     public void whenInit_thenIOTasksAreSubmittedToTheIOExecutor() throws ExecutionException, InterruptedException {
         client.init().get();
         verify(ioExecutor, times(2)).execute(any());
-    }
-
-    @Test
-    public void whenInit_thenIOExecutorShutdown() {
-        client.init();
-        verify(ioExecutor).shutdown();
     }
 
     @Test
@@ -163,7 +158,7 @@ public class ClientSpec {
         sleepThread(reader);
         exceptionThread(writer, runtimeException);
 
-        client.run().join();
+        client.start().join();
 
         verify(client).onComplete(isNull(), any());
     }
@@ -175,7 +170,7 @@ public class ClientSpec {
         sleepThread(writer);
         exceptionThread(reader, runtimeException);
 
-        client.run().join();
+        client.start().join();
 
         verify(client).onComplete(isNull(), any());
     }
@@ -185,7 +180,7 @@ public class ClientSpec {
         sleepThread(reader);
         doNothing().when(writer).run();
 
-        client.run().join();
+        client.start().join();
 
         verify(client).onComplete(any(), isNull(Throwable.class));
     }
@@ -195,38 +190,9 @@ public class ClientSpec {
         sleepThread(writer);
         doNothing().when(reader).run();
 
-        client.run().join();
+        client.start().join();
 
         verify(client).onComplete(any(), isNull(Throwable.class));
-    }
-
-    @Test
-    public void givenIOThreadsWork_whenClose_thenCallOnComplete() throws ExecutionException, InterruptedException {
-        CountDownLatch countDownLatch = new CountDownLatch(2);
-
-        doAnswer(a -> {
-            countDownLatch.countDown();
-            TimeUnit.DAYS.sleep(1);
-            return null;
-        }).when(reader).run();
-
-        doAnswer(a -> {
-            countDownLatch.countDown();
-            TimeUnit.DAYS.sleep(1);
-            return null;
-        }).when(writer).run();
-
-        Future future = client.run();
-
-        countDownLatch.await();
-
-        client.close();
-
-        try {
-            future.get();
-        } catch (Exception e) {}
-
-        verify(client).onComplete(any(), any());
     }
 
     @Test
@@ -240,4 +206,35 @@ public class ClientSpec {
         client.onComplete(null, null);
         verify(client).close();
     }
+
+    @Test
+    public void whenClose_thenInterruptReader() {
+        client.close();
+        verify(reader).interrupt();
+    }
+
+    @Test
+    public void whenClose_thenInterruptWriter() {
+        client.close();
+        verify(writer).interrupt();
+    }
+
+    @Test
+    public void whenClose_thenSocketClose() throws IOException {
+        client.close();
+        verify(socket).close();
+    }
+
+    @Test
+    public void whenClose_thenWriterJoin() throws InterruptedException {
+        client.close();
+        verify(writer).join();
+    }
+
+    @Test
+    public void whenClose_thenReaderJoin() throws InterruptedException {
+        client.close();
+        verify(reader).join();
+    }
+
 }
