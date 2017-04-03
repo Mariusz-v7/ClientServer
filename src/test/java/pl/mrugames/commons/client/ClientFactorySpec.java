@@ -1,7 +1,10 @@
 package pl.mrugames.commons.client;
 
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.mockito.InOrder;
@@ -32,6 +35,9 @@ public class ClientFactorySpec {
     private Function<InputStream, ClientReader> clientReaderProvider;
     private ClientWorkerFactory clientWorkerFactory;
     private Socket socket;
+
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void before() {
@@ -64,7 +70,7 @@ public class ClientFactorySpec {
 
         InOrder inOrder = inOrder(initializer1, initializer2, initializer3);
 
-        clientFactory = spy(new ClientFactory("test", 0, clientWriterProvider, clientReaderProvider, clientWorkerFactory, initializers));
+        clientFactory = new ClientFactory("test", 0, clientWriterProvider, clientReaderProvider, clientWorkerFactory, initializers);
         clientFactory.initialize(socket).get();
 
         inOrder.verify(initializer1).run();
@@ -72,5 +78,22 @@ public class ClientFactorySpec {
         inOrder.verify(initializer3).run();
     }
 
+    @Test
+    public void givenInitializerThrowsException_whenInit_thenExceptionIsNotSwallowed() throws IOException, ExecutionException, InterruptedException {
+        Initializer initializer = mock(Initializer.class);
+        doThrow(IOExceptionWrapper.class).when(initializer).run();
+
+        List<BiFunction<?, ?, Initializer>> initializers = new LinkedList<>();
+        initializers.add((a, b) -> initializer);
+
+        clientFactory = new ClientFactory("test",
+                0, clientWriterProvider, clientReaderProvider,
+                clientWorkerFactory, initializers);
+
+        expectedException.expect(ExecutionException.class);
+        expectedException.expectCause(IsInstanceOf.instanceOf(IOExceptionWrapper.class));
+
+        clientFactory.initialize(socket).get();
+    }
 
 }
