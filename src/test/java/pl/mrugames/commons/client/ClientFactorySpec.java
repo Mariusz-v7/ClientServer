@@ -1,6 +1,7 @@
 package pl.mrugames.commons.client;
 
 import org.hamcrest.core.IsInstanceOf;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,6 +36,7 @@ public class ClientFactorySpec {
     private Function<InputStream, ClientReader> clientReaderProvider;
     private ClientWorkerFactory clientWorkerFactory;
     private Socket socket;
+    private ClientWorker clientWorker;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -48,6 +50,14 @@ public class ClientFactorySpec {
         clientFactory = spy(new ClientFactory("test", 0, clientWriterProvider, clientReaderProvider, clientWorkerFactory, Collections.emptyList()));
 
         socket = mock(Socket.class);
+
+        clientWorker = mock(ClientWorker.class);
+        doReturn(clientWorker).when(clientWorkerFactory).create(any(), any(), any());
+    }
+
+    @After
+    public void after() {
+        clientFactory.shutdown();
     }
 
     @Test
@@ -94,6 +104,12 @@ public class ClientFactorySpec {
         expectedException.expectCause(IsInstanceOf.instanceOf(IOExceptionWrapper.class));
 
         clientFactory.initialize(socket).get();
+    }
+
+    @Test
+    public void givenClientStops_thenClientWorker_onClientTermination_isCalled() {
+        clientFactory.initWorker(socket);
+        verify(clientWorker).onClientTermination();
     }
 
 }

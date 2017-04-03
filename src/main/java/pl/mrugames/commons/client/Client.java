@@ -28,6 +28,10 @@ class Client {
         this.executorService = executorService;
     }
 
+    /**
+     * @return completable future which is never completed exceptionally. If exception will happen internally, then returned
+     * future will be resolved with null.
+     */
     CompletableFuture<Object> start() {
         logger.info("[{}] New client has connected from address: {}", name, socket.getLocalSocketAddress());
 

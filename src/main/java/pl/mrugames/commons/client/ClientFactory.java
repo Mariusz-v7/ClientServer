@@ -58,16 +58,16 @@ public class ClientFactory<WF, RF> {
             return initialize(socket)
                     .thenApply(o -> initWorker(socket))
                     .exceptionally(e -> {
-                        logger.error("[{}] One of initializers has failed...", clientName, e);
+                        logger.error("[{}] Failed to initialize client", clientName, e);
                         return null;
                     });
         } catch (Exception e) {
-            logger.error("[{}] Failed to initialize client, {}", clientName, e.getMessage());
+            logger.error("[{}] Failed to initialize client", clientName, e);
             return null;
         }
     }
 
-    private ClientWorker initWorker(Socket socket) {
+    ClientWorker initWorker(Socket socket) {
         try {
             BlockingQueue<RF> in = new LinkedBlockingQueue<>();
             BlockingQueue<WF> out = new LinkedBlockingQueue<>();
@@ -89,14 +89,7 @@ public class ClientFactory<WF, RF> {
             }
 
             threadPool.submit(clientWorker);
-            client.start()
-                    .whenCompleteAsync((v, t) -> {
-                        if (t != null) {
-                            logger.error("[{}] Exception in client", clientName, t);
-                        }
-
-                        clientWorker.onClientTermination();
-                    }, threadPool);
+            client.start().thenRunAsync(clientWorker::onClientTermination, threadPool);
 
             return clientWorker;
         } catch (IOException e) {
