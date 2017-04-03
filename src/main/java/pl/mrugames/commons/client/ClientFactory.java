@@ -55,57 +55,56 @@ public class ClientFactory<WF, RF> {
         try {
             socket.setSoTimeout((int) TimeUnit.SECONDS.toMillis(timeout));
 
-            return initialize(socket).thenApply(o -> {
-                try {
-                    return initWorker(socket);
-                } catch (IOException e) {
-                    throw new IOExceptionWrapper(e);
-                }
-            }).whenComplete((clientWorker, throwable) -> {
-                if (throwable != null) {
-                    logger.error("[{}] One of initializers has failed...", clientName, throwable);
-                }
-            });
+            return initialize(socket)
+                    .thenApply(o -> initWorker(socket))
+                    .exceptionally(e -> {
+                        logger.error("[{}] One of initializers has failed...", clientName, e);
+                        return null;
+                    });
         } catch (Exception e) {
             logger.error("[{}] Failed to initialize client, {}", clientName, e.getMessage());
             return null;
         }
     }
 
-    private ClientWorker initWorker(Socket socket) throws IOException {
-        BlockingQueue<RF> in = new LinkedBlockingQueue<>();
-        BlockingQueue<WF> out = new LinkedBlockingQueue<>();
+    private ClientWorker initWorker(Socket socket) {
+        try {
+            BlockingQueue<RF> in = new LinkedBlockingQueue<>();
+            BlockingQueue<WF> out = new LinkedBlockingQueue<>();
 
-        Comm<RF, WF> comm = new Comm<>(in, out);
+            Comm<RF, WF> comm = new Comm<>(in, out);
 
-        String name = clientName + " " + id.incrementAndGet();
+            String name = clientName + " " + id.incrementAndGet();
 
-        @SuppressWarnings("unchecked")
-        ClientWriterThread writerThread = new ClientWriterThread(name, out, clientWriterFactory.apply(socket.getOutputStream()), timeout, TimeUnit.SECONDS);
-        @SuppressWarnings("unchecked")
-        ClientReaderThread readerThread = new ClientReaderThread(name, in, clientReaderFactory.apply(socket.getInputStream()));
+            @SuppressWarnings("unchecked")
+            ClientWriterThread writerThread = new ClientWriterThread(name, out, clientWriterFactory.apply(socket.getOutputStream()), timeout, TimeUnit.SECONDS);
+            @SuppressWarnings("unchecked")
+            ClientReaderThread readerThread = new ClientReaderThread(name, in, clientReaderFactory.apply(socket.getInputStream()));
 
-        Client client = new Client(threadPool, name, socket, writerThread, readerThread);
-        @SuppressWarnings("unchecked")
-        ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::close);
-        if (clientWorker == null) {
-            throw new NullPointerException("Client worker is null");
+            Client client = new Client(threadPool, name, socket, writerThread, readerThread);
+            @SuppressWarnings("unchecked")
+            ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::close);
+            if (clientWorker == null) {
+                throw new NullPointerException("Client worker is null");
+            }
+
+            threadPool.submit(clientWorker);
+            client.start()
+                    .whenCompleteAsync((v, t) -> {
+                        if (t != null) {
+                            logger.error("[{}] Exception in client", clientName, t);
+                        }
+
+                        clientWorker.onClientTermination();
+                    }, threadPool);
+
+            return clientWorker;
+        } catch (IOException e) {
+            throw new IOExceptionWrapper(e);
         }
-
-        threadPool.submit(clientWorker);
-        client.start()
-                .whenCompleteAsync((v, t) -> {
-                    if (t != null) {
-                        logger.error("[{}] Exception in client", clientName, t);
-                    }
-
-                    clientWorker.onClientTermination();
-                }, threadPool);
-
-        return clientWorker;
     }
 
-    private CompletableFuture<Void> initialize(Socket socket) throws IOException {
+    CompletableFuture<Void> initialize(Socket socket) throws IOException {
         CompletableFuture<Void> initializerFuture = null;
         for (BiFunction<InputStream, OutputStream, Initializer> initializerFactory : initializerFactories) {
             Initializer initializer = initializerFactory.apply(socket.getInputStream(), socket.getOutputStream());
