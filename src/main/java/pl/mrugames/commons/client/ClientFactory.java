@@ -9,6 +9,7 @@ import pl.mrugames.commons.client.io.ClientWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.*;
@@ -16,14 +17,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class ClientFactory<WF, RF> {
+public class ClientFactory<OutFrame extends Serializable, InFrame extends Serializable> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final String clientName;
     private final ExecutorService threadPool;
     private final int timeout;
-    private final Function<OutputStream, ClientWriter<WF>> clientWriterFactory;
-    private final Function<InputStream, ClientReader<RF>> clientReaderFactory;
+    private final Function<OutputStream, ClientWriter<OutFrame>> clientWriterFactory;
+    private final Function<InputStream, ClientReader<InFrame>> clientReaderFactory;
     private final ClientWorkerFactory clientWorkerFactory;
     private final AtomicLong id;
     private final List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories;
@@ -33,9 +34,9 @@ public class ClientFactory<WF, RF> {
     public ClientFactory(
             String clientName,
             int timeout,
-            Function<OutputStream, ClientWriter<WF>> clientWriterFactory,
-            Function<InputStream, ClientReader<RF>> clientReaderFactory,
-            ClientWorkerFactory<RF, WF> clientWorkerFactory,
+            Function<OutputStream, ClientWriter<OutFrame>> clientWriterFactory,
+            Function<InputStream, ClientReader<InFrame>> clientReaderFactory,
+            ClientWorkerFactory<InFrame, OutFrame> clientWorkerFactory,
             List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories) {
         this.clientName = clientName;
         this.threadPool = Executors.newCachedThreadPool(this::factory);
@@ -69,10 +70,10 @@ public class ClientFactory<WF, RF> {
 
     ClientWorker initWorker(Socket socket) {
         try {
-            BlockingQueue<RF> in = new LinkedBlockingQueue<>();
-            BlockingQueue<WF> out = new LinkedBlockingQueue<>();
+            BlockingQueue<InFrame> in = new LinkedBlockingQueue<>();
+            BlockingQueue<OutFrame> out = new LinkedBlockingQueue<>();
 
-            Comm<RF, WF> comm = new Comm<>(in, out);
+            Comm<InFrame, OutFrame> comm = new Comm<>(in, out);
 
             String name = clientName + " " + id.incrementAndGet();
 

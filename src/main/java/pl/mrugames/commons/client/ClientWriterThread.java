@@ -4,12 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.commons.client.io.ClientWriter;
 
+import java.io.Serializable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-class ClientWriterThread<FrameType> implements Runnable {
+class ClientWriterThread<FrameType extends Serializable> implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientWriterThread.class);
 
     private final String name;

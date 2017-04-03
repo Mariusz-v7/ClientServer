@@ -1,27 +1,20 @@
 package pl.mrugames.commons.client.io;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
+import pl.mrugames.commons.client.frames.WebSocketFrame;
 
-public class WebSocketReader implements ClientReader<String> {
-    private final BufferedReader bufferedReader;
+import java.io.BufferedInputStream;
+import java.io.InputStream;
+
+public class WebSocketReader implements ClientReader<WebSocketFrame> {
+    private final BufferedInputStream bufferedInputStream;
 
     public WebSocketReader(InputStream inputStream) {
-        bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+        bufferedInputStream = new BufferedInputStream(inputStream);
     }
 
     @Override
-    public String next() throws Exception {
-        List<String> request = new LinkedList<>();
+    public WebSocketFrame next() throws Exception {
 
-        do {
-            request.add(bufferedReader.readLine());
-        } while (bufferedReader.ready());
-
-        return request.stream().collect(Collectors.joining("\r\n"));
+        return null;
     }
 }

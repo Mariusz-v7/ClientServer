@@ -1,5 +1,7 @@
 package pl.mrugames.commons.client.io;
 
-public interface ClientReader<FrameType> {
+import java.io.Serializable;
+
+public interface ClientReader<FrameType extends Serializable> {
     FrameType next() throws Exception;
 }
