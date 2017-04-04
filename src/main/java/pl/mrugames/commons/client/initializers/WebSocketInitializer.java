@@ -42,6 +42,7 @@ public class WebSocketInitializer implements Initializer {
 
             String request = requestLines.stream().collect(Collectors.joining("\r\n"));
             writer.write(parser.parse(request));
+            writer.flush();
 
             logger.info("Handshake response sent.");
         } catch (Exception e) {

@@ -20,7 +20,7 @@ class ClientWriterThread<FrameType extends Serializable> implements Runnable {
     private final TimeUnit timeoutUnit;
 
     @SuppressWarnings("unchecked")
-    private final FrameType TERMINATOR = (FrameType) new Object();
+    private final FrameType TERMINATOR = (FrameType) "";
 
     private volatile boolean interrupted;
     private volatile CountDownLatch shutdownSignal;
