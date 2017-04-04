@@ -55,11 +55,11 @@ public class WebSocketReader implements ClientReader<WebSocketFrame> {
         long payloadLength = computePayloadLength(lengthByte);
 
         if (payloadLength < 0) {
-            throw new RuntimeException("Failed to read payload length");
+            throw new IllegalStateException("Failed to read payload length");
         }
 
         if (payloadLength > MAX_PAYLOAD_SIZE) {
-            throw new RuntimeException(String.format("Payload length exceeds maximum allowed size. Payload length: %d", payloadLength));
+            throw new IllegalArgumentException(String.format("Payload length exceeds maximum allowed size. Payload length: %d", payloadLength));
         }
 
         byte[] mask = getMaskingKey(lengthByte);
@@ -100,8 +100,9 @@ public class WebSocketReader implements ClientReader<WebSocketFrame> {
 
     private byte[] getMaskingKey(byte lengthByte) throws IOException {
         boolean withMask = (lengthByte & 0x80) != 0;
-        if (!withMask)
+        if (!withMask) {
             return null;
+        }
 
         int maskSize = 4;
         byte[] mask = new byte[maskSize];
