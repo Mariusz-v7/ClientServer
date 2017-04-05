@@ -18,4 +18,8 @@ public class WebSocketFrame implements Serializable {
     public byte[] getPayload() {
         return payload;
     }
+
+    public FrameType getFrameType() {
+        return frameType;
+    }
 }
