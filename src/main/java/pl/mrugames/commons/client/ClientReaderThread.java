@@ -2,28 +2,38 @@ package pl.mrugames.commons.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.commons.client.filters.Filter;
+import pl.mrugames.commons.client.filters.FilterProcessor;
 import pl.mrugames.commons.client.io.ClientReader;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
-class ClientReaderThread<FrameType extends Serializable> implements Runnable {
+class ClientReaderThread<Input extends Serializable, Output> implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientReaderThread.class);
 
     private final String name;
-    private final BlockingQueue<FrameType> received;
-    private final ClientReader<FrameType> clientReader;
+    private final BlockingQueue<Output> received;
+    private final ClientReader<Input> clientReader;
+    private final List<Filter<Object, Object>> filters;
+    private final FilterProcessor filterProcessor;
 
     private volatile boolean interrupted;
     private volatile CountDownLatch shutdownSignal;
 
     ClientReaderThread(String name,
-                       BlockingQueue<FrameType> received,
-                       ClientReader<FrameType> clientReader) {
+                       BlockingQueue<Output> received,
+                       ClientReader<Input> clientReader,
+                       List<Filter<Object, Object>> filters,
+                       FilterProcessor filterProcessor) {
         this.name = name;
         this.received = received;
         this.clientReader = clientReader;
+        this.filters = filters;
+        this.filterProcessor = filterProcessor;
     }
 
     void interrupt() {
@@ -43,12 +53,15 @@ class ClientReaderThread<FrameType extends Serializable> implements Runnable {
 
         try {
             while (!interrupted && !Thread.currentThread().isInterrupted()) {
-                FrameType frame = clientReader.next();
+                Input frame = clientReader.next();
                 if (frame == null) {
                     break;
                 }
 
-                received.add(frame);
+                Optional<Output> transformed = filterProcessor.filter(frame, filters);
+                if (transformed.isPresent()) {
+                    received.add(transformed.get());
+                }
             }
         } catch (Exception e) {
             throw new IOExceptionWrapper(e);

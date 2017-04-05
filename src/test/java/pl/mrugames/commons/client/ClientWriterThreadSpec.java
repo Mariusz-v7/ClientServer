@@ -9,9 +9,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
+import pl.mrugames.commons.client.filters.FilterProcessor;
 import pl.mrugames.commons.client.io.ClientWriter;
 
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.*;
 
@@ -26,6 +28,7 @@ public class ClientWriterThreadSpec {
     private CountDownLatch latch;
     private ExecutorService executor;
     private String frame = "123";
+    private FilterProcessor filterProcessor;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -46,15 +49,19 @@ public class ClientWriterThreadSpec {
             return null;
         }).when(clientWriter).next(any());
 
-        clientWriterThread = spy(new ClientWriterThread("Writer", queue, clientWriter, 10, TimeUnit.MILLISECONDS));
+        filterProcessor = mock(FilterProcessor.class);
+
+        clientWriterThread = spy(new ClientWriterThread("Writer", queue, clientWriter,
+                10, TimeUnit.MILLISECONDS,
+                Collections.emptyList(), filterProcessor));
 
         executor = Executors.newSingleThreadExecutor();
 
         queue.put(frame);
 
         doAnswer(a -> Optional.ofNullable(a.getArguments()[0]))
-                .when(clientWriterThread)
-                .filter(any());
+                .when(filterProcessor)
+                .filter(any(), any());
     }
 
     @After
@@ -91,7 +98,9 @@ public class ClientWriterThreadSpec {
     @Test(timeout = 1000)
     @SuppressWarnings("unchecked")
     public void whenInterrupt_thenLoopShouldExit() {
-        clientWriterThread = new ClientWriterThread("Writer", queue, clientWriter, 1000, TimeUnit.MILLISECONDS);
+        clientWriterThread = new ClientWriterThread("Writer", queue, clientWriter,
+                1000, TimeUnit.MILLISECONDS,
+                Collections.emptyList(), filterProcessor);
 
         clientWriterThread.interrupt();
         clientWriterThread.run();

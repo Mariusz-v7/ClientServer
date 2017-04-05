@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -106,10 +107,16 @@ public class ClientFactorySpec {
         clientFactory.initialize(socket).get();
     }
 
-    @Test
-    public void givenClientStops_thenClientWorker_onClientTermination_isCalled() {
+    @Test(timeout = 1000)
+    public void givenClientStops_thenClientWorker_onClientTermination_isCalled() throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        doAnswer(a -> {
+            countDownLatch.countDown();
+            return null;
+        }).when(clientWorker).onClientTermination();
+
         clientFactory.initWorker(socket);
-        verify(clientWorker).onClientTermination();
+        countDownLatch.await();
     }
 
 }

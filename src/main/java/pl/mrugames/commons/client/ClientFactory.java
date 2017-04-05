@@ -2,6 +2,7 @@ package pl.mrugames.commons.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.commons.client.filters.FilterProcessor;
 import pl.mrugames.commons.client.initializers.Initializer;
 import pl.mrugames.commons.client.io.ClientReader;
 import pl.mrugames.commons.client.io.ClientWriter;
@@ -11,6 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.Socket;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -78,9 +80,16 @@ public class ClientFactory<OutFrame extends Serializable, InFrame extends Serial
             String name = clientName + " " + id.incrementAndGet();
 
             @SuppressWarnings("unchecked")
-            ClientWriterThread writerThread = new ClientWriterThread(name, out, clientWriterFactory.apply(socket.getOutputStream()), timeout, TimeUnit.SECONDS);
+            ClientWriterThread writerThread = new ClientWriterThread(name, out,
+                    clientWriterFactory.apply(socket.getOutputStream()),
+                    timeout, TimeUnit.SECONDS,
+                    Collections.emptyList(), FilterProcessor.getInstance());
+
             @SuppressWarnings("unchecked")
-            ClientReaderThread readerThread = new ClientReaderThread(name, in, clientReaderFactory.apply(socket.getInputStream()));
+            ClientReaderThread readerThread = new ClientReaderThread(name, in,
+                    clientReaderFactory.apply(socket.getInputStream()),
+                    Collections.emptyList(), FilterProcessor.getInstance()
+            );
 
             Client client = new Client(threadPool, name, socket, writerThread, readerThread);
             @SuppressWarnings("unchecked")

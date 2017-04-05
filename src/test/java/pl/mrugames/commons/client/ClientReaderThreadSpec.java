@@ -3,20 +3,24 @@ package pl.mrugames.commons.client;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import pl.mrugames.commons.client.filters.FilterProcessor;
 import pl.mrugames.commons.client.io.ClientReader;
 
+import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 public class ClientReaderThreadSpec {
-    private ClientReaderThread<String> readerThread;
+    private ClientReaderThread readerThread;
     private BlockingQueue<String> queue;
     private ClientReader<String> clientReader;
     private CountDownLatch latch;
     private ExecutorService executor;
     private String frame = "123";
+    private FilterProcessor filterProcessor;
 
     @Before
     @SuppressWarnings("unchecked")
@@ -32,9 +36,15 @@ public class ClientReaderThreadSpec {
             return frame;
         }).when(clientReader).next();
 
-        readerThread = spy(new ClientReaderThread<>("Reader", queue, clientReader));
+
+        filterProcessor = mock(FilterProcessor.class);
+        readerThread = spy(new ClientReaderThread<>("Reader", queue, clientReader, Collections.emptyList(), filterProcessor));
 
         executor = Executors.newSingleThreadExecutor();
+
+        doAnswer(a -> Optional.ofNullable(a.getArguments()[0]))
+                .when(filterProcessor)
+                .filter(any(), any());
     }
 
     @After

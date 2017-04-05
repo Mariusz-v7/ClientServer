@@ -2,9 +2,12 @@ package pl.mrugames.commons.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.commons.client.filters.Filter;
+import pl.mrugames.commons.client.filters.FilterProcessor;
 import pl.mrugames.commons.client.io.ClientWriter;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -24,6 +27,8 @@ class ClientWriterThread<Input, Output extends Serializable> implements Runnable
     private final ClientWriter<Output> clientWriter;
     private final long timeout;
     private final TimeUnit timeoutUnit;
+    private final List<Filter<Object, Object>> filters;
+    private final FilterProcessor filterProcessor;
 
 
     private volatile boolean interrupted;
@@ -33,12 +38,16 @@ class ClientWriterThread<Input, Output extends Serializable> implements Runnable
                        BlockingQueue<Input> toSend,
                        ClientWriter<Output> clientWriter,
                        long timeout,
-                       TimeUnit timeoutUnit) {
+                       TimeUnit timeoutUnit,
+                       List<Filter<Object, Object>> filters,
+                       FilterProcessor filterProcessor) {
         this.name = name;
         this.toSend = toSend;
         this.clientWriter = clientWriter;
         this.timeout = timeout;
         this.timeoutUnit = timeoutUnit;
+        this.filters = filters;
+        this.filterProcessor = filterProcessor;
     }
 
     void interrupt() {
@@ -69,7 +78,7 @@ class ClientWriterThread<Input, Output extends Serializable> implements Runnable
                 }
 
                 if (frame != null) {
-                    Optional<Output> transformed = filter(frame);
+                    Optional<Output> transformed = filterProcessor.filter(frame, filters);
                     if (transformed.isPresent()) {
                         clientWriter.next(transformed.get());
                     }
@@ -85,9 +94,5 @@ class ClientWriterThread<Input, Output extends Serializable> implements Runnable
             logger.info("[{}] Writer thread has been stopped!", name);
             shutdownSignal.countDown();
         }
-    }
-
-    Optional<Output> filter(Input frame) {
-        return Optional.empty();
     }
 }
