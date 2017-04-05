@@ -29,6 +29,8 @@ public class Main {
                 TextWriter::new,
                 TextReader::new,
                 new ExampleClientWorkerFactory(Main::shutdown),
+                Collections.emptyList(),
+                Collections.emptyList(),
                 Collections.emptyList()
         );
 

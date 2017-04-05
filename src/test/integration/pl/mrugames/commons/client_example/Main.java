@@ -31,6 +31,8 @@ public class Main {
                 TextWriter::new,
                 TextReader::new,
                 new LocalClientWorkerFactory(),
+                Collections.emptyList(),
+                Collections.emptyList(),
                 Collections.emptyList()
         );
 

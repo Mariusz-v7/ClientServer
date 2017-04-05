@@ -32,7 +32,8 @@ public class Main {
                 WebSocketWriter::new,
                 WebSocketReader::new,
                 new WebSocketWorkerFactory(Main::shutdown),
-                Collections.singletonList(WebSocketInitializer.create(new WebSocketHandshakeParser()))
+                Collections.singletonList(WebSocketInitializer.create(new WebSocketHandshakeParser())),
+                Collections.emptyList(), Collections.emptyList()  // TODO: add filters BINARY <-> STRING
         );
 
         host = new Host("Main Host", port, clientFactory);

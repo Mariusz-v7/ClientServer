@@ -48,6 +48,8 @@ public class TimeoutSpec {
                 TextWriter::new,
                 TextReader::new,
                 workerFactory,
+                Collections.emptyList(),
+                Collections.emptyList(),
                 Collections.emptyList()
         );
 

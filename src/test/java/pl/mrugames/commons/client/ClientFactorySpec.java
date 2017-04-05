@@ -48,7 +48,9 @@ public class ClientFactorySpec {
         clientReaderProvider = mock(Function.class);
         clientWorkerFactory = mock(ClientWorkerFactory.class);
 
-        clientFactory = spy(new ClientFactory("test", 0, clientWriterProvider, clientReaderProvider, clientWorkerFactory, Collections.emptyList()));
+        clientFactory = spy(new ClientFactory("test", 0, clientWriterProvider, clientReaderProvider,
+                clientWorkerFactory, Collections.emptyList(), Collections.emptyList(), Collections.emptyList()
+        ));
 
         socket = mock(Socket.class);
 
@@ -81,7 +83,8 @@ public class ClientFactorySpec {
 
         InOrder inOrder = inOrder(initializer1, initializer2, initializer3);
 
-        clientFactory = new ClientFactory("test", 0, clientWriterProvider, clientReaderProvider, clientWorkerFactory, initializers);
+        clientFactory = new ClientFactory("test", 0, clientWriterProvider, clientReaderProvider, clientWorkerFactory,
+                initializers, Collections.emptyList(), Collections.emptyList());
         clientFactory.initialize(socket).get();
 
         inOrder.verify(initializer1).run();
@@ -99,7 +102,9 @@ public class ClientFactorySpec {
 
         clientFactory = new ClientFactory("test",
                 0, clientWriterProvider, clientReaderProvider,
-                clientWorkerFactory, initializers);
+                clientWorkerFactory, initializers,
+                Collections.emptyList(), Collections.emptyList()
+        );
 
         expectedException.expect(ExecutionException.class);
         expectedException.expectCause(IsInstanceOf.instanceOf(IOExceptionWrapper.class));

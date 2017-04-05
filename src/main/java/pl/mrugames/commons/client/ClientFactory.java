@@ -2,6 +2,7 @@ package pl.mrugames.commons.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.commons.client.filters.Filter;
 import pl.mrugames.commons.client.filters.FilterProcessor;
 import pl.mrugames.commons.client.initializers.Initializer;
 import pl.mrugames.commons.client.io.ClientReader;
@@ -12,7 +13,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.Socket;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -30,6 +30,8 @@ public class ClientFactory<WorldIn extends Serializable, WorldOut extends Serial
     private final ClientWorkerFactory<ClientIn, ClientOut> clientWorkerFactory;
     private final AtomicLong id;
     private final List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories;
+    private final List<Filter<Object, Object>> inputFilters;
+    private final List<Filter<Object, Object>> outputFilters;
 
     private volatile boolean shutdown;
 
@@ -39,7 +41,9 @@ public class ClientFactory<WorldIn extends Serializable, WorldOut extends Serial
             Function<OutputStream, ClientWriter<WorldOut>> clientWriterFactory,
             Function<InputStream, ClientReader<WorldIn>> clientReaderFactory,
             ClientWorkerFactory<ClientIn, ClientOut> clientWorkerFactory,
-            List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories) {
+            List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories,
+            List<Filter<Object, Object>> inputFilters,
+            List<Filter<Object, Object>> outputFilters) {
         this.clientName = clientName;
         this.threadPool = Executors.newCachedThreadPool(this::factory);
         this.timeout = timeout;
@@ -47,6 +51,8 @@ public class ClientFactory<WorldIn extends Serializable, WorldOut extends Serial
         this.clientReaderFactory = clientReaderFactory;
         this.clientWorkerFactory = clientWorkerFactory;
         this.initializerFactories = initializerFactories;
+        this.inputFilters = inputFilters;
+        this.outputFilters = outputFilters;
         this.id = new AtomicLong();
     }
 
@@ -82,11 +88,11 @@ public class ClientFactory<WorldIn extends Serializable, WorldOut extends Serial
             ClientWriterThread<ClientOut, WorldOut> writerThread = new ClientWriterThread<>(name, out,
                     clientWriterFactory.apply(socket.getOutputStream()),
                     timeout, TimeUnit.SECONDS,
-                    Collections.emptyList(), FilterProcessor.getInstance());
+                    outputFilters, FilterProcessor.getInstance());
 
             ClientReaderThread<WorldIn, ClientIn> readerThread = new ClientReaderThread<>(name, in,
                     clientReaderFactory.apply(socket.getInputStream()),
-                    Collections.emptyList(), FilterProcessor.getInstance()
+                    inputFilters, FilterProcessor.getInstance()
             );
 
             Client client = new Client(threadPool, name, socket, writerThread, readerThread);
