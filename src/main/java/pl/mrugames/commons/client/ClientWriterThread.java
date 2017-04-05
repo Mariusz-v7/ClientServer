@@ -11,6 +11,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 class ClientWriterThread<FrameType extends Serializable> implements Runnable {
+    private final static class Terminator implements Serializable {
+    }
+
+    private final static Terminator TERMINATOR = new Terminator();
+
     private final static Logger logger = LoggerFactory.getLogger(ClientWriterThread.class);
 
     private final String name;
@@ -19,8 +24,6 @@ class ClientWriterThread<FrameType extends Serializable> implements Runnable {
     private final long timeout;
     private final TimeUnit timeoutUnit;
 
-    @SuppressWarnings("unchecked")
-    private final FrameType TERMINATOR = (FrameType) "";
 
     private volatile boolean interrupted;
     private volatile CountDownLatch shutdownSignal;
@@ -39,7 +42,10 @@ class ClientWriterThread<FrameType extends Serializable> implements Runnable {
 
     void interrupt() {
         interrupted = true;
-        toSend.add(TERMINATOR);  // instead of interrupting the thread, add terminator to the queue
+
+        @SuppressWarnings("unchecked")
+        FrameType terminator = (FrameType) TERMINATOR;
+        toSend.add(terminator);  // instead of interrupting the thread, add terminator to the queue
     }
 
     void join() throws InterruptedException {
