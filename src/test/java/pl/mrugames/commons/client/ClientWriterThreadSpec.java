@@ -12,6 +12,7 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 import pl.mrugames.commons.client.io.ClientWriter;
 
 import java.io.OutputStream;
+import java.util.Optional;
 import java.util.concurrent.*;
 
 import static org.mockito.Mockito.*;
@@ -50,6 +51,10 @@ public class ClientWriterThreadSpec {
         executor = Executors.newSingleThreadExecutor();
 
         queue.put(frame);
+
+        doAnswer(a -> Optional.ofNullable(a.getArguments()[0]))
+                .when(clientWriterThread)
+                .filter(any());
     }
 
     @After
