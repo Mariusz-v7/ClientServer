@@ -54,7 +54,7 @@ public class FilterProcessorSpec {
     }
 
     @Test
-    public void whenMultipleFilters_thenValueFromSecondIsReturned() {
+    public void whenMultipleFilters_thenValueFromLastIsReturned() {
         filters.add(i -> 123);
         filters.add(i -> null);
         filters.add(i -> "Blah!");
@@ -64,6 +64,21 @@ public class FilterProcessorSpec {
 
         if (result.isPresent()) {
             assertThat(result.get()).isEqualTo("Blah!");
+        }
+    }
+
+    @Test
+    public void fullExampleOfFiltering() {
+        filters.add(i -> (int) i + 10);
+        filters.add(i -> (int) i * 2.1);
+        filters.add(i -> (double) i + 1);
+        filters.add(i -> String.valueOf((double) i));
+
+        Optional<String> result = filterProcessor.filter(0, filters);
+        assertThat(result).isPresent();
+
+        if (result.isPresent()) {
+            assertThat(result.get()).isEqualTo(Double.toString(10 * 2.1 + 1));
         }
     }
 }
