@@ -19,15 +19,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class ClientFactory<OutFrame extends Serializable, InFrame extends Serializable> {
+public class ClientFactory<WorldIn extends Serializable, WorldOut extends Serializable, ClientIn, ClientOut> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final String clientName;
     private final ExecutorService threadPool;
     private final int timeout;
-    private final Function<OutputStream, ClientWriter<OutFrame>> clientWriterFactory;
-    private final Function<InputStream, ClientReader<InFrame>> clientReaderFactory;
-    private final ClientWorkerFactory clientWorkerFactory;
+    private final Function<OutputStream, ClientWriter<WorldOut>> clientWriterFactory;
+    private final Function<InputStream, ClientReader<WorldIn>> clientReaderFactory;
+    private final ClientWorkerFactory<ClientIn, ClientOut> clientWorkerFactory;
     private final AtomicLong id;
     private final List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories;
 
@@ -36,9 +36,9 @@ public class ClientFactory<OutFrame extends Serializable, InFrame extends Serial
     public ClientFactory(
             String clientName,
             int timeout,
-            Function<OutputStream, ClientWriter<OutFrame>> clientWriterFactory,
-            Function<InputStream, ClientReader<InFrame>> clientReaderFactory,
-            ClientWorkerFactory<InFrame, OutFrame> clientWorkerFactory,
+            Function<OutputStream, ClientWriter<WorldOut>> clientWriterFactory,
+            Function<InputStream, ClientReader<WorldIn>> clientReaderFactory,
+            ClientWorkerFactory<ClientIn, ClientOut> clientWorkerFactory,
             List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories) {
         this.clientName = clientName;
         this.threadPool = Executors.newCachedThreadPool(this::factory);
@@ -72,27 +72,25 @@ public class ClientFactory<OutFrame extends Serializable, InFrame extends Serial
 
     ClientWorker initWorker(Socket socket) {
         try {
-            BlockingQueue<InFrame> in = new LinkedBlockingQueue<>();
-            BlockingQueue<OutFrame> out = new LinkedBlockingQueue<>();
+            BlockingQueue<ClientIn> in = new LinkedBlockingQueue<>();
+            BlockingQueue<ClientOut> out = new LinkedBlockingQueue<>();
 
-            Comm<InFrame, OutFrame> comm = new Comm<>(in, out);
+            Comm<ClientIn, ClientOut> comm = new Comm<>(in, out);
 
             String name = clientName + " " + id.incrementAndGet();
 
-            @SuppressWarnings("unchecked")
-            ClientWriterThread writerThread = new ClientWriterThread(name, out,
+            ClientWriterThread<ClientOut, WorldOut> writerThread = new ClientWriterThread<>(name, out,
                     clientWriterFactory.apply(socket.getOutputStream()),
                     timeout, TimeUnit.SECONDS,
                     Collections.emptyList(), FilterProcessor.getInstance());
 
-            @SuppressWarnings("unchecked")
-            ClientReaderThread readerThread = new ClientReaderThread(name, in,
+            ClientReaderThread<WorldIn, ClientIn> readerThread = new ClientReaderThread<>(name, in,
                     clientReaderFactory.apply(socket.getInputStream()),
                     Collections.emptyList(), FilterProcessor.getInstance()
             );
 
             Client client = new Client(threadPool, name, socket, writerThread, readerThread);
-            @SuppressWarnings("unchecked")
+
             ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::close);
             if (clientWorker == null) {
                 throw new NullPointerException("Client worker is null");
