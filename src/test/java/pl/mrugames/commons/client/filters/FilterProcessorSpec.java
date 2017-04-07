@@ -73,12 +73,13 @@ public class FilterProcessorSpec {
         filters.add(i -> (int) i * 2.1);
         filters.add(i -> (double) i + 1);
         filters.add(i -> String.valueOf((double) i));
+        filters.add(s -> "Hello " + s);
 
         Optional<String> result = filterProcessor.filter(0, filters);
         assertThat(result).isPresent();
 
         if (result.isPresent()) {
-            assertThat(result.get()).isEqualTo(Double.toString(10 * 2.1 + 1));
+            assertThat(result.get()).isEqualTo("Hello " + Double.toString(10 * 2.1 + 1));
         }
     }
 }
