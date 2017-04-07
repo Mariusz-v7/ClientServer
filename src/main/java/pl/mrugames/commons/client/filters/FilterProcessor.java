@@ -18,7 +18,7 @@ public class FilterProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    public <Input, Output> Optional<Output> filter(Input input, List<Filter<Object, Object>> filters) {
+    public <Input, Output> Optional<Output> filter(Input input, List<Filter<?, ?>> filters) {
         if (filters.isEmpty()) {
             return Optional.of((Output) input);
         }

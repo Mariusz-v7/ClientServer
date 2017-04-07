@@ -18,7 +18,7 @@ class ClientReaderThread<Input extends Serializable, Output> implements Runnable
     private final String name;
     private final BlockingQueue<Output> received;
     private final ClientReader<Input> clientReader;
-    private final List<Filter<Object, Object>> filters;
+    private final List<Filter<?, ?>> filters;
     private final FilterProcessor filterProcessor;
 
     private volatile boolean interrupted;
@@ -27,7 +27,7 @@ class ClientReaderThread<Input extends Serializable, Output> implements Runnable
     ClientReaderThread(String name,
                        BlockingQueue<Output> received,
                        ClientReader<Input> clientReader,
-                       List<Filter<Object, Object>> filters,
+                       List<Filter<?, ?>> filters,
                        FilterProcessor filterProcessor) {
         this.name = name;
         this.received = received;

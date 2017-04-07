@@ -3,6 +3,8 @@ package pl.mrugames.commons.websocket_server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.commons.client.ClientFactory;
+import pl.mrugames.commons.client.filters.StringToWebSocketFrameFilter;
+import pl.mrugames.commons.client.filters.WebSocketFrameToStringFilter;
 import pl.mrugames.commons.client.initializers.WebSocketInitializer;
 import pl.mrugames.commons.client.io.WebSocketReader;
 import pl.mrugames.commons.client.io.WebSocketWriter;
@@ -33,7 +35,8 @@ public class Main {
                 WebSocketReader::new,
                 new WebSocketWorkerFactory(Main::shutdown),
                 Collections.singletonList(WebSocketInitializer.create(new WebSocketHandshakeParser())),
-                Collections.emptyList(), Collections.emptyList()  // TODO: add filters BINARY <-> STRING
+                Collections.singletonList(WebSocketFrameToStringFilter.getInstance()),
+                Collections.singletonList(StringToWebSocketFrameFilter.getInstance())
         );
 
         host = new Host("Main Host", port, clientFactory);

@@ -30,8 +30,8 @@ public class ClientFactory<WorldIn extends Serializable, WorldOut extends Serial
     private final ClientWorkerFactory<ClientIn, ClientOut> clientWorkerFactory;
     private final AtomicLong id;
     private final List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories;
-    private final List<Filter<Object, Object>> inputFilters;
-    private final List<Filter<Object, Object>> outputFilters;
+    private final List<Filter<?, ?>> inputFilters;
+    private final List<Filter<?, ?>> outputFilters;
 
     private volatile boolean shutdown;
 
@@ -42,8 +42,8 @@ public class ClientFactory<WorldIn extends Serializable, WorldOut extends Serial
             Function<InputStream, ClientReader<WorldIn>> clientReaderFactory,
             ClientWorkerFactory<ClientIn, ClientOut> clientWorkerFactory,
             List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories,
-            List<Filter<Object, Object>> inputFilters,
-            List<Filter<Object, Object>> outputFilters) {
+            List<Filter<?, ?>> inputFilters,
+            List<Filter<?, ?>> outputFilters) {
         this.clientName = clientName;
         this.threadPool = Executors.newCachedThreadPool(this::factory);
         this.timeout = timeout;

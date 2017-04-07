@@ -27,7 +27,7 @@ class ClientWriterThread<Input, Output extends Serializable> implements Runnable
     private final ClientWriter<Output> clientWriter;
     private final long timeout;
     private final TimeUnit timeoutUnit;
-    private final List<Filter<Object, Object>> filters;
+    private final List<Filter<?, ?>> filters;
     private final FilterProcessor filterProcessor;
 
 
@@ -39,7 +39,7 @@ class ClientWriterThread<Input, Output extends Serializable> implements Runnable
                        ClientWriter<Output> clientWriter,
                        long timeout,
                        TimeUnit timeoutUnit,
-                       List<Filter<Object, Object>> filters,
+                       List<Filter<?, ?>> filters,
                        FilterProcessor filterProcessor) {
         this.name = name;
         this.toSend = toSend;

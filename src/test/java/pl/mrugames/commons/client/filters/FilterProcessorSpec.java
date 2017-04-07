@@ -16,7 +16,7 @@ import static org.mockito.Mockito.spy;
 @RunWith(BlockJUnit4ClassRunner.class)
 public class FilterProcessorSpec {
     private FilterProcessor filterProcessor;
-    private List<Filter<Object, Object>> filters;
+    private List<Filter<?, ?>> filters;
 
 
     @Before
