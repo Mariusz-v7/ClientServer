@@ -7,6 +7,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class WebSocketHandshakeParser {
+    private static WebSocketHandshakeParser instance;
+
+    public static synchronized WebSocketHandshakeParser getInstance() {
+        if (instance == null) {
+            instance = new WebSocketHandshakeParser();
+        }
+
+        return instance;
+    }
+
+    WebSocketHandshakeParser() {
+    }
 
     public String parse(String request) {
         String key = findKey(request);
