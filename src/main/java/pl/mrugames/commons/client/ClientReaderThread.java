@@ -8,6 +8,7 @@ import pl.mrugames.commons.client.io.ClientReader;
 
 import java.io.EOFException;
 import java.io.Serializable;
+import java.net.SocketException;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
@@ -64,8 +65,8 @@ class ClientReaderThread<Input extends Serializable, Output> implements Runnable
                     received.add(transformed.get());
                 }
             }
-        } catch (EOFException e) {
-            logger.debug("[{}] Eof exception!", name, e);
+        } catch (EOFException | SocketException e) {
+            logger.debug("[{}] Connection related exception!", name, e);
         } catch (Exception e) {
             throw new IOExceptionWrapper(e);
         } finally {

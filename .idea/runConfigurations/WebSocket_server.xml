@@ -8,7 +8,7 @@
     </extension>
     <option name="MAIN_CLASS_NAME" value="pl.mrugames.commons.websocket_server.Main" />
     <option name="VM_PARAMETERS" value="" />
-    <option name="PROGRAM_PARAMETERS" value="8080" />
+    <option name="PROGRAM_PARAMETERS" value="10002" />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
     <option name="ALTERNATIVE_JRE_PATH" />

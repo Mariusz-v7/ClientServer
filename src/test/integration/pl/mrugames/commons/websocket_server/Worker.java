@@ -20,7 +20,7 @@ public class Worker implements ClientWorker {
 
     @Override
     public void onClientTermination() {
-        shutdownSwitch.run();
+        onClientShutDown.run();
     }
 
     @Override
@@ -29,12 +29,16 @@ public class Worker implements ClientWorker {
             String message;
             do {
                 message = comm.receive(30, TimeUnit.SECONDS);
+
+                if (message.equals("shutdown")) {
+                    shutdownSwitch.run();
+                    break;
+                }
+
                 comm.send("Your message was: " + message);
             } while (!Thread.currentThread().isInterrupted() && message != null && !message.equals("shutdown"));
         } catch (InterruptedException e) {
             e.printStackTrace();
-        } finally {
-            shutdownSwitch.run();
         }
     }
 }
