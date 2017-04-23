@@ -1,7 +1,8 @@
 package pl.mrugames.commons.client.filters;
 
-import com.sun.istack.internal.Nullable;
 import pl.mrugames.commons.client.frames.WebSocketFrame;
+
+import javax.annotation.Nullable;
 
 public class StringToWebSocketFrameFilter implements Filter<String, WebSocketFrame> {
     private static StringToWebSocketFrameFilter instance;

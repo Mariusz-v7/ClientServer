@@ -13,6 +13,8 @@
           <option value="clean" />
           <option value="telnetExampleJar" />
           <option value="clientExampleJar" />
+          <option value="build" />
+          <option value="publish" />
         </list>
       </option>
       <option name="vmOptions" value="" />

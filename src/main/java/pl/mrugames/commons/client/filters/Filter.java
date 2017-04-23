@@ -1,6 +1,6 @@
 package pl.mrugames.commons.client.filters;
 
-import com.sun.istack.internal.Nullable;
+import javax.annotation.Nullable;
 
 public interface Filter<Input, Output> {
     @Nullable
