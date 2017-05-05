@@ -78,4 +78,9 @@ public class Host extends Thread {
     public void waitForSocketOpen() throws InterruptedException {
         socketOpenSignal.await();
     }
+
+    public void interruptAndJoin() throws InterruptedException {
+        interrupt();
+        join();
+    }
 }
