@@ -54,16 +54,16 @@ public class Host extends Thread {
 
     @Override
     public void interrupt() {
-        super.interrupt();
+        logger.info("[Host {}] is being shutdown!", getName());
 
         try {
-            logger.info("[Host {}] is being shutdown!", getName());
-
-            if (socket != null)
+            if (socket != null) {
                 socket.close();
-
+            }
         } catch (IOException e) {
             logger.error("[Host {}] failed to close socket!", getName());
+        } finally {
+            super.interrupt();
         }
     }
 
