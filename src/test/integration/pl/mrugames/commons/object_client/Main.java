@@ -23,7 +23,7 @@ public class Main {
         final String address = args[0];
         final int port = Integer.valueOf(args[1]);
 
-        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer(new WorkerFactory(), "Local Client");
+        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Local Client", 60, new WorkerFactory());
 
         Worker localClientWorker = (Worker) clientFactory.create(new Socket(address, port)).get();
 

@@ -31,11 +31,11 @@ public class ClientFactories {
     }
 
     public static ClientFactory<? extends Serializable, ? extends Serializable, ? extends Serializable, ? extends Serializable> createClientFactoryForJavaServer(
-            ClientWorkerFactory<? extends Serializable, ? extends Serializable> clientWorkerFactory,
-            String name) {
+            String name, int timeoutSeconds, ClientWorkerFactory<? extends Serializable, ? extends Serializable> clientWorkerFactory) {
 
         return new ClientFactoryBuilder<>(ObjectWriter::new, ObjectReader::new, clientWorkerFactory)
                 .setClientName(name)
+                .setTimeout(timeoutSeconds)
                 .build();
     }
 }
