@@ -1,7 +1,7 @@
 package pl.mrugames.commons.client;
 
 public class ClientInfoHelper {
-    public void setClientInfo(ClientInfo value) {
+    public static void setClientInfo(ClientInfo value) {
         ClientInfo.setClientInfo(value);
     }
 
