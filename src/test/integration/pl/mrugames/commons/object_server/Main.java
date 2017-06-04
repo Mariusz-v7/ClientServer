@@ -3,9 +3,7 @@ package pl.mrugames.commons.object_server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.commons.client.ClientFactory;
-import pl.mrugames.commons.client.helpers.ClientFactoryBuilder;
-import pl.mrugames.commons.client.io.ObjectReader;
-import pl.mrugames.commons.client.io.ObjectWriter;
+import pl.mrugames.commons.client.helpers.ClientFactories;
 import pl.mrugames.commons.host.Host;
 
 public class Main {
@@ -23,8 +21,7 @@ public class Main {
 
         logger.info("Main started...");
 
-        ClientFactory clientFactory = new ClientFactoryBuilder<>(ObjectWriter::new, ObjectReader::new, new WorkerFactory(Main::shutdown))
-                .build();
+        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer(new WorkerFactory(Main::shutdown), "Main Host");
 
         host = new Host("Main Host", port, clientFactory);
 

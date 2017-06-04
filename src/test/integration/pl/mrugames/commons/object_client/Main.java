@@ -3,9 +3,7 @@ package pl.mrugames.commons.object_client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.commons.client.ClientFactory;
-import pl.mrugames.commons.client.helpers.ClientFactoryBuilder;
-import pl.mrugames.commons.client.io.ObjectReader;
-import pl.mrugames.commons.client.io.ObjectWriter;
+import pl.mrugames.commons.client.helpers.ClientFactories;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -25,10 +23,7 @@ public class Main {
         final String address = args[0];
         final int port = Integer.valueOf(args[1]);
 
-        ClientFactory clientFactory = new ClientFactoryBuilder<>(
-                ObjectWriter::new, ObjectReader::new, new WorkerFactory())
-                .setClientName("Local Client")
-                .build();
+        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer(new WorkerFactory(), "Local Client");
 
         Worker localClientWorker = (Worker) clientFactory.create(new Socket(address, port)).get();
 
