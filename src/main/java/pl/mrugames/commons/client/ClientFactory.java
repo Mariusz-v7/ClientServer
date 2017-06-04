@@ -97,7 +97,7 @@ public class ClientFactory<WorldIn extends Serializable, WorldOut extends Serial
 
             Client client = new Client(threadPool, name, socket, writerThread, readerThread);
 
-            ClientWorker clientWorker = clientWorkerFactory.create(name, comm, client::close);
+            ClientWorker clientWorker = clientWorkerFactory.create(comm, client::close, new ClientInfo(name, socket));
             if (clientWorker == null) {
                 throw new NullPointerException("Client worker is null");
             }

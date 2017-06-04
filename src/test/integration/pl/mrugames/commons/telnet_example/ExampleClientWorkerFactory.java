@@ -1,5 +1,6 @@
 package pl.mrugames.commons.telnet_example;
 
+import pl.mrugames.commons.client.ClientInfo;
 import pl.mrugames.commons.client.ClientWorker;
 import pl.mrugames.commons.client.ClientWorkerFactory;
 import pl.mrugames.commons.client.Comm;
@@ -12,7 +13,7 @@ public class ExampleClientWorkerFactory implements ClientWorkerFactory<String, S
     }
 
     @Override
-    public ClientWorker create(String name, Comm<String, String> comm, Runnable shutdownSwitch) {
-        return new ExampleClientWorker(name, comm, shutdownSwitch, onShutdownCommand);
+    public ClientWorker create(Comm<String, String> comm, Runnable shutdownSwitch, ClientInfo clientInfo) {
+        return new ExampleClientWorker(comm, shutdownSwitch, onShutdownCommand, clientInfo);
     }
 }

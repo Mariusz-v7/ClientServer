@@ -7,13 +7,11 @@ import java.util.concurrent.TimeUnit;
 
 public class Worker implements ClientWorker {
     private final Runnable shutdownSwitch;
-    private final String name;
     private final Comm<String, String> comm;
     private final Runnable onClientShutDown;
 
-    public Worker(String name, Comm<String, String> comm, Runnable onClientShutDown, Runnable shutdownSwitch) {
+    public Worker(Comm<String, String> comm, Runnable onClientShutDown, Runnable shutdownSwitch) {
         this.shutdownSwitch = shutdownSwitch;
-        this.name = name;
         this.comm = comm;
         this.onClientShutDown = onClientShutDown;
     }

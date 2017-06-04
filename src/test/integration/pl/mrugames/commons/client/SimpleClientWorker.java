@@ -6,7 +6,7 @@ public class SimpleClientWorker implements ClientWorker {
     public static class Factory implements ClientWorkerFactory<String, String> {
 
         @Override
-        public ClientWorker create(String name, Comm<String, String> comm, Runnable shutdownSwitch) {
+        public ClientWorker create(Comm<String, String> comm, Runnable shutdownSwitch, ClientInfo clientInfo) {
             return new SimpleClientWorker(comm);
         }
     }

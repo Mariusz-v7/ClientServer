@@ -10,13 +10,11 @@ import java.util.concurrent.TimeUnit;
 class Worker implements ClientWorker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Runnable shutdownSwitch;
-    private final String name;
     private final Comm<Frame, Frame> comm;
     private final Runnable onClientShutDown;
 
-    Worker(Runnable shutdownSwitch, String name, Comm<Frame, Frame> comm, Runnable onClientShutDown) {
+    Worker(Runnable shutdownSwitch, Comm<Frame, Frame> comm, Runnable onClientShutDown) {
         this.shutdownSwitch = shutdownSwitch;
-        this.name = name;
         this.comm = comm;
         this.onClientShutDown = onClientShutDown;
     }

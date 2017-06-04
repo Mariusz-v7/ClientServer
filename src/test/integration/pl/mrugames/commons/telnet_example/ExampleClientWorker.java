@@ -2,6 +2,7 @@ package pl.mrugames.commons.telnet_example;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.commons.client.ClientInfo;
 import pl.mrugames.commons.client.ClientWorker;
 import pl.mrugames.commons.client.Comm;
 
@@ -17,11 +18,11 @@ public class ExampleClientWorker implements ClientWorker {
 
     private volatile Thread thisThread;
 
-    public ExampleClientWorker(String name, Comm<String, String> comm, Runnable shutdownSwitch, Runnable onShutdownCommand) {
-        this.name = name;
+    public ExampleClientWorker(Comm<String, String> comm, Runnable shutdownSwitch, Runnable onShutdownCommand, ClientInfo clientInfo) {
         this.comm = comm;
         this.shutdownSwitch = shutdownSwitch;
         this.onShutdownCommand = onShutdownCommand;
+        this.name = clientInfo.getName();
     }
 
     @Override
