@@ -4,6 +4,20 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 public class ClientInfo {
+    private final static ThreadLocal<ClientInfo> clientInfo = new ThreadLocal<>();
+
+    public static ClientInfo getClientInfo() {
+        return clientInfo.get();
+    }
+
+    static void setClientInfo(ClientInfo value) {
+        clientInfo.set(value);
+    }
+
+    static void destroy() {
+        clientInfo.remove();
+    }
+
     private final String name;
     private final InetAddress remote;
     private final int remotePort;
