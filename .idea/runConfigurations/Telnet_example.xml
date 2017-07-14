@@ -2,11 +2,11 @@
   <configuration default="false" name="Telnet example" type="Application" factoryName="Application" singleton="true">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
       <pattern>
-        <option name="PATTERN" value="pl.mrugames.commons.telnet_example.*" />
+        <option name="PATTERN" value="pl.mrugames.client_server.telnet_example.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
-    <option name="MAIN_CLASS_NAME" value="pl.mrugames.commons.telnet_example.Main" />
+    <option name="MAIN_CLASS_NAME" value="pl.mrugames.client_server.telnet_example.Main" />
     <option name="VM_PARAMETERS" value="" />
     <option name="PROGRAM_PARAMETERS" value="10000" />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />

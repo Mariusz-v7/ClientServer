@@ -2,11 +2,11 @@
   <configuration default="false" name="WebSocket server" type="Application" factoryName="Application">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea">
       <pattern>
-        <option name="PATTERN" value="pl.mrugames.commons.websocket_server.*" />
+        <option name="PATTERN" value="pl.mrugames.client_server.websocket_server.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
-    <option name="MAIN_CLASS_NAME" value="pl.mrugames.commons.websocket_server.Main" />
+    <option name="MAIN_CLASS_NAME" value="pl.mrugames.client_server.websocket_server.Main" />
     <option name="VM_PARAMETERS" value="" />
     <option name="PROGRAM_PARAMETERS" value="10002" />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$" />
