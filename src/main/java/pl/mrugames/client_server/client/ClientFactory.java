@@ -157,7 +157,7 @@ public class ClientFactory<WorldIn extends Serializable, WorldOut extends Serial
     private Thread factory(Runnable runnable) {
         Thread thread = new Thread(runnable, "client-factory-pool-" + clientName);
         thread.setUncaughtExceptionHandler((t, e) -> {
-            logger.error("[{}] Error in client thread, {}", t.getName(), e.getMessage());
+            logger.error("[{}] Error in client thread, {}", t.getName(), e.getMessage(), e);
             t.interrupt();
         });
         return thread;
