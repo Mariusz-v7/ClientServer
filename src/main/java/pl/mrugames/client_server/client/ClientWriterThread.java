@@ -82,9 +82,13 @@ class ClientWriterThread<Input, Output extends Serializable> implements Runnable
                 }
 
                 if (frame != null) {
+                    logger.debug("[{}] sending fame: {}", name, frame);
                     Optional<Output> transformed = filterProcessor.filter(frame, filters);
                     if (transformed.isPresent()) {
+                        logger.debug("[{}] transformed fame: {}", name, transformed.get());
                         clientWriter.next(transformed.get());
+                    } else {
+                        logger.debug("[{}] frame transformed to null: ", name);
                     }
                 } else {
                     throw new TimeoutException("No frames to send since " + timeout + " " + timeoutUnit);

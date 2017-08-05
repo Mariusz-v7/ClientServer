@@ -62,12 +62,17 @@ class ClientReaderThread<Input extends Serializable, Output> implements Runnable
             while (!interrupted && !Thread.currentThread().isInterrupted()) {
                 Input frame = clientReader.next();
                 if (frame == null) {
+                    logger.debug("[{}] received null, closing: ", name);
                     break;
                 }
 
+                logger.debug("[{}] received frame: ", name, frame);
                 Optional<Output> transformed = filterProcessor.filter(frame, filters);
                 if (transformed.isPresent()) {
+                    logger.debug("[{}] transformed frame: ", name, transformed.get());
                     received.add(transformed.get());
+                } else {
+                    logger.debug("[{}] frame transformed to null: ", name);
                 }
             }
         } catch (EOFException | SocketException e) {
