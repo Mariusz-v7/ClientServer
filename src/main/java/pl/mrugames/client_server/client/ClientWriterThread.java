@@ -88,7 +88,7 @@ class ClientWriterThread<Input, Output extends Serializable> implements Runnable
                         logger.debug("[{}] transformed fame: {}", name, transformed.get());
                         clientWriter.next(transformed.get());
                     } else {
-                        logger.debug("[{}] frame transformed to null: ", name);
+                        logger.debug("[{}] frame transformed to null", name);
                     }
                 } else {
                     throw new TimeoutException("No frames to send since " + timeout + " " + timeoutUnit);

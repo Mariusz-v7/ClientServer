@@ -66,13 +66,13 @@ class ClientReaderThread<Input extends Serializable, Output> implements Runnable
                     break;
                 }
 
-                logger.debug("[{}] received frame: ", name, frame);
+                logger.debug("[{}] received frame: {}", name, frame);
                 Optional<Output> transformed = filterProcessor.filter(frame, filters);
                 if (transformed.isPresent()) {
-                    logger.debug("[{}] transformed frame: ", name, transformed.get());
+                    logger.debug("[{}] received transformed frame: {}", name, transformed.get());
                     received.add(transformed.get());
                 } else {
-                    logger.debug("[{}] frame transformed to null: ", name);
+                    logger.debug("[{}] frame transformed to null", name);
                 }
             }
         } catch (EOFException | SocketException e) {
