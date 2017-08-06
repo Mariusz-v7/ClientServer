@@ -4,7 +4,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 public class ClientInfo {
-    private final static ThreadLocal<ClientInfo> clientInfo = new ThreadLocal<>();
+    private final static ThreadLocal<ClientInfo> clientInfo = new InheritableThreadLocal<>();
 
     public static ClientInfo getClientInfo() {
         return clientInfo.get();
