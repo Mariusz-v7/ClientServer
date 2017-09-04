@@ -1,5 +1,7 @@
 package pl.mrugames.client_server.client.io;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
 
 import java.io.BufferedInputStream;
@@ -8,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class WebSocketReader implements ClientReader<WebSocketFrame> {
+    private final static Logger logger = LoggerFactory.getLogger(WebSocketReader.class);
     private final static int MAX_PAYLOAD_SIZE = 1_000_000;
     private final DataInputStream stream;
 
@@ -25,7 +28,9 @@ public class WebSocketReader implements ClientReader<WebSocketFrame> {
         }
 
         if ((first & 0x70) != 0) {
-            throw new IllegalStateException("Reserved bits should be 0");
+//            throw new IllegalStateException("Reserved bits should be 0");
+            logger.warn("Reserved bits should be 0, but were {}. Returning null.", first & 0x70);
+            return null;
         }
 
         byte opcode = (byte) (first & 0x0F);

@@ -1,11 +1,12 @@
 package pl.mrugames.client_server.client.filters;
 
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
+import pl.mrugames.client_server.websocket.WebsocketConstatns;
 
 import javax.annotation.Nullable;
 
 public class WebSocketFrameToStringFilter implements Filter<WebSocketFrame, String> {
-    private static WebSocketFrameToStringFilter instance;
+    private static volatile WebSocketFrameToStringFilter instance;
 
     public synchronized static WebSocketFrameToStringFilter getInstance() {
         if (instance == null) {
@@ -22,6 +23,10 @@ public class WebSocketFrameToStringFilter implements Filter<WebSocketFrame, Stri
     public String filter(@Nullable WebSocketFrame webSocketFrame) {
         if (webSocketFrame == null) {
             return null;
+        }
+
+        if (webSocketFrame.getFrameType() == WebSocketFrame.FrameType.CLOSE) {
+            return WebsocketConstatns.WEBSOCKET_CLOSE_FRAME;
         }
 
         return new String(webSocketFrame.getPayload());
