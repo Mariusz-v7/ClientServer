@@ -25,7 +25,7 @@ public class Host extends Thread {
 
     @Override
     public void run() {
-        logger.info("[Host {}] Host has started!", getName());
+        logger.info("[Host {}] Host has started! Listening on port: {}!", getName(), port);
 
         try (ServerSocket socket = new ServerSocket(port)) {
             setSocket(socket);
