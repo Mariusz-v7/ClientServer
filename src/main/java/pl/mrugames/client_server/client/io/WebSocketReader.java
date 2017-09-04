@@ -28,7 +28,6 @@ public class WebSocketReader implements ClientReader<WebSocketFrame> {
         }
 
         if ((first & 0x70) != 0) {
-//            throw new IllegalStateException("Reserved bits should be 0");
             logger.warn("Reserved bits should be 0, but were {}. Returning null.", first & 0x70);
             return null;
         }

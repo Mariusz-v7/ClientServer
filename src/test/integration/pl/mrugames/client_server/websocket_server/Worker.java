@@ -2,7 +2,7 @@ package pl.mrugames.client_server.websocket_server;
 
 import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
-import pl.mrugames.client_server.websocket.WebsocketConstatns;
+import pl.mrugames.client_server.websocket.WebsocketConstants;
 
 import java.util.concurrent.TimeUnit;
 
@@ -29,13 +29,13 @@ public class Worker implements ClientWorker {
             do {
                 message = comm.receive(30, TimeUnit.SECONDS);
 
-                if (message.equals(WebsocketConstatns.WEBSOCKET_CLOSE_FRAME)) {
-                    comm.send(WebsocketConstatns.WEBSOCKET_CLOSE_FRAME);
+                if (message.equals(WebsocketConstants.WEBSOCKET_CLOSE_FRAME)) {
+                    comm.send(WebsocketConstants.WEBSOCKET_CLOSE_FRAME);
                     break;
                 }
 
                 if (message.equals("CLOSE")) { // init close on server side
-                    comm.send(WebsocketConstatns.WEBSOCKET_CLOSE_FRAME);
+                    comm.send(WebsocketConstants.WEBSOCKET_CLOSE_FRAME);
                     continue;
                 }
 

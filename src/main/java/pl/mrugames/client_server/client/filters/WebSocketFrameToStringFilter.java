@@ -1,7 +1,7 @@
 package pl.mrugames.client_server.client.filters;
 
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
-import pl.mrugames.client_server.websocket.WebsocketConstatns;
+import pl.mrugames.client_server.websocket.WebsocketConstants;
 
 import javax.annotation.Nullable;
 
@@ -26,7 +26,7 @@ public class WebSocketFrameToStringFilter implements Filter<WebSocketFrame, Stri
         }
 
         if (webSocketFrame.getFrameType() == WebSocketFrame.FrameType.CLOSE) {
-            return WebsocketConstatns.WEBSOCKET_CLOSE_FRAME;
+            return WebsocketConstants.WEBSOCKET_CLOSE_FRAME;
         }
 
         return new String(webSocketFrame.getPayload());
