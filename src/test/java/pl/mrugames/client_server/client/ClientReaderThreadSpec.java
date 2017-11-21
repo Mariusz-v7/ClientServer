@@ -1,9 +1,9 @@
 package pl.mrugames.client_server.client;
 
 import com.codahale.metrics.Counter;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.io.ClientReader;
 
@@ -14,7 +14,7 @@ import java.util.concurrent.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-public class ClientReaderThreadSpec {
+class ClientReaderThreadSpec {
     private ClientReaderThread readerThread;
     private BlockingQueue<String> queue;
     private ClientReader<String> clientReader;
@@ -23,9 +23,9 @@ public class ClientReaderThreadSpec {
     private String frame = "123";
     private FilterProcessor filterProcessor;
 
-    @Before
+    @BeforeEach
     @SuppressWarnings("unchecked")
-    public void before() throws Exception {
+    void before() throws Exception {
         latch = new CountDownLatch(1);
 
         queue = spy(new LinkedBlockingQueue<>());
@@ -48,32 +48,32 @@ public class ClientReaderThreadSpec {
                 .filter(any(), any());
     }
 
-    @After
-    public void after() throws InterruptedException {
+    @AfterEach
+    void after() throws InterruptedException {
         executor.shutdownNow();
         executor.awaitTermination(1, TimeUnit.SECONDS);
     }
 
     @Test
-    public void givenStreamReturnsFrame_whenRun_thenFrameIsAddedToQueue() throws InterruptedException {
+    void givenStreamReturnsFrame_whenRun_thenFrameIsAddedToQueue() throws InterruptedException {
         executor.submit(readerThread);
         latch.await();
         assertThat(queue).contains(frame);
     }
 
-    @Test(timeout = 1000)
-    public void whenInterrupt_thenLoopShouldExit() {
+    @Test
+    void whenInterrupt_thenLoopShouldExit() {
         readerThread.interrupt();
         readerThread.run();
     }
 
-    @Test(timeout = 1000)
-    public void givenThreadNotStarted_whenJoin_thenExitImmediately() throws InterruptedException {
+    @Test
+    void givenThreadNotStarted_whenJoin_thenExitImmediately() throws InterruptedException {
         readerThread.join();
     }
 
-    @Test(timeout = 1000)
-    public void whenJoin_thenAwaitToExitFromRun() throws InterruptedException {
+    @Test
+    void whenJoin_thenAwaitToExitFromRun() throws InterruptedException {
         CountDownLatch runSignal = new CountDownLatch(1);
         doAnswer(a -> {
             runSignal.countDown();

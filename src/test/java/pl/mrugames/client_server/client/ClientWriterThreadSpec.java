@@ -1,15 +1,9 @@
 package pl.mrugames.client_server.client;
 
 import com.codahale.metrics.Counter;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.io.ClientWriter;
 
@@ -18,10 +12,11 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.*;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-@RunWith(BlockJUnit4ClassRunner.class)
-public class ClientWriterThreadSpec {
+class ClientWriterThreadSpec {
     private ClientWriterThread clientWriterThread;
     private OutputStream finalStream;
     private BlockingQueue<String> queue;
@@ -31,12 +26,9 @@ public class ClientWriterThreadSpec {
     private String frame = "123";
     private FilterProcessor filterProcessor;
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
-    @Before
+    @BeforeEach
     @SuppressWarnings("unchecked")
-    public void before() throws Exception {
+    void before() throws Exception {
         latch = new CountDownLatch(1);
 
         finalStream = mock(OutputStream.class);
@@ -66,40 +58,30 @@ public class ClientWriterThreadSpec {
                 .filter(any(), any());
     }
 
-    @After
-    public void after() throws InterruptedException {
+    @AfterEach
+    void after() throws InterruptedException {
         executor.shutdownNow();
         executor.awaitTermination(1, TimeUnit.SECONDS);
     }
 
     @Test
-    public void givenQueueIsNotEmpty_whenRun_thenNextIsCalledWithFinalStream() throws Exception {
+    void givenQueueIsNotEmpty_whenRun_thenNextIsCalledWithFinalStream() throws Exception {
         executor.execute(clientWriterThread);
         latch.await();
         verify(clientWriter).next(frame);
     }
 
     @Test
-    public void givenQueueIsEmpty_whenRun_thenTimeoutException() {
+    void givenQueueIsEmpty_whenRun_thenTimeoutException() {
         queue.poll();
-        expectedException.expect(IOExceptionWrapper.class);
-        expectedException.expectCause(new BaseMatcher<Throwable>() {
-            @Override
-            public void describeTo(Description description) {
-            }
 
-            @Override
-            public boolean matches(Object item) {
-                return item instanceof TimeoutException;
-            }
-        });
-
-        clientWriterThread.run();
+        IOExceptionWrapper wrapper = assertThrows(IOExceptionWrapper.class, () -> clientWriterThread.run());
+        assertThat(wrapper.getCause()).isInstanceOf(TimeoutException.class);
     }
 
-    @Test(timeout = 1000)
+    @Test
     @SuppressWarnings("unchecked")
-    public void whenInterrupt_thenLoopShouldExit() {
+    void whenInterrupt_thenLoopShouldExit() {
         clientWriterThread = new ClientWriterThread("Writer", queue, clientWriter,
                 1000, TimeUnit.MILLISECONDS,
                 Collections.emptyList(), filterProcessor,
@@ -109,13 +91,13 @@ public class ClientWriterThreadSpec {
         clientWriterThread.run();
     }
 
-    @Test(timeout = 1000)
-    public void givenThreadNotStarted_whenJoin_thenExitImmediately() throws InterruptedException {
+    @Test
+    void givenThreadNotStarted_whenJoin_thenExitImmediately() throws InterruptedException {
         clientWriterThread.join();
     }
 
-    @Test(timeout = 1000)
-    public void whenJoin_thenAwaitToExitFromRun() throws InterruptedException {
+    @Test
+    void whenJoin_thenAwaitToExitFromRun() throws InterruptedException {
         CountDownLatch runSignal = new CountDownLatch(1);
         doAnswer(a -> {
             runSignal.countDown();

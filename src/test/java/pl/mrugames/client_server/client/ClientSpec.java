@@ -1,22 +1,17 @@
 package pl.mrugames.client_server.client;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.*;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-@RunWith(BlockJUnit4ClassRunner.class)
-public class ClientSpec {
+class ClientSpec {
     private Client client;
     private Socket socket;
     private CountDownLatch executionLatch;
@@ -24,12 +19,9 @@ public class ClientSpec {
     private ClientWriterThread writer;
     private ClientReaderThread reader;
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
-    @Before
+    @BeforeEach
     @SuppressWarnings("deprecation")
-    public void before() throws InterruptedException {
+    void before() throws InterruptedException {
         executionLatch = new CountDownLatch(1);
 
         writer = mock(ClientWriterThread.class);
@@ -47,8 +39,8 @@ public class ClientSpec {
 
     }
 
-    @Test(timeout = 1000)
-    public void givenReaderThreadStops_whenInit_thenReturnedFutureFinishes() throws ExecutionException, InterruptedException {
+    @Test
+    void givenReaderThreadStops_whenInit_thenReturnedFutureFinishes() throws ExecutionException, InterruptedException {
         doNothing().when(reader).run();
 
         doAnswer(a -> {
@@ -59,8 +51,8 @@ public class ClientSpec {
         client.init().get();
     }
 
-    @Test(timeout = 1000)
-    public void givenWriterThreadStops_whenInit_thenReturnedFutureFinishes() throws ExecutionException, InterruptedException {
+    @Test
+    void givenWriterThreadStops_whenInit_thenReturnedFutureFinishes() throws ExecutionException, InterruptedException {
         doNothing().when(writer).run();
 
         doAnswer(a -> {
@@ -72,13 +64,13 @@ public class ClientSpec {
     }
 
     @Test
-    public void whenInit_thenIOTasksAreSubmittedToTheIOExecutor() throws ExecutionException, InterruptedException {
+    void whenInit_thenIOTasksAreSubmittedToTheIOExecutor() throws ExecutionException, InterruptedException {
         client.init().get();
         verify(ioExecutor, times(2)).execute(any());
     }
 
     @Test
-    public void whenInit_thenIOThreadsAreRun() throws ExecutionException, InterruptedException {
+    void whenInit_thenIOThreadsAreRun() throws ExecutionException, InterruptedException {
         CountDownLatch countDownLatch = new CountDownLatch(2);
 
         doAnswer(a -> {
@@ -96,24 +88,9 @@ public class ClientSpec {
         countDownLatch.await();
     }
 
-    private BaseMatcher<Throwable> getBaseMatcherForNestedException(String exceptionMessage) {
-        return new BaseMatcher<Throwable>() {
-            @Override
-            public boolean matches(Object item) {
-                return item instanceof RuntimeException && ((RuntimeException) item).getMessage().equals(exceptionMessage);
-            }
-
-            @Override
-            public void describeTo(Description description) {}
-        };
-    }
-
     @Test
-    public void givenReaderThreadThrowsException_whenInit_thenFutureEndsWithException() throws ExecutionException, InterruptedException {
+    void givenReaderThreadThrowsException_whenInit_thenFutureEndsWithException() throws ExecutionException, InterruptedException {
         String msg = "READER EXCEPTION";
-
-        expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(getBaseMatcherForNestedException(msg));
 
         doAnswer(a -> {
             TimeUnit.DAYS.sleep(1);
@@ -121,15 +98,14 @@ public class ClientSpec {
         }).when(writer).run();
 
         doThrow(new RuntimeException(msg)).when(reader).run();
-        client.init().get();
+
+        ExecutionException executionException = assertThrows(ExecutionException.class, () -> client.init().get());
+        assertThat(executionException.getCause().getMessage()).isEqualTo(msg);
     }
 
     @Test
-    public void givenWriterThreadThrowsException_whenInit_thenFutureEndsWithException() throws ExecutionException, InterruptedException {
+    void givenWriterThreadThrowsException_whenInit_thenFutureEndsWithException() throws ExecutionException, InterruptedException {
         String msg = "WRITER EXCEPTION";
-
-        expectedException.expect(ExecutionException.class);
-        expectedException.expectCause(getBaseMatcherForNestedException(msg));
 
         doAnswer(a -> {
             TimeUnit.DAYS.sleep(1);
@@ -137,7 +113,9 @@ public class ClientSpec {
         }).when(reader).run();
 
         doThrow(new RuntimeException(msg)).when(writer).run();
-        client.init().get();
+
+        ExecutionException executionException = assertThrows(ExecutionException.class, () -> client.init().get());
+        assertThat(executionException.getCause().getMessage()).isEqualTo(msg);
     }
 
     private void sleepThread(Runnable runnable) {
@@ -152,7 +130,7 @@ public class ClientSpec {
     }
 
     @Test
-    public void givenWriterThreadThrowsException_whenRun_thenCallOnCompleteWithException() {
+    void givenWriterThreadThrowsException_whenRun_thenCallOnCompleteWithException() {
         RuntimeException runtimeException = new RuntimeException("SOME EXCEPTION");
 
         sleepThread(reader);
@@ -164,7 +142,7 @@ public class ClientSpec {
     }
 
     @Test
-    public void givenReaderThreadThrowsException_whenRun_thenCallOnCompleteWithException() {
+    void givenReaderThreadThrowsException_whenRun_thenCallOnCompleteWithException() {
         RuntimeException runtimeException = new RuntimeException("SOME EXCEPTION");
 
         sleepThread(writer);
@@ -176,7 +154,7 @@ public class ClientSpec {
     }
 
     @Test
-    public void givenWriterThreadEndsException_whenRun_thenCallOnCompleteWithoutException() {
+    void givenWriterThreadEndsException_whenRun_thenCallOnCompleteWithoutException() {
         sleepThread(reader);
         doNothing().when(writer).run();
 
@@ -186,7 +164,7 @@ public class ClientSpec {
     }
 
     @Test
-    public void givenReaderThreadEndsException_whenRun_thenCallOnCompleteWithoutException() {
+    void givenReaderThreadEndsException_whenRun_thenCallOnCompleteWithoutException() {
         sleepThread(writer);
         doNothing().when(reader).run();
 
@@ -196,43 +174,43 @@ public class ClientSpec {
     }
 
     @Test
-    public void whenOnCompleteWithException_thenCallClose() {
+    void whenOnCompleteWithException_thenCallClose() {
         client.onComplete(null, new Exception());
         verify(client).close();
     }
 
     @Test
-    public void whenOnCompleteWithoutException_thenCallClose() {
+    void whenOnCompleteWithoutException_thenCallClose() {
         client.onComplete(null, null);
         verify(client).close();
     }
 
     @Test
-    public void whenClose_thenInterruptReader() {
+    void whenClose_thenInterruptReader() {
         client.close();
         verify(reader).interrupt();
     }
 
     @Test
-    public void whenClose_thenInterruptWriter() {
+    void whenClose_thenInterruptWriter() {
         client.close();
         verify(writer).interrupt();
     }
 
     @Test
-    public void whenClose_thenSocketClose() throws IOException {
+    void whenClose_thenSocketClose() throws IOException {
         client.close();
         verify(socket).close();
     }
 
     @Test
-    public void whenClose_thenWriterJoin() throws InterruptedException {
+    void whenClose_thenWriterJoin() throws InterruptedException {
         client.close();
         verify(writer).join();
     }
 
     @Test
-    public void whenClose_thenReaderJoin() throws InterruptedException {
+    void whenClose_thenReaderJoin() throws InterruptedException {
         client.close();
         verify(reader).join();
     }

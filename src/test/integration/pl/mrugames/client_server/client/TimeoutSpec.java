@@ -2,11 +2,9 @@ package pl.mrugames.client_server.client;
 
 import com.codahale.metrics.MetricRegistry;
 import org.assertj.core.data.Percentage;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.HealthCheckManager;
 import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
@@ -29,8 +27,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
-@RunWith(BlockJUnit4ClassRunner.class)
-public class TimeoutSpec {
+class TimeoutSpec {
     private Host host;
     private int port = 10000;
     private int timeoutSeconds = 10;
@@ -38,8 +35,8 @@ public class TimeoutSpec {
     private CountDownLatch clientConnected;
     private Runnable onClientWorkerCreate;
 
-    @Before
-    public void before() throws InterruptedException {
+    @BeforeEach
+    void before() throws InterruptedException {
         HealthCheckManager.setMetricRegistry(new MetricRegistry());
         clientConnected = new CountDownLatch(1);
 
@@ -70,8 +67,8 @@ public class TimeoutSpec {
         host.waitForSocketOpen();
     }
 
-    @After
-    public void after() throws InterruptedException {
+    @AfterEach
+    void after() throws InterruptedException {
         host.interrupt();
         host.join();
     }
@@ -104,8 +101,8 @@ public class TimeoutSpec {
         executor.shutdown();
     }
 
-    @Test(timeout = 1000)
-    public void whenNewClientConnects_thenClientWorkerIsNotNull() throws IOException, InterruptedException {
+    @Test
+    void whenNewClientConnects_thenClientWorkerIsNotNull() throws IOException, InterruptedException {
         Socket socket = new Socket("localhost", port);
         clientConnected.await();
 
@@ -114,7 +111,7 @@ public class TimeoutSpec {
     }
 
     @Test
-    public void givenNewClientConnects_whenNoReadNoWriteForGivenTime_thenClientIsShutDown() throws IOException, InterruptedException {
+    void givenNewClientConnects_whenNoReadNoWriteForGivenTime_thenClientIsShutDown() throws IOException, InterruptedException {
         Socket socket = new Socket("localhost", port);
         clientConnected.await();
 
@@ -129,7 +126,7 @@ public class TimeoutSpec {
     }
 
     @Test
-    public void givenNewClientConnectsAndWritesEverySecond_whenNoResponseForGivenTime_thenClientIsShutDown() throws IOException, InterruptedException {
+    void givenNewClientConnectsAndWritesEverySecond_whenNoResponseForGivenTime_thenClientIsShutDown() throws IOException, InterruptedException {
         Socket socket = new Socket("localhost", port);
         clientConnected.await();
 
@@ -146,7 +143,7 @@ public class TimeoutSpec {
     }
 
     @Test
-    public void givenNewClientConnectsAndDoesNotWriteAnythingAndHostSendsEveryOneSecond_whenTimeoutElapses_thenClientIsShutDown() throws InterruptedException, IOException {
+    void givenNewClientConnectsAndDoesNotWriteAnythingAndHostSendsEveryOneSecond_whenTimeoutElapses_thenClientIsShutDown() throws InterruptedException, IOException {
         mockHostToSendEverySecond();
 
         Socket socket = new Socket("localhost", port);
@@ -163,7 +160,7 @@ public class TimeoutSpec {
     }
 
     @Test
-    public void givenNewClientConnects_whenBothClientAndHostKeepCommunicating_thenNoTimeout() throws IOException, InterruptedException {
+    void givenNewClientConnects_whenBothClientAndHostKeepCommunicating_thenNoTimeout() throws IOException, InterruptedException {
         mockHostToSendEverySecond();
 
         Socket socket = new Socket("localhost", port);

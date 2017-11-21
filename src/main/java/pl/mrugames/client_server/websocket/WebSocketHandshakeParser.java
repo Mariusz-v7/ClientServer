@@ -1,12 +1,17 @@
 package pl.mrugames.client_server.websocket;
 
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.digest.DigestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class WebSocketHandshakeParser {
+    private static final Logger logger = LoggerFactory.getLogger(WebSocketHandshakeParser.class);
     private static WebSocketHandshakeParser instance;
 
     public static synchronized WebSocketHandshakeParser getInstance() {
@@ -43,7 +48,18 @@ public class WebSocketHandshakeParser {
     }
 
     String computeResponseKey(String requestKey) {
-        byte[] sha1 = DigestUtils.sha1(requestKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
-        return Base64.encodeBase64String(sha1);
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
+            messageDigest.reset();
+
+            String key = requestKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+            messageDigest.update(key.getBytes("UTF-8"));
+
+            return Base64.getEncoder().encodeToString(messageDigest.digest());
+        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+            logger.error(e.getMessage(), e);
+            return e.getMessage();
+        }
+
     }
 }

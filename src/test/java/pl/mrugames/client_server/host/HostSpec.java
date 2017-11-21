@@ -1,10 +1,8 @@
 package pl.mrugames.client_server.host;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
@@ -15,16 +13,15 @@ import java.util.concurrent.CountDownLatch;
 
 import static org.mockito.Mockito.*;
 
-@RunWith(BlockJUnit4ClassRunner.class)
-public class HostSpec {
+class HostSpec {
     private Host host;
     private ServerSocket serverSocket;
     private ClientFactory clientFactory;
     private Socket socket;
     private CountDownLatch latch;
 
-    @Before
-    public void before() throws IOException {
+    @BeforeEach
+    void before() throws IOException {
         latch = new CountDownLatch(1);
 
         clientFactory = mock(ClientFactory.class);
@@ -41,8 +38,8 @@ public class HostSpec {
 
     }
 
-    @After
-    public void after() throws InterruptedException {
+    @AfterEach
+    void after() throws InterruptedException {
         host.interrupt();
         host.join();
 
@@ -51,8 +48,8 @@ public class HostSpec {
         }
     }
 
-    @Test(timeout = 1000)
-    public void whenNexMethodThrowsException_thenThreadLoopIsNotBroken() throws IOException, InterruptedException, BrokenBarrierException {
+    @Test
+    void whenNexMethodThrowsException_thenThreadLoopIsNotBroken() throws IOException, InterruptedException, BrokenBarrierException {
         CountDownLatch latch = new CountDownLatch(3);
 
         doAnswer(a -> {
@@ -65,8 +62,8 @@ public class HostSpec {
         latch.await();
     }
 
-    @Test(timeout = 1000)
-    public void givenHostIsRunWithRealSocket_whenShutDown_thenHostIsShutdownGracefully() throws IOException, InterruptedException {
+    @Test
+    void givenHostIsRunWithRealSocket_whenShutDown_thenHostIsShutdownGracefully() throws IOException, InterruptedException {
         host.start();
 
         latch.await();
@@ -76,7 +73,7 @@ public class HostSpec {
     }
 
     @Test
-    public void whenRun_thenSetSocket() throws InterruptedException, IOException {
+    void whenRun_thenSetSocket() throws InterruptedException, IOException {
         host.start();
 
         latch.await();
@@ -88,13 +85,13 @@ public class HostSpec {
     }
 
     @Test
-    public void whenNext_thenSocketAccept() throws IOException {
+    void whenNext_thenSocketAccept() throws IOException {
         host.next(serverSocket);
         verify(serverSocket).accept();
     }
 
     @Test
-    public void whenSocketAccept_thenClientFactoryIsCalled() throws IOException {
+    void whenSocketAccept_thenClientFactoryIsCalled() throws IOException {
         doReturn(socket).when(serverSocket).accept();
         host.next(serverSocket);
 
@@ -102,7 +99,7 @@ public class HostSpec {
     }
 
     @Test
-    public void whenInterrupt_thenSocketClose() throws IOException {
+    void whenInterrupt_thenSocketClose() throws IOException {
         host.setSocket(serverSocket);
         host.interrupt();
         verify(serverSocket).close();
