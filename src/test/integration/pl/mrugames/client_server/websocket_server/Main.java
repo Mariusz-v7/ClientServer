@@ -6,12 +6,12 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.HealthCheckManager;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.client.helpers.ClientFactories;
-import pl.mrugames.client_server.host.Host;
+import pl.mrugames.client_server.host.HostManager;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
-    private static Host host;
+    private static HostManager hostManager = new HostManager();
 
     public static void main(String... args) throws InterruptedException {
         if (args.length != 1) {
@@ -28,15 +28,16 @@ public class Main {
         ClientFactory clientFactory = ClientFactories.createClientFactoryForWSServer(
                 "WS Server", 60, new WebSocketWorkerFactory(Main::shutdown));
 
-        host = new Host("Main Host", port, clientFactory);
-
-        host.start();
-        host.join();
+        hostManager.newHost("Main Host", port, clientFactory);
 
         logger.info("Main finished...");
     }
 
     public static void shutdown() {
-        host.interrupt();
+        try {
+            hostManager.shutdown();
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage(), e);
+        }
     }
 }

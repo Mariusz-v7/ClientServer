@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.HealthCheckManager;
 import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
-import pl.mrugames.client_server.host.Host;
+import pl.mrugames.client_server.host.HostManager;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -28,15 +28,17 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 class TimeoutSpec {
-    private Host host;
     private int port = 10000;
     private int timeoutSeconds = 10;
     private SimpleClientWorker clientWorker;
     private CountDownLatch clientConnected;
     private Runnable onClientWorkerCreate;
+    private HostManager hostManager;
 
     @BeforeEach
     void before() throws InterruptedException {
+        hostManager = new HostManager();
+
         HealthCheckManager.setMetricRegistry(new MetricRegistry());
         clientConnected = new CountDownLatch(1);
 
@@ -62,15 +64,12 @@ class TimeoutSpec {
         }).when(workerFactory).create(any(), any(), any());
 
 
-        host = new Host("Timeout tests", port, clientFactory);
-        host.start();
-        host.waitForSocketOpen();
+        hostManager.newHost("Timeout tests", port, clientFactory);
     }
 
     @AfterEach
     void after() throws InterruptedException {
-        host.interrupt();
-        host.join();
+        hostManager.shutdown();
     }
 
     private void mockHostToSendEverySecond() {

@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.concurrent.CountDownLatch;
 
-public class Host extends Thread {
+class Host extends Thread {
     private final static Logger logger = LoggerFactory.getLogger(Host.class);
 
     private final int port;
@@ -17,7 +17,7 @@ public class Host extends Thread {
 
     private volatile ServerSocket socket;
 
-    public Host(String name, int port, ClientFactory clientFactory) {
+    Host(String name, int port, ClientFactory clientFactory) {
         super(name);
         this.port = port;
         this.clientFactory = clientFactory;
