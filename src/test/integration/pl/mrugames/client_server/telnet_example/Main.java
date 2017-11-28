@@ -7,6 +7,7 @@ import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.client.helpers.ClientFactoryBuilder;
 import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
+import pl.mrugames.client_server.host.FailedToStartException;
 import pl.mrugames.client_server.host.HostManager;
 
 public class Main {
@@ -14,7 +15,7 @@ public class Main {
     private static HostManager hostManager = new HostManager();
     private static Thread reporter = HealthCheckReporter.createAndStart();
 
-    public static void main(String... args) throws InterruptedException {
+    public static void main(String... args) throws InterruptedException, FailedToStartException {
         if (args.length != 1) {
             logger.error("Please provide port");
             return;

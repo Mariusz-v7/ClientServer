@@ -6,14 +6,15 @@ import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 class Host extends Thread {
     private final static Logger logger = LoggerFactory.getLogger(Host.class);
 
     private final int port;
     private final ClientFactory clientFactory;
-    private final CountDownLatch socketOpenSignal = new CountDownLatch(1);
+    private final CompletableFuture<Boolean> startResult;
 
     private volatile ServerSocket socket;
 
@@ -21,6 +22,7 @@ class Host extends Thread {
         super(name);
         this.port = port;
         this.clientFactory = clientFactory;
+        this.startResult = new CompletableFuture<>();
     }
 
     @Override
@@ -29,7 +31,7 @@ class Host extends Thread {
 
         try (ServerSocket socket = new ServerSocket(port)) {
             setSocket(socket);
-            socketOpenSignal.countDown();
+            startResult.complete(true);
 
             while (!isInterrupted()) {
                 try {
@@ -47,6 +49,10 @@ class Host extends Thread {
             logger.error("[Host {}] Failed to create socket: {}", getName(), e.getMessage());
         } finally {
             clientFactory.shutdown();
+
+            if (!startResult.isDone()) {
+                startResult.complete(false);
+            }
         }
 
         logger.info("[Host {}] Host has been shutdown!", getName());
@@ -75,12 +81,12 @@ class Host extends Thread {
         this.socket = socket;
     }
 
-    public void waitForSocketOpen() throws InterruptedException {
-        socketOpenSignal.await();
-    }
-
-    public void interruptAndJoin() throws InterruptedException {
-        interrupt();
-        join();
+    boolean waitForSocketOpen() throws InterruptedException {
+        try {
+            return startResult.get();
+        } catch (ExecutionException e) {
+            logger.error(e.getMessage(), e);
+            return false;
+        }
     }
 }

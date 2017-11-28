@@ -2,22 +2,25 @@ package pl.mrugames.client_server.host;
 
 import pl.mrugames.client_server.client.ClientFactory;
 
+import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class HostManager {
     private final List<Host> hosts;
 
     public HostManager() {
-        hosts = new CopyOnWriteArrayList<>();
+        hosts = new LinkedList<>();
     }
 
-    public synchronized void newHost(String name, int port, ClientFactory clientFactory) throws InterruptedException {
+    public synchronized void newHost(String name, int port, ClientFactory clientFactory) throws InterruptedException, FailedToStartException {
         Host host = new Host(name, port, clientFactory);
         host.start();
-        host.waitForSocketOpen();
+        boolean result = host.waitForSocketOpen();
+        if (!result) {
+            host.interrupt();
+            throw new FailedToStartException();
+        }
+
         hosts.add(host);
     }
 
