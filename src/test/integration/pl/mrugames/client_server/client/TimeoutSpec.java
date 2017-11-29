@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.HealthCheckManager;
 import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
-import pl.mrugames.client_server.host.FailedToStartException;
 import pl.mrugames.client_server.host.HostManager;
 
 import java.io.BufferedWriter;
@@ -37,7 +36,7 @@ class TimeoutSpec {
     private HostManager hostManager;
 
     @BeforeEach
-    void before() throws InterruptedException, FailedToStartException {
+    void before() throws InterruptedException, IOException {
         hostManager = new HostManager();
 
         HealthCheckManager.setMetricRegistry(new MetricRegistry());
@@ -69,7 +68,7 @@ class TimeoutSpec {
     }
 
     @AfterEach
-    void after() throws InterruptedException {
+    void after() throws InterruptedException, IOException {
         hostManager.shutdown();
     }
 

@@ -1,33 +1,44 @@
 package pl.mrugames.client_server.host;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientFactory;
 
+import java.io.IOException;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
 import java.util.LinkedList;
 import java.util.List;
 
-public class HostManager {
-    private final List<Host> hosts;
+public class HostManager implements Runnable {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public HostManager() {
-        hosts = new LinkedList<>();
+    final Selector selector;
+    final List<Host> hosts;
+
+    public HostManager() throws IOException {
+        this.selector = Selector.open();
+        this.hosts = new LinkedList<>();
     }
 
-    public synchronized void newHost(String name, int port, ClientFactory clientFactory) throws InterruptedException, FailedToStartException {
-        Host host = new Host(name, port, clientFactory);
-        host.start();
-        boolean result = host.waitForSocketOpen();
-        if (!result) {
-            host.interrupt();
-            throw new FailedToStartException();
+    public synchronized void newHost(String name, int port, ClientFactory clientFactory) throws IOException {
+        if (!selector.isOpen()) {
+            throw new HostManagerIshShutDownException();
         }
 
-        hosts.add(host);
+        hosts.add(new Host(name, port, clientFactory, ServerSocketChannel.open(), selector));
     }
 
-    public synchronized void shutdown() throws InterruptedException {
-        hosts.forEach(Host::interrupt);
-        for (Host host : hosts) {
-            host.join();
+    @Override
+    public void run() {
+        while (!Thread.currentThread().isInterrupted()) {
+
         }
+    }
+
+    public synchronized void shutdown() throws IOException {
+        selector.close();
+        hosts.forEach(Host::shutdown);
+        hosts.clear();
     }
 }

@@ -6,19 +6,22 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.HealthCheckManager;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.client.helpers.ClientFactories;
-import pl.mrugames.client_server.host.FailedToStartException;
 import pl.mrugames.client_server.host.HostManager;
+
+import java.io.IOException;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
-    private static HostManager hostManager = new HostManager();
+    private static HostManager hostManager;
 
-    public static void main(String... args) throws InterruptedException, FailedToStartException {
+    public static void main(String... args) throws InterruptedException, IOException {
         if (args.length != 1) {
             logger.error("Please provide port");
             return;
         }
+
+        hostManager = new HostManager();
 
         HealthCheckManager.setMetricRegistry(new MetricRegistry());
 
@@ -36,7 +39,7 @@ public class Main {
     public static void shutdown() {
         try {
             hostManager.shutdown();
-        } catch (InterruptedException e) {
+        } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
     }

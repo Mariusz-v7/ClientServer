@@ -5,88 +5,64 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
 
-class Host extends Thread {
+class Host {
     private final static Logger logger = LoggerFactory.getLogger(Host.class);
 
+    private final String name;
     private final int port;
     private final ClientFactory clientFactory;
-    private final CompletableFuture<Boolean> startResult;
+    private final ServerSocketChannel serverSocketChannel;
 
-    private volatile ServerSocket socket;
-
-    Host(String name, int port, ClientFactory clientFactory) {
-        super(name);
+    Host(String name, int port, ClientFactory clientFactory, ServerSocketChannel serverSocketChannel, Selector selector) throws IOException {
+        this.name = name;
         this.port = port;
         this.clientFactory = clientFactory;
-        this.startResult = new CompletableFuture<>();
+        this.serverSocketChannel = serverSocketChannel;
+
+        serverSocketChannel.configureBlocking(false);
+        serverSocketChannel.bind(new InetSocketAddress(port));
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+        logger.info("New Host has been created: {}", this);
+    }
+
+    String getName() {
+        return name;
+    }
+
+    int getPort() {
+        return port;
+    }
+
+    ClientFactory getClientFactory() {
+        return clientFactory;
+    }
+
+    ServerSocketChannel getServerSocketChannel() {
+        return serverSocketChannel;
+    }
+
+    void shutdown() {
+        try {
+            serverSocketChannel.close();
+        } catch (IOException e) {
+            logger.error("[{}] {}", name, e.getMessage(), e);
+        }
+
+        clientFactory.shutdown();
     }
 
     @Override
-    public void run() {
-        logger.info("[Host {}] Host has started! Listening on port: {}!", getName(), port);
-
-        try (ServerSocket socket = new ServerSocket(port)) {
-            setSocket(socket);
-            startResult.complete(true);
-
-            while (!isInterrupted()) {
-                try {
-                    next(socket);
-                } catch (Exception e) {
-                    logger.error("[Host {}] Failed to initialize client", getName());
-
-                    if (socket.isClosed()) {
-                        logger.error("[Host {}] ServerSocket is closed", getName());
-                        break;
-                    }
-                }
-            }
-        } catch (IOException e) {
-            logger.error("[Host {}] Failed to create socket: {}", getName(), e.getMessage());
-        } finally {
-            clientFactory.shutdown();
-
-            if (!startResult.isDone()) {
-                startResult.complete(false);
-            }
-        }
-
-        logger.info("[Host {}] Host has been shutdown!", getName());
-    }
-
-    @Override
-    public void interrupt() {
-        logger.info("[Host {}] is being shutdown!", getName());
-
-        try {
-            if (socket != null) {
-                socket.close();
-            }
-        } catch (IOException e) {
-            logger.error("[Host {}] failed to close socket!", getName());
-        } finally {
-            super.interrupt();
-        }
-    }
-
-    void next(final ServerSocket socket) throws IOException {
-        clientFactory.create(socket.accept());
-    }
-
-    void setSocket(ServerSocket socket) {
-        this.socket = socket;
-    }
-
-    boolean waitForSocketOpen() throws InterruptedException {
-        try {
-            return startResult.get();
-        } catch (ExecutionException e) {
-            logger.error(e.getMessage(), e);
-            return false;
-        }
+    public String toString() {
+        return "Host{" +
+                "name='" + name + '\'' +
+                ", port=" + port +
+                ", clientFactory=" + clientFactory +
+                '}';
     }
 }
