@@ -34,9 +34,11 @@ class TimeoutSpec {
     private CountDownLatch clientConnected;
     private Runnable onClientWorkerCreate;
     private HostManager hostManager;
+    private ExecutorService executorService;
 
     @BeforeEach
     void before() throws InterruptedException, IOException {
+        executorService = Executors.newSingleThreadExecutor();
         hostManager = new HostManager();
 
         HealthCheckManager.setMetricRegistry(new MetricRegistry());
@@ -63,13 +65,15 @@ class TimeoutSpec {
             return clientWorker;
         }).when(workerFactory).create(any(), any(), any());
 
-
         hostManager.newHost("Timeout tests", port, clientFactory);
+
+        executorService.execute(hostManager);
     }
 
     @AfterEach
     void after() throws InterruptedException, IOException {
         hostManager.shutdown();
+        executorService.shutdownNow();
     }
 
     private void mockHostToSendEverySecond() {

@@ -5,12 +5,10 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
+import java.net.Socket;
+import java.nio.channels.*;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 public class HostManager implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -36,6 +34,8 @@ public class HostManager implements Runnable {
 
     @Override
     public void run() {
+        logger.info("Host Manager has been started in thread: {}", Thread.currentThread().getName());
+
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 if (selector.select() <= 0) {
@@ -43,16 +43,50 @@ public class HostManager implements Runnable {
                     continue;
                 }
 
-                progressKeys(selector.selectedKeys());
+                selector.selectedKeys().forEach(this::progressKey);
                 cleanUp();
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             }
         }
+
+        logger.info("Host Manager is stopping");
+
+        try {
+            shutdown();
+        } catch (IOException e) {
+            logger.info("Failed to stop host manager!", e);
+            return;
+        }
+
+        logger.info("Host Manager has been stopped successfully");
     }
 
-    void progressKeys(Set<SelectionKey> selectionKeys) {
+    private void progressKey(SelectionKey selectionKey) {
+        SelectableChannel channel = selectionKey.channel();
 
+        if (selectionKey.isAcceptable()) {
+            Host host = (Host) selectionKey.attachment();
+            acceptConnection(host, (ServerSocketChannel) channel);
+            return;
+        }
+    }
+
+    void acceptConnection(Host host, ServerSocketChannel channel) {
+        logger.info("[{}] New Client is connecting", host.getName());
+
+        try {
+            SocketChannel socketChannel = channel.accept();
+            socketChannel.configureBlocking(true); //TODO
+
+            Socket socket = socketChannel.socket();
+
+            logger.info("[{}] New client has been accepted: {}/{}", socketChannel.getLocalAddress(), socketChannel.getRemoteAddress());
+
+            host.getClientFactory().create(socket); // todo
+        } catch (IOException e) {
+            logger.error("[{}] Error during socket accept", host.getName(), e);
+        }
     }
 
     void cleanUp() {
