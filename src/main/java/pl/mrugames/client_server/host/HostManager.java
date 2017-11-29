@@ -26,7 +26,10 @@ public class HostManager implements Runnable {
             throw new HostManagerIshShutDownException();
         }
 
-        hosts.add(new Host(name, port, clientFactory, ServerSocketChannel.open(), selector));
+        Host host = new Host(name, port, clientFactory, ServerSocketChannel.open(), selector);
+        hosts.add(host);
+
+        logger.info("New Host has been created: {}", host);
     }
 
     @Override

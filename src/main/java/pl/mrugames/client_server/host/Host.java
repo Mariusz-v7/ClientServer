@@ -27,8 +27,6 @@ class Host {
         serverSocketChannel.configureBlocking(false);
         serverSocketChannel.bind(new InetSocketAddress(port));
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-
-        logger.info("New Host has been created: {}", this);
     }
 
     String getName() {
