@@ -26,7 +26,8 @@ class Host {
 
         serverSocketChannel.configureBlocking(false);
         serverSocketChannel.bind(new InetSocketAddress(port));
-        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT)
+                .attach(this);
     }
 
     String getName() {
@@ -53,6 +54,10 @@ class Host {
         }
 
         clientFactory.shutdown();
+    }
+
+    boolean isOpen() {
+        return serverSocketChannel.isOpen();
     }
 
     @Override

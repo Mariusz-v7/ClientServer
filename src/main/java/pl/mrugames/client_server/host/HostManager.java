@@ -5,10 +5,12 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 public class HostManager implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -35,8 +37,26 @@ public class HostManager implements Runnable {
     @Override
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
+            try {
+                if (selector.select() <= 0) {
+                    logger.warn("Selected 0 keys...");
+                    continue;
+                }
 
+                progressKeys(selector.selectedKeys());
+                cleanUp();
+            } catch (IOException e) {
+                logger.error(e.getMessage(), e);
+            }
         }
+    }
+
+    void progressKeys(Set<SelectionKey> selectionKeys) {
+
+    }
+
+    void cleanUp() {
+        //TODO: find closed hosts and remove them
     }
 
     public synchronized void shutdown() throws IOException {
