@@ -37,8 +37,10 @@ public class HostManager implements Runnable {
     @Override
     public void run() {
         try {
-            logger.info("Host Manager has been started in thread: {}", Thread.currentThread().getName());
-            started = true;
+            synchronized (this) {
+                logger.info("Host Manager has been started in thread: {}", Thread.currentThread().getName());
+                started = true;
+            }
 
             selector = Selector.open();
 

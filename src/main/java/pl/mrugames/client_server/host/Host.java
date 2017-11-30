@@ -32,11 +32,11 @@ class Host implements Shutdownable {
         return clientFactory;
     }
 
-    public ServerSocketChannel getServerSocketChannel() {
+    ServerSocketChannel getServerSocketChannel() {
         return serverSocketChannel;
     }
 
-    public void setServerSocketChannel(ServerSocketChannel serverSocketChannel) {
+    void setServerSocketChannel(ServerSocketChannel serverSocketChannel) {
         this.serverSocketChannel = serverSocketChannel;
     }
 
@@ -44,7 +44,7 @@ class Host implements Shutdownable {
     public void shutdown() {
         logger.info("[{}] Host is shutting down", name);
         clientFactory.shutdown();
-        logger.info("[{}] Host shut down", name);
+        logger.info("[{}] Host has shutdown", name);
     }
 
     @Override
