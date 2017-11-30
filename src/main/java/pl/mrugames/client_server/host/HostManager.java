@@ -120,7 +120,7 @@ public class HostManager implements Runnable {
             logger.info("Closing connection: {}", key.attachment());
 
             try {
-                closeChannel(key.channel());
+                closeChannel(key);
             } catch (Exception e) {
                 logger.info("Failed to close connection: {}", key.attachment());
                 continue;
@@ -152,8 +152,11 @@ public class HostManager implements Runnable {
         return serverSocketChannel;
     }
 
-    void closeChannel(SelectableChannel selectableChannel) throws IOException {
-        selectableChannel.close();
+    void closeChannel(SelectionKey key) throws IOException {
+        Shutdownable shutdownable = (Shutdownable) key.attachment();
+        shutdownable.shutdown();
+
+        key.channel().close();
     }
 
 }

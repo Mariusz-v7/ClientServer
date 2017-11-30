@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -98,18 +97,11 @@ class HostManagerSpec {
     void givenChannelThrowException_whenShutdown_thenCloseAll() throws IOException {
         hostManager.selector = mock(Selector.class);
 
-        SelectableChannel channel1 = mock(SelectableChannel.class);
-        SelectableChannel channel2 = mock(SelectableChannel.class);
-        SelectableChannel channel3 = mock(SelectableChannel.class);
-
         SelectionKey key1 = mock(SelectionKey.class);
-        doReturn(channel1).when(key1).channel();
         SelectionKey key2 = mock(SelectionKey.class);
-        doReturn(channel2).when(key2).channel();
         SelectionKey key3 = mock(SelectionKey.class);
-        doReturn(channel3).when(key3).channel();
 
-        doThrow(RuntimeException.class).when(hostManager).closeChannel(channel2);
+        doThrow(RuntimeException.class).when(hostManager).closeChannel(key2);
 
         Set<SelectionKey> selectionKeySet = new HashSet<>();
         selectionKeySet.add(key1);
@@ -120,9 +112,8 @@ class HostManagerSpec {
 
         hostManager.shutdown();
 
-        verify(hostManager).closeChannel(channel1);
-        verify(hostManager).closeChannel(channel2);
-        verify(hostManager).closeChannel(channel3);
+        verify(hostManager).closeChannel(key1);
+        verify(hostManager).closeChannel(key2);
+        verify(hostManager).closeChannel(key3);
     }
-
 }

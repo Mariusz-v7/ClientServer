@@ -6,7 +6,7 @@ import pl.mrugames.client_server.client.ClientFactory;
 
 import java.nio.channels.ServerSocketChannel;
 
-class Host {
+class Host implements Shutdownable {
     private final static Logger logger = LoggerFactory.getLogger(Host.class);
 
     private final String name;
@@ -38,6 +38,13 @@ class Host {
 
     public void setServerSocketChannel(ServerSocketChannel serverSocketChannel) {
         this.serverSocketChannel = serverSocketChannel;
+    }
+
+    @Override
+    public void shutdown() {
+        logger.info("[{}] Host is shutting down", name);
+        clientFactory.shutdown();
+        logger.info("[{}] Host shut down", name);
     }
 
     @Override
