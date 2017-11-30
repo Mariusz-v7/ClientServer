@@ -1,54 +1,128 @@
 package pl.mrugames.client_server.host;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 class HostManagerSpec {
     private HostManager hostManager;
 
     @BeforeEach
-    void before() throws IOException {
-        hostManager = new HostManager();
+    void before() throws IOException, InterruptedException {
+        hostManager = spy(new HostManager());
     }
 
-    @Test
-    void givenNewManager_thenSelectorIsOpen() {
-        assertTrue(hostManager.selector.isOpen());
+    @AfterEach
+    void after() throws IOException {
+        if (hostManager.selector != null) {
+            hostManager.selector.close();
+        }
     }
 
     @Test
     void whenShutdown_thenCloseSelector() throws IOException, InterruptedException {
+        hostManager.selector = Selector.open();
         hostManager.shutdown();
         assertFalse(hostManager.selector.isOpen());
     }
 
     @Test
-    void givenHostListNotEmpty_whenShutdown_thenCallShutdownAndRemove() throws IOException {
-        Host host1 = mock(Host.class);
-        Host host2 = mock(Host.class);
+    void givenManagerIsStarted_whenNewHost_thenException() throws IOException {
+        hostManager.started = true;
 
-        hostManager.hosts.add(host1);
-        hostManager.hosts.add(host2);
+        HostManagerIsRunningException e = assertThrows(HostManagerIsRunningException.class, () -> hostManager.newHost("test", 1999, mock(ClientFactory.class)));
+        assertThat(e.getMessage()).isEqualTo("Host Manager is running. Please submit your hosts before starting Host Manager's thread!");
+    }
 
-        hostManager.shutdown();
-        verify(host1).shutdown();
-        verify(host2).shutdown();
-
+    @Test
+    void whenNewHostManager_thenHostListIsEmpty() {
         assertThat(hostManager.hosts).isEmpty();
     }
 
     @Test
-    void givenSelectorIsClosed_whenNewHost_thenException() throws IOException {
-        hostManager.selector.close();
+    void whenNewHost_thenAddToList() {
+        hostManager.newHost("Test", 1234, mock(ClientFactory.class));
+        assertThat(hostManager.hosts).hasSize(1);
 
-        assertThrows(HostManagerIshShutDownException.class, () -> hostManager.newHost("test", 1999, mock(ClientFactory.class)));
+        Host host = hostManager.hosts.get(0);
+
+        assertEquals("Test", host.getName());
+        assertEquals(1234, host.getPort());
     }
+
+    @Test
+    void givenHostsRegistered_whenStartHosts_thenCallFactoryAndAssignResultToHost() throws IOException {
+        ServerSocketChannel factoryProduct = mock(ServerSocketChannel.class);
+        doReturn(factoryProduct).when(hostManager).serverSocketChannelFactory(any(Host.class));
+
+        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class));
+        Host host2 = new Host("Host 2", 1235, mock(ClientFactory.class));
+
+        hostManager.hosts.add(host1);
+        hostManager.hosts.add(host2);
+
+        hostManager.startHosts();
+
+        verify(hostManager).serverSocketChannelFactory(host1);
+        verify(hostManager).serverSocketChannelFactory(host2);
+
+        assertThat(host1.getServerSocketChannel()).isSameAs(factoryProduct);
+        assertThat(host2.getServerSocketChannel()).isSameAs(factoryProduct);
+    }
+
+    @Test
+    void factoryThrowsException_catchIt() throws IOException {
+        doThrow(RuntimeException.class).when(hostManager).serverSocketChannelFactory(any());
+
+        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class));
+        hostManager.hosts.add(host1);
+
+        hostManager.startHosts();
+        // no exception
+    }
+
+    @Test
+    void givenChannelThrowException_whenShutdown_thenCloseAll() throws IOException {
+        hostManager.selector = mock(Selector.class);
+
+        SelectableChannel channel1 = mock(SelectableChannel.class);
+        SelectableChannel channel2 = mock(SelectableChannel.class);
+        SelectableChannel channel3 = mock(SelectableChannel.class);
+
+        SelectionKey key1 = mock(SelectionKey.class);
+        doReturn(channel1).when(key1).channel();
+        SelectionKey key2 = mock(SelectionKey.class);
+        doReturn(channel2).when(key2).channel();
+        SelectionKey key3 = mock(SelectionKey.class);
+        doReturn(channel3).when(key3).channel();
+
+        doThrow(RuntimeException.class).when(hostManager).closeChannel(channel2);
+
+        Set<SelectionKey> selectionKeySet = new HashSet<>();
+        selectionKeySet.add(key1);
+        selectionKeySet.add(key2);
+        selectionKeySet.add(key3);
+
+        doReturn(selectionKeySet).when(hostManager.selector).keys();
+
+        hostManager.shutdown();
+
+        verify(hostManager).closeChannel(channel1);
+        verify(hostManager).closeChannel(channel2);
+        verify(hostManager).closeChannel(channel3);
+    }
+
 }

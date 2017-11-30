@@ -9,11 +9,15 @@ import pl.mrugames.client_server.client.helpers.ClientFactories;
 import pl.mrugames.client_server.host.HostManager;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
     private static HostManager hostManager;
+    private static ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     public static void main(String... args) throws InterruptedException, IOException {
         if (args.length != 1) {
@@ -22,6 +26,7 @@ public class Main {
         }
 
         hostManager = new HostManager();
+        executorService.execute(hostManager);
 
         final int port = Integer.valueOf(args[0]);
 
@@ -38,9 +43,10 @@ public class Main {
     }
 
     public static void shutdown() {
+        executorService.shutdownNow();
         try {
-            hostManager.shutdown();
-        } catch (IOException e) {
+            executorService.awaitTermination(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
             logger.error(e.getMessage(), e);
         }
     }

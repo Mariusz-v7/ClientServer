@@ -72,8 +72,8 @@ class TimeoutSpec {
 
     @AfterEach
     void after() throws InterruptedException, IOException {
-        hostManager.shutdown();
         executorService.shutdownNow();
+        executorService.awaitTermination(30, TimeUnit.SECONDS);
     }
 
     private void mockHostToSendEverySecond() {

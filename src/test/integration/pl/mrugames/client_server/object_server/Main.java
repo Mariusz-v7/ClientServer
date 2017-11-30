@@ -9,11 +9,15 @@ import pl.mrugames.client_server.client.helpers.ClientFactories;
 import pl.mrugames.client_server.host.HostManager;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
     private static HostManager hostManager;
+    private static ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     public static void main(String... args) throws InterruptedException, IOException {
         if (args.length != 1) {
@@ -22,6 +26,7 @@ public class Main {
         }
 
         hostManager = new HostManager();
+        executorService.execute(hostManager);
 
         HealthCheckManager.setMetricRegistry(new MetricRegistry());
 
@@ -38,8 +43,9 @@ public class Main {
 
     public static void shutdown() {
         try {
-            hostManager.shutdown();
-        } catch (IOException e) {
+            executorService.shutdownNow();
+            executorService.awaitTermination(1, TimeUnit.MINUTES);
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
     }

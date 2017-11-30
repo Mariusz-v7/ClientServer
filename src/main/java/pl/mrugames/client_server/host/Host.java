@@ -4,10 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientFactory;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 
 class Host {
@@ -16,18 +12,12 @@ class Host {
     private final String name;
     private final int port;
     private final ClientFactory clientFactory;
-    private final ServerSocketChannel serverSocketChannel;
+    private volatile ServerSocketChannel serverSocketChannel;
 
-    Host(String name, int port, ClientFactory clientFactory, ServerSocketChannel serverSocketChannel, Selector selector) throws IOException {
+    Host(String name, int port, ClientFactory clientFactory) {
         this.name = name;
         this.port = port;
         this.clientFactory = clientFactory;
-        this.serverSocketChannel = serverSocketChannel;
-
-        serverSocketChannel.configureBlocking(false);
-        serverSocketChannel.bind(new InetSocketAddress(port));
-        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT)
-                .attach(this);
     }
 
     String getName() {
@@ -42,22 +32,12 @@ class Host {
         return clientFactory;
     }
 
-    ServerSocketChannel getServerSocketChannel() {
+    public ServerSocketChannel getServerSocketChannel() {
         return serverSocketChannel;
     }
 
-    void shutdown() {
-        try {
-            serverSocketChannel.close();
-        } catch (IOException e) {
-            logger.error("[{}] {}", name, e.getMessage(), e);
-        }
-
-        clientFactory.shutdown();
-    }
-
-    boolean isOpen() {
-        return serverSocketChannel.isOpen();
+    public void setServerSocketChannel(ServerSocketChannel serverSocketChannel) {
+        this.serverSocketChannel = serverSocketChannel;
     }
 
     @Override
