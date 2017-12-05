@@ -102,13 +102,13 @@ public class HostManager implements Runnable {
 
         try {
             SocketChannel socketChannel = channel.accept();
-            socketChannel.configureBlocking(true); //TODO : add to current selector
+            socketChannel.configureBlocking(true);
 
             Socket socket = socketChannel.socket();
 
             logger.info("[{}] New client has been accepted: {}/{}", host.getName(), socketChannel.getLocalAddress(), socketChannel.getRemoteAddress());
 
-            host.getClientFactory().create(socket); // TODO: refactor client factory
+            host.getClientFactory().create(socket);
         } catch (IOException e) {
             logger.error("[{}] Error during socket accept", host.getName(), e);
         }
