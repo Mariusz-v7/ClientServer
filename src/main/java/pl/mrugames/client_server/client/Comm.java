@@ -12,15 +12,15 @@ public class Comm<In, Out> {
         this.out = out;
     }
 
-    public void send(Out frame) {
+    public synchronized void send(Out frame) {
         out.add(frame);
     }
 
-    public In receive() {
+    public synchronized In receive() {
         return in.poll();
     }
 
-    public In receive(long timeout, TimeUnit unit) throws InterruptedException {
+    public synchronized In receive(long timeout, TimeUnit unit) throws InterruptedException {
         return in.poll(timeout, unit);
     }
 }
