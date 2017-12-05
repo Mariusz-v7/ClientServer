@@ -107,5 +107,7 @@ class CommV2Spec {
 
         InterruptedException e = assertThrows(InterruptedException.class, () -> comm.receive());
         assertThat(e.getMessage()).isEqualTo("Thread interrupted before receiving message!");
+
+        Thread.interrupted(); // clear interrupted flag
     }
 }
