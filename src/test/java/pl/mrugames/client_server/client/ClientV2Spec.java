@@ -6,6 +6,8 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import pl.mrugames.client_server.client.initializers.Initializer;
 
+import java.io.IOException;
+import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -15,19 +17,20 @@ class ClientV2Spec {
     private ClientV2 client;
     private List<Initializer> initializers;
     private Runnable clientWorker;
-    private Runnable shutdownNotifier;
+    private Socket socket;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     void before() {
         initializers = new LinkedList<>();
         clientWorker = mock(Runnable.class);
-        shutdownNotifier = mock(Runnable.class);
+        socket = mock(Socket.class);
 
-        client = new ClientV2("Test Client", initializers, clientWorker, shutdownNotifier);
+        client = new ClientV2("Test Client", initializers, clientWorker, socket);
     }
 
     @Test
-    void givenSomeInitializers_whenRun_thenRunAllInitializersInOrderThenWorkerThenNotifier() {
+    void givenSomeInitializers_whenRun_thenRunAllInitializersInOrderThenWorkerThenCloseSocket() throws IOException {
         Initializer initializer1 = mock(Initializer.class);
         Initializer initializer2 = mock(Initializer.class);
 
@@ -36,27 +39,27 @@ class ClientV2Spec {
 
         client.run();
 
-        InOrder inOrder = Mockito.inOrder(initializer1, initializer2, clientWorker, shutdownNotifier);
+        InOrder inOrder = Mockito.inOrder(initializer1, initializer2, clientWorker, socket);
 
         inOrder.verify(initializer1).run();
         inOrder.verify(initializer2).run();
 
         inOrder.verify(clientWorker).run();
 
-        inOrder.verify(shutdownNotifier).run();
+        inOrder.verify(socket).close();
     }
 
     @Test
-    void givenMainLoopThrowsException_whenFinish_thenCallNotifierAnyway() {
+    void givenMainLoopThrowsException_whenFinish_thenCloseSocketAnyway() throws IOException {
         doThrow(RuntimeException.class).when(clientWorker).run();
 
         client.run();
 
-        verify(shutdownNotifier).run();
+        verify(socket).close();
     }
 
     @Test
-    void givenInitializerThrowsException_whenFinish_thenCallNotifierAnyway() {
+    void givenInitializerThrowsException_whenFinish_thenCloseSocketAnyway() throws IOException {
         Initializer initializer1 = mock(Initializer.class);
 
         initializers.add(initializer1);
@@ -65,6 +68,6 @@ class ClientV2Spec {
 
         client.run();
 
-        verify(shutdownNotifier).run();
+        verify(socket).close();
     }
 }

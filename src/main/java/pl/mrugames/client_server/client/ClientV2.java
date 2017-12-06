@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.initializers.Initializer;
 
+import java.net.Socket;
 import java.util.List;
 
 class ClientV2 implements Runnable {
@@ -12,13 +13,13 @@ class ClientV2 implements Runnable {
     private final String name;
     private final List<Initializer> initializers;
     private final Runnable clientWorker;
-    private final Runnable shutdownNotifier;
+    private final Socket socket;
 
-    ClientV2(String name, List<Initializer> initializers, Runnable clientWorker, Runnable shutdownNotifier) {
+    ClientV2(String name, List<Initializer> initializers, Runnable clientWorker, Socket socket) {
         this.name = name;
         this.initializers = initializers;
         this.clientWorker = clientWorker;
-        this.shutdownNotifier = shutdownNotifier;
+        this.socket = socket;
 
         logger.info("[{}] New client has been created", name);
     }
@@ -27,7 +28,7 @@ class ClientV2 implements Runnable {
     public void run() {
         logger.info("[{}] Client has been started in thread: {}", name, Thread.currentThread().getName());
 
-        try {
+        try (socket) {
             for (Initializer initializer : initializers) {
                 logger.info("[{}] {} initializer is starting", name, initializer.getClass().getSimpleName());
                 initializer.run();
@@ -41,10 +42,20 @@ class ClientV2 implements Runnable {
             logger.info("[{}] Client's main loop has finished", name);
         } catch (Exception e) {
             logger.info("[{}] Client finished with exception", name, e);
-        } finally {
-            shutdownNotifier.run();
         }
 
         logger.info("[{}] Client has been terminated in thread: {}", name, Thread.currentThread().getName());
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    List<Initializer> getInitializers() {
+        return initializers;
+    }
+
+    Runnable getClientWorker() {
+        return clientWorker;
     }
 }

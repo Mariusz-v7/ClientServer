@@ -100,18 +100,31 @@ public class HostManager implements Runnable {
     void acceptConnection(Host host, ServerSocketChannel channel) {
         logger.info("[{}] New Client is connecting", host.getName());
 
+        Socket socket = null;
         try {
             SocketChannel socketChannel = channel.accept();
             socketChannel.configureBlocking(true);
 
-            Socket socket = socketChannel.socket();
+            socket = socketChannel.socket();
 
             logger.info("[{}] New client has been accepted: {}/{}", host.getName(), socketChannel.getLocalAddress(), socketChannel.getRemoteAddress());
 
             host.getClientFactory().create(socket);
-        } catch (IOException e) {
-            logger.error("[{}] Error during socket accept", host.getName(), e);
+        } catch (Exception e) {
+            logger.error("[{}] Error during client creation", host.getName(), e);
+
+            if (socket != null) {
+                logger.error("[{}] Closing client's socket", host.getName());
+
+                try {
+                    socket.close();
+                    logger.error("[{}] Client's socket closed", host.getName());
+                } catch (IOException e1) {
+                    logger.error("[{}] Failed to close client's socket", host.getName(), e1);
+                }
+            }
         }
+
     }
 
     synchronized void shutdown() {

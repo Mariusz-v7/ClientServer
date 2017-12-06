@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Optional;
 
-public class CommV2<In, Out, Writer extends Serializable, Reader extends Serializable> {
+public class CommV2<In, Out, Reader extends Serializable, Writer extends Serializable> {
     private final static Logger logger = LoggerFactory.getLogger(CommV2.class);
 
     private final ClientWriter<Writer> clientWriter;
