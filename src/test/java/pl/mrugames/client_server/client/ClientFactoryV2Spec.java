@@ -36,6 +36,7 @@ class ClientFactoryV2Spec {
     private ExecutorService executorService;
     private ClientV2 client;
     private boolean shouldTimeoutClientCreation;
+    private ClientWatchdog clientWatchdog;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -55,6 +56,8 @@ class ClientFactoryV2Spec {
 
         executorService = mock(ExecutorService.class);
 
+        clientWatchdog = mock(ClientWatchdog.class);
+
         clientFactory = spy(new ClientFactoryV2<>("factory",
                 "client",
                 clientWorkerFactory,
@@ -63,7 +66,8 @@ class ClientFactoryV2Spec {
                 clientReaderFactory,
                 inputFilterProcessor,
                 outputFilterProcessor,
-                executorService));
+                executorService,
+                clientWatchdog));
 
         doAnswer(a -> {
             client = (ClientV2) a.callRealMethod();
@@ -146,5 +150,17 @@ class ClientFactoryV2Spec {
         assertThat(timeout.getMessage()).isEqualTo("Failed to start client");
 
         verify(socket).close();
+    }
+
+    @Test
+    void whenCreateClient_thenRegisterToWatchdog() throws Exception {
+        CommV2 comm = mock(CommV2.class);
+        doReturn(comm).when(clientFactory).createComms(anyString(), any());
+
+        Socket socket = mock(Socket.class);
+
+        clientFactory.create(socket);
+
+        verify(clientWatchdog).register(comm, socket);
     }
 }

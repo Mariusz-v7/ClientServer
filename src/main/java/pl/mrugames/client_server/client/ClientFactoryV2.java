@@ -34,6 +34,7 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
     private final FilterProcessorV2 inputFilterProcessor;
     private final FilterProcessorV2 outputFilterProcessor;
     private final ExecutorService executorService;
+    private final ClientWatchdog watchdog;
     final long clientStartTimeoutMilliseconds = 1000;
 
     ClientFactoryV2(String factoryName,
@@ -44,7 +45,8 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
                     Function<InputStream, ClientReader<Reader>> clientReaderFactory,
                     FilterProcessorV2 inputFilterProcessor,
                     FilterProcessorV2 outputFilterProcessor,
-                    ExecutorService executorService
+                    ExecutorService executorService,
+                    ClientWatchdog clientWatchdog
     ) {
         this.clientId = new AtomicLong();
         this.factoryName = factoryName;
@@ -56,6 +58,7 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
         this.inputFilterProcessor = inputFilterProcessor;
         this.outputFilterProcessor = outputFilterProcessor;
         this.executorService = executorService;
+        this.watchdog = clientWatchdog;
     }
 
     public ClientV2 create(Socket socket) throws Exception {
@@ -67,11 +70,13 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
 
             List<Initializer> initializers = createInitializers(clientName, socket);
             CommV2<In, Out, Reader, Writer> comm = createComms(clientName, socket);
+
+            watchdog.register(comm, socket);
+
             Runnable clientWorker = createWorker(clientName, comm, clientInfo);
 
             ClientV2 client = createClient(clientName, initializers, clientWorker, socket);
 
-            // TODO: add watchdog for comms timeout
             executorService.execute(client);
             boolean result = client.awaitStart(clientStartTimeoutMilliseconds, TimeUnit.MILLISECONDS);
             if (!result) {
