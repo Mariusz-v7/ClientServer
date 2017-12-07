@@ -2,7 +2,10 @@ package pl.mrugames.client_server.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.client_server.client.filters.FilterProcessorV2;
 import pl.mrugames.client_server.client.initializers.Initializer;
+import pl.mrugames.client_server.client.io.ClientReader;
+import pl.mrugames.client_server.client.io.ClientWriter;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,6 +15,7 @@ import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extends Serializable> {
@@ -22,13 +26,29 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
     private final String clientNamePrefix;
     private final ClientWorkerFactoryV2<In, Out, Reader, Writer> clientWorkerFactory;
     private final List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories;
+    private final Function<OutputStream, ClientWriter<Writer>> clientWriterFactory;
+    private final Function<InputStream, ClientReader<Reader>> clientReaderFactory;
+    private final FilterProcessorV2 inputFilterProcessor;
+    private final FilterProcessorV2 outputFilterProcessor;
 
-    ClientFactoryV2(String factoryName, String clientNamePrefix, ClientWorkerFactoryV2<In, Out, Reader, Writer> clientWorkerFactory, List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories) {
+    ClientFactoryV2(String factoryName,
+                    String clientNamePrefix,
+                    ClientWorkerFactoryV2<In, Out, Reader, Writer> clientWorkerFactory,
+                    List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories,
+                    Function<OutputStream, ClientWriter<Writer>> clientWriterFactory,
+                    Function<InputStream, ClientReader<Reader>> clientReaderFactory,
+                    FilterProcessorV2 inputFilterProcessor,
+                    FilterProcessorV2 outputFilterProcessor
+    ) {
         this.clientId = new AtomicLong();
         this.factoryName = factoryName;
         this.clientNamePrefix = clientNamePrefix;
         this.clientWorkerFactory = clientWorkerFactory;
         this.initializerFactories = initializerFactories;
+        this.clientWriterFactory = clientWriterFactory;
+        this.clientReaderFactory = clientReaderFactory;
+        this.inputFilterProcessor = inputFilterProcessor;
+        this.outputFilterProcessor = outputFilterProcessor;
     }
 
     public ClientV2 create(Socket socket) throws Exception {
@@ -39,7 +59,7 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
             ClientInfo clientInfo = new ClientInfo(clientName, socket);
 
             List<Initializer> initializers = createInitializers(clientName, socket);
-            CommV2<In, Out, Reader, Writer> comm = createComms(clientName);
+            CommV2<In, Out, Reader, Writer> comm = createComms(clientName, socket);
             Runnable clientWorker = createWorker(clientName, comm, clientInfo);
 
             ClientV2 client = new ClientV2(clientName, initializers, clientWorker, socket);
@@ -75,12 +95,21 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
         return initializers;
     }
 
-    CommV2<In, Out, Reader, Writer> createComms(String clientName) {
+    CommV2<In, Out, Reader, Writer> createComms(String clientName, Socket socket) throws IOException {
         logger.info("[{}] Creating comms for client: {}", factoryName, clientName);
-//        CommV2<In, Out, Reader, Writer> comm = new CommV2<>(); // TODO
+
+        InputStream inputStream = socket.getInputStream();
+        OutputStream outputStream = socket.getOutputStream();
+
+        ClientWriter<Writer> clientWriter = clientWriterFactory.apply(outputStream);
+        ClientReader<Reader> clientReader = clientReaderFactory.apply(inputStream);
+
+        CommV2<In, Out, Reader, Writer> comm = new CommV2<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor);
         logger.info("[{}] Comms has been created for client: {}", factoryName, clientName);
 
-        return null;
+        // TODO: add watchdog for comms timeout
+
+        return comm;
     }
 
     Runnable createWorker(String clientName, CommV2<In, Out, Reader, Writer> comm, ClientInfo clientInfo) {

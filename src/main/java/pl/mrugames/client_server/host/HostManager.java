@@ -102,13 +102,7 @@ public class HostManager implements Runnable {
 
         Socket socket = null;
         try {
-            SocketChannel socketChannel = channel.accept();
-            socketChannel.configureBlocking(true);
-
-            socket = socketChannel.socket();
-
-            logger.info("[{}] New client has been accepted: {}/{}", host.getName(), socketChannel.getLocalAddress(), socketChannel.getRemoteAddress());
-
+            socket = accept(host, channel);
             host.getClientFactory().create(socket);
         } catch (Exception e) {
             logger.error("[{}] Error during client creation", host.getName(), e);
@@ -165,6 +159,18 @@ public class HostManager implements Runnable {
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT, host);
 
         return serverSocketChannel;
+    }
+
+    /**
+     * Method created for mocking purposes.
+     */
+    Socket accept(Host host, ServerSocketChannel channel) throws IOException {
+        SocketChannel socketChannel = channel.accept();
+        socketChannel.configureBlocking(true);
+
+        logger.info("[{}] New client has been accepted: {}/{}", host.getName(), socketChannel.getLocalAddress(), socketChannel.getRemoteAddress());
+
+        return socketChannel.socket();
     }
 
     void closeChannel(SelectionKey key) throws IOException {

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -115,5 +116,22 @@ class HostManagerSpec {
         verify(hostManager).closeChannel(key1);
         verify(hostManager).closeChannel(key2);
         verify(hostManager).closeChannel(key3);
+    }
+
+    @Test
+    void givenFactoryThrowsException_whenClientAccept_thenCloseSocket() throws IOException {
+        Host host = mock(Host.class);
+        ClientFactory clientFactory = mock(ClientFactory.class);
+        doThrow(RuntimeException.class).when(clientFactory).create(any());
+
+        doReturn(clientFactory).when(host).getClientFactory();
+
+        Socket socket = mock(Socket.class);
+
+        doReturn(socket).when(hostManager).accept(any(), any());
+
+        hostManager.acceptConnection(host, mock(ServerSocketChannel.class));
+
+        verify(socket).close();
     }
 }

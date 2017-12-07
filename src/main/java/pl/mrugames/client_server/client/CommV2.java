@@ -78,4 +78,20 @@ public class CommV2<In, Out, Reader extends Serializable, Writer extends Seriali
     Instant getLastDataReceived() {
         return lastDataReceived;
     }
+
+    ClientWriter<Writer> getClientWriter() {
+        return clientWriter;
+    }
+
+    ClientReader<Reader> getClientReader() {
+        return clientReader;
+    }
+
+    FilterProcessorV2 getInputFilterProcessor() {
+        return inputFilterProcessor;
+    }
+
+    FilterProcessorV2 getOutputFilterProcessor() {
+        return outputFilterProcessor;
+    }
 }

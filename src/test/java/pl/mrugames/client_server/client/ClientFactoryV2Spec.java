@@ -2,7 +2,10 @@ package pl.mrugames.client_server.client;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import pl.mrugames.client_server.client.filters.FilterProcessorV2;
 import pl.mrugames.client_server.client.initializers.Initializer;
+import pl.mrugames.client_server.client.io.ClientReader;
+import pl.mrugames.client_server.client.io.ClientWriter;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,6 +14,7 @@ import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -21,14 +25,27 @@ class ClientFactoryV2Spec {
     private ClientFactoryV2<String, String, String, String> clientFactory;
     private ClientWorkerFactoryV2<String, String, String, String> clientWorkerFactory;
     private List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories;
+    private ClientWriter<String> clientWriter;
+    private ClientReader<String> clientReader;
+    private FilterProcessorV2 inputFilterProcessor;
+    private FilterProcessorV2 outputFilterProcessor;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void before() {
         initializerFactories = new LinkedList<>();
 
+        inputFilterProcessor = mock(FilterProcessorV2.class);
+        outputFilterProcessor = mock(FilterProcessorV2.class);
+
+        clientWriter = mock(ClientWriter.class);
+        clientReader = mock(ClientReader.class);
+
+        Function<OutputStream, ClientWriter<String>> clientWriterFactory = i -> clientWriter;
+        Function<InputStream, ClientReader<String>> clientReaderFactory = o -> clientReader;
+
         clientWorkerFactory = mock(ClientWorkerFactoryV2.class);
-        clientFactory = new ClientFactoryV2<>("factory", "client", clientWorkerFactory, initializerFactories);
+        clientFactory = new ClientFactoryV2<>("factory", "client", clientWorkerFactory, initializerFactories, clientWriterFactory, clientReaderFactory, inputFilterProcessor, outputFilterProcessor);
     }
 
     @Test
@@ -71,5 +88,15 @@ class ClientFactoryV2Spec {
         assertThrows(RuntimeException.class, () -> clientFactory.create(socket));
 
         verify(socket).close();
+    }
+
+    @Test
+    void whenCreateComm_thenSetProperComponents() throws IOException {
+        CommV2<String, String, String, String> comm = clientFactory.createComms("test", mock(Socket.class));
+
+        assertThat(comm.getClientReader()).isSameAs(clientReader);
+        assertThat(comm.getClientWriter()).isSameAs(clientWriter);
+        assertThat(comm.getInputFilterProcessor()).isSameAs(inputFilterProcessor);
+        assertThat(comm.getOutputFilterProcessor()).isSameAs(outputFilterProcessor);
     }
 }
