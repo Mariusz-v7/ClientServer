@@ -2,6 +2,7 @@ package pl.mrugames.client_server.client;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import pl.mrugames.client_server.client.filters.FilterProcessorV2;
 import pl.mrugames.client_server.client.initializers.Initializer;
 import pl.mrugames.client_server.client.io.ClientReader;
@@ -13,6 +14,9 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -29,10 +33,13 @@ class ClientFactoryV2Spec {
     private ClientReader<String> clientReader;
     private FilterProcessorV2 inputFilterProcessor;
     private FilterProcessorV2 outputFilterProcessor;
+    private ExecutorService executorService;
+    private ClientV2 client;
+    private boolean shouldTimeoutClientCreation;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void before() {
+    void before() throws InterruptedException {
         initializerFactories = new LinkedList<>();
 
         inputFilterProcessor = mock(FilterProcessorV2.class);
@@ -45,7 +52,26 @@ class ClientFactoryV2Spec {
         Function<InputStream, ClientReader<String>> clientReaderFactory = o -> clientReader;
 
         clientWorkerFactory = mock(ClientWorkerFactoryV2.class);
-        clientFactory = new ClientFactoryV2<>("factory", "client", clientWorkerFactory, initializerFactories, clientWriterFactory, clientReaderFactory, inputFilterProcessor, outputFilterProcessor);
+
+        executorService = mock(ExecutorService.class);
+
+        clientFactory = spy(new ClientFactoryV2<>("factory",
+                "client",
+                clientWorkerFactory,
+                initializerFactories,
+                clientWriterFactory,
+                clientReaderFactory,
+                inputFilterProcessor,
+                outputFilterProcessor,
+                executorService));
+
+        doAnswer(a -> {
+            client = (ClientV2) a.callRealMethod();
+            client = spy(client);
+            doReturn(!shouldTimeoutClientCreation).when(client).awaitStart(anyLong(), any());
+
+            return client;
+        }).when(clientFactory).createClient(anyString(), anyList(), any(), any());
     }
 
     @Test
@@ -98,5 +124,27 @@ class ClientFactoryV2Spec {
         assertThat(comm.getClientWriter()).isSameAs(clientWriter);
         assertThat(comm.getInputFilterProcessor()).isSameAs(inputFilterProcessor);
         assertThat(comm.getOutputFilterProcessor()).isSameAs(outputFilterProcessor);
+    }
+
+    @Test
+    void whenCreateClient_thenSubmitToExecutor_andWait() throws Exception {
+        clientFactory.create(mock(Socket.class));
+
+        InOrder inOrder = inOrder(client, executorService);
+
+        inOrder.verify(executorService).execute(client);
+        inOrder.verify(client).awaitStart(clientFactory.clientStartTimeoutMilliseconds, TimeUnit.MILLISECONDS);
+    }
+
+    @Test
+    void givenAwaitStartReturnsFalse_thenException_andCloseSocket() throws Exception {
+        shouldTimeoutClientCreation = true;
+
+        Socket socket = mock(Socket.class);
+
+        TimeoutException timeout = assertThrows(TimeoutException.class, () -> clientFactory.create(socket));
+        assertThat(timeout.getMessage()).isEqualTo("Failed to start client");
+
+        verify(socket).close();
     }
 }

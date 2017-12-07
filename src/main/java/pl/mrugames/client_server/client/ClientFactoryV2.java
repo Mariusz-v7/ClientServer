@@ -13,6 +13,9 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.Socket;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -30,6 +33,8 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
     private final Function<InputStream, ClientReader<Reader>> clientReaderFactory;
     private final FilterProcessorV2 inputFilterProcessor;
     private final FilterProcessorV2 outputFilterProcessor;
+    private final ExecutorService executorService;
+    final long clientStartTimeoutMilliseconds = 1000;
 
     ClientFactoryV2(String factoryName,
                     String clientNamePrefix,
@@ -38,7 +43,8 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
                     Function<OutputStream, ClientWriter<Writer>> clientWriterFactory,
                     Function<InputStream, ClientReader<Reader>> clientReaderFactory,
                     FilterProcessorV2 inputFilterProcessor,
-                    FilterProcessorV2 outputFilterProcessor
+                    FilterProcessorV2 outputFilterProcessor,
+                    ExecutorService executorService
     ) {
         this.clientId = new AtomicLong();
         this.factoryName = factoryName;
@@ -49,6 +55,7 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
         this.clientReaderFactory = clientReaderFactory;
         this.inputFilterProcessor = inputFilterProcessor;
         this.outputFilterProcessor = outputFilterProcessor;
+        this.executorService = executorService;
     }
 
     public ClientV2 create(Socket socket) throws Exception {
@@ -62,7 +69,14 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
             CommV2<In, Out, Reader, Writer> comm = createComms(clientName, socket);
             Runnable clientWorker = createWorker(clientName, comm, clientInfo);
 
-            ClientV2 client = new ClientV2(clientName, initializers, clientWorker, socket);
+            ClientV2 client = createClient(clientName, initializers, clientWorker, socket);
+
+            // TODO: add watchdog for comms timeout
+            executorService.execute(client);
+            boolean result = client.awaitStart(clientStartTimeoutMilliseconds, TimeUnit.MILLISECONDS);
+            if (!result) {
+                throw new TimeoutException("Failed to start client");
+            }
 
             logger.info("[{}] New client has been created: {}!", factoryName, client.getName());
             return client;
@@ -107,8 +121,6 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
         CommV2<In, Out, Reader, Writer> comm = new CommV2<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor);
         logger.info("[{}] Comms has been created for client: {}", factoryName, clientName);
 
-        // TODO: add watchdog for comms timeout
-
         return comm;
     }
 
@@ -120,6 +132,10 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
         logger.info("[{}] Client worker has been created for client: {}", factoryName, clientName);
 
         return clientWorker;
+    }
+
+    ClientV2 createClient(String clientName, List<Initializer> initializers, Runnable clientWorker, Socket socket) {
+        return new ClientV2(clientName, initializers, clientWorker, socket);
     }
 
 }

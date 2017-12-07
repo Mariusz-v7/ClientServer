@@ -6,6 +6,8 @@ import pl.mrugames.client_server.client.initializers.Initializer;
 
 import java.net.Socket;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 class ClientV2 implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientV2.class);
@@ -14,12 +16,14 @@ class ClientV2 implements Runnable {
     private final List<Initializer> initializers;
     private final Runnable clientWorker;
     private final Socket socket;
+    private final CountDownLatch startSignal;
 
     ClientV2(String name, List<Initializer> initializers, Runnable clientWorker, Socket socket) {
         this.name = name;
         this.initializers = initializers;
         this.clientWorker = clientWorker;
         this.socket = socket;
+        this.startSignal = new CountDownLatch(1);
 
         logger.info("[{}] New client has been created", name);
     }
@@ -29,6 +33,8 @@ class ClientV2 implements Runnable {
         logger.info("[{}] Client has been started in thread: {}", name, Thread.currentThread().getName());
 
         try (socket) {
+            startSignal.countDown();
+
             for (Initializer initializer : initializers) {
                 logger.info("[{}] {} initializer is starting", name, initializer.getClass().getSimpleName());
                 initializer.run();
@@ -57,5 +63,9 @@ class ClientV2 implements Runnable {
 
     Runnable getClientWorker() {
         return clientWorker;
+    }
+
+    boolean awaitStart(long timeout, TimeUnit timeUnit) throws InterruptedException {
+        return startSignal.await(timeout, timeUnit);
     }
 }

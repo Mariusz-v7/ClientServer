@@ -8,9 +8,12 @@ import pl.mrugames.client_server.client.initializers.Initializer;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.time.Duration;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class ClientV2Spec {
@@ -69,5 +72,21 @@ class ClientV2Spec {
         client.run();
 
         verify(socket).close();
+    }
+
+    @Test
+    void givenClientNotRun_whenAwaitStart_thenReturnFalse() throws InterruptedException {
+        boolean result = assertTimeout(Duration.ofMillis(300), () -> client.awaitStart(250, TimeUnit.MILLISECONDS));
+
+        assertFalse(result);
+    }
+
+    @Test
+    void givenClientRun_whenAwaitStart_thenReturnTrue() {
+        client.run();
+
+        boolean result = assertTimeout(Duration.ofMillis(50), () -> client.awaitStart(250, TimeUnit.MILLISECONDS));
+
+        assertTrue(result);
     }
 }
