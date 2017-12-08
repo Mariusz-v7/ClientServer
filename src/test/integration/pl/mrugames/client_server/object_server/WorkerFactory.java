@@ -1,19 +1,18 @@
 package pl.mrugames.client_server.object_server;
 
 import pl.mrugames.client_server.client.ClientInfo;
-import pl.mrugames.client_server.client.ClientWorker;
-import pl.mrugames.client_server.client.ClientWorkerFactory;
-import pl.mrugames.client_server.client.Comm;
+import pl.mrugames.client_server.client.ClientWorkerFactoryV2;
+import pl.mrugames.client_server.client.CommV2;
 
-class WorkerFactory implements ClientWorkerFactory<Frame, Frame> {
-    private final Runnable shutdownSwitch;
+class WorkerFactory implements ClientWorkerFactoryV2<Frame, Frame, Frame, Frame> {
+    private final Runnable onShutDown;
 
-    WorkerFactory(Runnable shutdownSwitch) {
-        this.shutdownSwitch = shutdownSwitch;
+    WorkerFactory(Runnable onShutDown) {
+        this.onShutDown = onShutDown;
     }
 
     @Override
-    public ClientWorker create(Comm<Frame, Frame> comm, Runnable shutdownSwitch, ClientInfo clientInfo) {
-        return new Worker(this.shutdownSwitch, comm, shutdownSwitch);
+    public Runnable create(CommV2<Frame, Frame, Frame, Frame> comm, ClientInfo clientInfo) {
+        return new Worker(comm, onShutDown);
     }
 }

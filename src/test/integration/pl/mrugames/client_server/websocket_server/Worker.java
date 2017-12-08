@@ -1,18 +1,15 @@
 package pl.mrugames.client_server.websocket_server;
 
 import pl.mrugames.client_server.client.ClientWorker;
-import pl.mrugames.client_server.client.Comm;
+import pl.mrugames.client_server.client.CommV2;
+import pl.mrugames.client_server.client.frames.WebSocketFrame;
 import pl.mrugames.client_server.websocket.WebsocketConstants;
 
-import java.util.concurrent.TimeUnit;
-
 public class Worker implements ClientWorker {
-    private final Runnable shutdownSwitch;
-    private final Comm<String, String> comm;
+    private final CommV2<String, String, WebSocketFrame, WebSocketFrame> comm;
     private final Runnable onClientShutDown;
 
-    public Worker(Comm<String, String> comm, Runnable onClientShutDown, Runnable shutdownSwitch) {
-        this.shutdownSwitch = shutdownSwitch;
+    public Worker(CommV2<String, String, WebSocketFrame, WebSocketFrame> comm, Runnable onClientShutDown) {
         this.comm = comm;
         this.onClientShutDown = onClientShutDown;
     }
@@ -27,7 +24,7 @@ public class Worker implements ClientWorker {
         try {
             String message;
             do {
-                message = comm.receive(30, TimeUnit.SECONDS);
+                message = comm.receive();
 
                 if (message.equals(WebsocketConstants.WEBSOCKET_CLOSE_FRAME)) {
                     comm.send(WebsocketConstants.WEBSOCKET_CLOSE_FRAME);
@@ -40,14 +37,15 @@ public class Worker implements ClientWorker {
                 }
 
                 if (message.equals("shutdown")) {
-                    shutdownSwitch.run();
                     break;
                 }
 
                 comm.send("Your message was: " + message);
             } while (!Thread.currentThread().isInterrupted() && message != null && !message.equals("shutdown"));
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
+
+        onClientShutDown.run();
     }
 }

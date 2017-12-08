@@ -2,7 +2,7 @@ package pl.mrugames.client_server.host;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.client.ClientFactory;
+import pl.mrugames.client_server.client.ClientFactoryV2;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -23,7 +23,7 @@ public class HostManager implements Runnable {
         this.hosts = new CopyOnWriteArrayList<>();
     }
 
-    public synchronized void newHost(String name, int port, ClientFactory clientFactory) {
+    public synchronized void newHost(String name, int port, ClientFactoryV2 clientFactory) {
         if (started) {
             throw new HostManagerIsRunningException("Host Manager is running. Please submit your hosts before starting Host Manager's thread!");
         }
@@ -121,7 +121,7 @@ public class HostManager implements Runnable {
 
     }
 
-    synchronized void shutdown() {
+    public synchronized void shutdown() {
         logger.info("Host Manager is stopping");
 
         Set<SelectionKey> keys = selector.keys();
@@ -174,9 +174,6 @@ public class HostManager implements Runnable {
     }
 
     void closeChannel(SelectionKey key) throws IOException {
-        Shutdownable shutdownable = (Shutdownable) key.attachment();
-        shutdownable.shutdown();
-
         key.channel().close();
     }
 

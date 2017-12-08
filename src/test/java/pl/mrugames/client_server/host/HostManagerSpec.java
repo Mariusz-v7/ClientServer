@@ -3,7 +3,7 @@ package pl.mrugames.client_server.host;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.mrugames.client_server.client.ClientFactory;
+import pl.mrugames.client_server.client.ClientFactoryV2;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -43,7 +43,7 @@ class HostManagerSpec {
     void givenManagerIsStarted_whenNewHost_thenException() throws IOException {
         hostManager.started = true;
 
-        HostManagerIsRunningException e = assertThrows(HostManagerIsRunningException.class, () -> hostManager.newHost("test", 1999, mock(ClientFactory.class)));
+        HostManagerIsRunningException e = assertThrows(HostManagerIsRunningException.class, () -> hostManager.newHost("test", 1999, mock(ClientFactoryV2.class)));
         assertThat(e.getMessage()).isEqualTo("Host Manager is running. Please submit your hosts before starting Host Manager's thread!");
     }
 
@@ -54,7 +54,7 @@ class HostManagerSpec {
 
     @Test
     void whenNewHost_thenAddToList() {
-        hostManager.newHost("Test", 1234, mock(ClientFactory.class));
+        hostManager.newHost("Test", 1234, mock(ClientFactoryV2.class));
         assertThat(hostManager.hosts).hasSize(1);
 
         Host host = hostManager.hosts.get(0);
@@ -68,8 +68,8 @@ class HostManagerSpec {
         ServerSocketChannel factoryProduct = mock(ServerSocketChannel.class);
         doReturn(factoryProduct).when(hostManager).serverSocketChannelFactory(any(Host.class));
 
-        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class));
-        Host host2 = new Host("Host 2", 1235, mock(ClientFactory.class));
+        Host host1 = new Host("Host 1", 1234, mock(ClientFactoryV2.class));
+        Host host2 = new Host("Host 2", 1235, mock(ClientFactoryV2.class));
 
         hostManager.hosts.add(host1);
         hostManager.hosts.add(host2);
@@ -87,7 +87,7 @@ class HostManagerSpec {
     void factoryThrowsException_catchIt() throws IOException {
         doThrow(RuntimeException.class).when(hostManager).serverSocketChannelFactory(any());
 
-        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class));
+        Host host1 = new Host("Host 1", 1234, mock(ClientFactoryV2.class));
         hostManager.hosts.add(host1);
 
         hostManager.startHosts();
@@ -119,9 +119,9 @@ class HostManagerSpec {
     }
 
     @Test
-    void givenFactoryThrowsException_whenClientAccept_thenCloseSocket() throws IOException {
+    void givenFactoryThrowsException_whenClientAccept_thenCloseSocket() throws Exception {
         Host host = mock(Host.class);
-        ClientFactory clientFactory = mock(ClientFactory.class);
+        ClientFactoryV2 clientFactory = mock(ClientFactoryV2.class);
         doThrow(RuntimeException.class).when(clientFactory).create(any());
 
         doReturn(clientFactory).when(host).getClientFactory();

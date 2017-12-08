@@ -1,31 +1,36 @@
 package pl.mrugames.client_server.client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.CountDownLatch;
 
-public class SimpleClientWorker implements ClientWorker {
-    public static class Factory implements ClientWorkerFactory<String, String> {
+public class SimpleClientWorker implements Runnable {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    public static class Factory implements ClientWorkerFactoryV2<String, String, String, String> {
         @Override
-        public ClientWorker create(Comm<String, String> comm, Runnable shutdownSwitch, ClientInfo clientInfo) {
+        public Runnable create(CommV2<String, String, String, String> comm, ClientInfo clientInfo) {
             return new SimpleClientWorker(comm);
         }
     }
 
-    private final Comm<String, String> comm;
-    private final CountDownLatch shutdownSignal = new CountDownLatch(1);
+    private final CommV2<String, String, String, String> comm;
+    final CountDownLatch shutdownSignal = new CountDownLatch(1);
 
-    public SimpleClientWorker(Comm<String, String> comm) {
+    public SimpleClientWorker(CommV2<String, String, String, String> comm) {
         this.comm = comm;
     }
 
     @Override
-    public void onClientTermination() {
-        shutdownSignal.countDown();
-    }
-
-    @Override
     public void run() {
+        try {
+            comm.receive();
+        } catch (Exception e) {
+            logger.info("Client exception:", e);
+        }
 
+        shutdownSignal.countDown();
     }
 
     void waitForShutdown() throws InterruptedException {
@@ -36,7 +41,7 @@ public class SimpleClientWorker implements ClientWorker {
         return shutdownSignal.getCount() == 0;
     }
 
-    Comm<String, String> getComm() {
+    CommV2<String, String, String, String> getComm() {
         return comm;
     }
 }

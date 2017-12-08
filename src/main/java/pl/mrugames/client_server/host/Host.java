@@ -2,19 +2,19 @@ package pl.mrugames.client_server.host;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.client.ClientFactory;
+import pl.mrugames.client_server.client.ClientFactoryV2;
 
 import java.nio.channels.ServerSocketChannel;
 
-class Host implements Shutdownable {
+class Host {
     private final static Logger logger = LoggerFactory.getLogger(Host.class);
 
     private final String name;
     private final int port;
-    private final ClientFactory clientFactory;
+    private final ClientFactoryV2 clientFactory;
     private volatile ServerSocketChannel serverSocketChannel;
 
-    Host(String name, int port, ClientFactory clientFactory) {
+    Host(String name, int port, ClientFactoryV2 clientFactory) {
         this.name = name;
         this.port = port;
         this.clientFactory = clientFactory;
@@ -28,7 +28,7 @@ class Host implements Shutdownable {
         return port;
     }
 
-    ClientFactory getClientFactory() {
+    ClientFactoryV2 getClientFactory() {
         return clientFactory;
     }
 
@@ -38,13 +38,6 @@ class Host implements Shutdownable {
 
     void setServerSocketChannel(ServerSocketChannel serverSocketChannel) {
         this.serverSocketChannel = serverSocketChannel;
-    }
-
-    @Override
-    public void shutdown() {
-        logger.info("[{}] Host is shutting down", name);
-        clientFactory.shutdown();
-        logger.info("[{}] Host has shutdown", name);
     }
 
     @Override

@@ -1,6 +1,5 @@
 package pl.mrugames.client_server.client;
 
-import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +37,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now().minusSeconds(31)).when(comm).getLastDataSent();
         doReturn(Instant.now()).when(comm).getLastDataReceived();
 
-        assertTrue(watchdog.isTimeout(comm));
+        assertTrue(watchdog.isTimeout(comm, ""));
     }
 
     @Test
@@ -47,7 +46,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now()).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(31)).when(comm).getLastDataReceived();
 
-        assertTrue(watchdog.isTimeout(comm));
+        assertTrue(watchdog.isTimeout(comm, ""));
     }
 
     @Test
@@ -56,7 +55,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now()).when(comm).getLastDataSent();
         doReturn(Instant.now()).when(comm).getLastDataReceived();
 
-        assertFalse(watchdog.isTimeout(comm));
+        assertFalse(watchdog.isTimeout(comm, ""));
     }
 
     @Test
@@ -65,7 +64,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now().minusSeconds(10)).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(5)).when(comm).getLastDataReceived();
 
-        assertThat(watchdog.calculateSecondsToTimeout(comm)).isCloseTo(30 - 10, Offset.offset(2L));
+        assertThat(watchdog.calculateSecondsToTimeout(comm)).isEqualTo(20);
     }
 
     @Test
@@ -74,7 +73,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now().minusSeconds(5)).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(10)).when(comm).getLastDataReceived();
 
-        assertThat(watchdog.calculateSecondsToTimeout(comm)).isCloseTo(30 - 10, Offset.offset(2L));
+        assertThat(watchdog.calculateSecondsToTimeout(comm)).isEqualTo(20);
     }
 
     @Test
@@ -83,6 +82,15 @@ class ClientWatchdogSpec {
         doReturn(Instant.now().minusSeconds(15)).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(15)).when(comm).getLastDataReceived();
 
-        assertThat(watchdog.calculateSecondsToTimeout(comm)).isCloseTo(30 - 15, Offset.offset(2L));
+        assertThat(watchdog.calculateSecondsToTimeout(comm)).isEqualTo(15);
+    }
+
+    @Test
+    void calculateTimeoutCeiling() {
+        CommV2 comm = mock(CommV2.class);
+        doReturn(Instant.now().minusSeconds(29).minusMillis(50)).when(comm).getLastDataSent();
+        doReturn(Instant.now().minusSeconds(15)).when(comm).getLastDataReceived();
+
+        assertThat(watchdog.calculateSecondsToTimeout(comm)).isEqualTo(1);
     }
 }

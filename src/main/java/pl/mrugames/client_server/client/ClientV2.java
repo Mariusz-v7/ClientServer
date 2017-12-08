@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.initializers.Initializer;
 
 import java.net.Socket;
+import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +47,8 @@ class ClientV2 implements Runnable {
             clientWorker.run();
 
             logger.info("[{}] Client's main loop has finished", name);
+        } catch (ClosedChannelException e) {
+            logger.info("[{}] Client's socket has been closed by other thread!", name);
         } catch (Exception e) {
             logger.info("[{}] Client finished with exception", name, e);
         }

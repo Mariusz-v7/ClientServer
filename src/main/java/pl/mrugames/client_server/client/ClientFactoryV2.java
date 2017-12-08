@@ -37,16 +37,16 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
     private final ClientWatchdog watchdog;
     final long clientStartTimeoutMilliseconds = 1000;
 
-    ClientFactoryV2(String factoryName,
-                    String clientNamePrefix,
-                    ClientWorkerFactoryV2<In, Out, Reader, Writer> clientWorkerFactory,
-                    List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories,
-                    Function<OutputStream, ClientWriter<Writer>> clientWriterFactory,
-                    Function<InputStream, ClientReader<Reader>> clientReaderFactory,
-                    FilterProcessorV2 inputFilterProcessor,
-                    FilterProcessorV2 outputFilterProcessor,
-                    ExecutorService executorService,
-                    ClientWatchdog clientWatchdog
+    public ClientFactoryV2(String factoryName,
+                           String clientNamePrefix,
+                           ClientWorkerFactoryV2<In, Out, Reader, Writer> clientWorkerFactory,
+                           List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories,
+                           Function<OutputStream, ClientWriter<Writer>> clientWriterFactory,
+                           Function<InputStream, ClientReader<Reader>> clientReaderFactory,
+                           FilterProcessorV2 inputFilterProcessor,
+                           FilterProcessorV2 outputFilterProcessor,
+                           ExecutorService executorService,
+                           ClientWatchdog clientWatchdog
     ) {
         this.clientId = new AtomicLong();
         this.factoryName = factoryName;

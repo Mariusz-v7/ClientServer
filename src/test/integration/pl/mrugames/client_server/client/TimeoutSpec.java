@@ -5,13 +5,17 @@ import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.HealthCheckManager;
+import pl.mrugames.client_server.client.filters.FilterProcessorV2;
 import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
 import pl.mrugames.client_server.host.HostManager;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.time.LocalTime;
@@ -22,15 +26,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 class TimeoutSpec {
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     private int port = 10000;
     private int timeoutSeconds = 10;
-    private SimpleClientWorker clientWorker;
+    private volatile SimpleClientWorker clientWorker;
     private CountDownLatch clientConnected;
     private Runnable onClientWorkerCreate;
     private HostManager hostManager;
@@ -38,7 +47,7 @@ class TimeoutSpec {
 
     @BeforeEach
     void before() throws InterruptedException, IOException {
-        executorService = Executors.newSingleThreadExecutor();
+        executorService = Executors.newCachedThreadPool();
         hostManager = new HostManager();
 
         HealthCheckManager.setMetricRegistry(new MetricRegistry());
@@ -46,24 +55,33 @@ class TimeoutSpec {
 
         SimpleClientWorker.Factory workerFactory = spy(new SimpleClientWorker.Factory());
 
-        ClientFactory clientFactory = new ClientFactory<>(
+        ClientWatchdog watchdog = new ClientWatchdog("Test Watchdog", timeoutSeconds);
+        executorService.execute(watchdog);
+        watchdog.awaitStart(10, TimeUnit.SECONDS);
+
+        ClientFactoryV2 clientFactory = new ClientFactoryV2<>(
                 "Timeout Client",
-                timeoutSeconds,
-                TextWriter::new,
-                TextReader::new,
+                "Test Client",
                 workerFactory,
                 Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList()
+                TextWriter::new,
+                TextReader::new,
+                new FilterProcessorV2(Collections.emptyList()),
+                new FilterProcessorV2(Collections.emptyList()),
+                executorService,
+                watchdog
         );
 
         doAnswer(a -> {
             clientWorker = spy((SimpleClientWorker) a.callRealMethod());
-            if (onClientWorkerCreate != null)
+
+            if (onClientWorkerCreate != null) {
                 onClientWorkerCreate.run();
+            }
+
             clientConnected.countDown();
             return clientWorker;
-        }).when(workerFactory).create(any(), any(), any());
+        }).when(workerFactory).create(any(), any());
 
         hostManager.newHost("Timeout tests", port, clientFactory);
 
@@ -72,15 +90,32 @@ class TimeoutSpec {
 
     @AfterEach
     void after() throws InterruptedException, IOException {
+        hostManager.shutdown();
         executorService.shutdownNow();
-        executorService.awaitTermination(30, TimeUnit.SECONDS);
+        boolean result = executorService.awaitTermination(10, TimeUnit.SECONDS);
+        assertTrue(result);
     }
 
-    private void mockHostToSendEverySecond() {
+    private void mockHostToSendEverySecond(boolean shouldKeepReceiving) {
         onClientWorkerCreate = () -> doAnswer(a -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                clientWorker.getComm().send("test");
-                TimeUnit.SECONDS.sleep(1);
+            try {
+                while (!Thread.currentThread().isInterrupted()) {
+                    logger.info("Host sending message");
+                    clientWorker.getComm().send("host - test");
+                    logger.info("Host message sent");
+
+                    if (shouldKeepReceiving) {
+                        logger.info("Host receiving message");
+                        clientWorker.getComm().receive();
+                        logger.info("Host received message");
+                    }
+
+                    TimeUnit.SECONDS.sleep(1);
+                }
+            } catch (Exception e) {
+                logger.error("", e);
+            } finally {
+                clientWorker.shutdownSignal.countDown();
             }
 
             return null;
@@ -91,9 +126,15 @@ class TimeoutSpec {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.submit(() -> {
             try {
+                InputStream inputStream = socket.getInputStream();
+
                 BufferedWriter bos = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
                 while (!Thread.currentThread().isInterrupted()) {
-                    bos.write("test");
+                    int available = inputStream.available();
+                    logger.info("Client, bytes to read: {}", available);
+
+                    logger.info("Client sending message");
+                    bos.write("Client - test\n\r");
                     bos.flush();
                     TimeUnit.SECONDS.sleep(1);
                 }
@@ -115,17 +156,20 @@ class TimeoutSpec {
 
     @Test
     void givenNewClientConnects_whenNoReadNoWriteForGivenTime_thenClientIsShutDown() throws IOException, InterruptedException {
-        Socket socket = new Socket("localhost", port);
-        clientConnected.await();
+        assertTimeout(ofSeconds(15), () -> {
 
-        LocalTime before = LocalTime.now();
-        clientWorker.waitForShutdown();
-        LocalTime after = LocalTime.now();
+            Socket socket = new Socket("localhost", port);
+            clientConnected.await();
 
-        long diff = ChronoUnit.MILLIS.between(before, after);
+            LocalTime before = LocalTime.now();
+            clientWorker.waitForShutdown();
+            LocalTime after = LocalTime.now();
 
-        assertThat(diff).isCloseTo(timeoutSeconds * 1000, Percentage.withPercentage(95));
-        socket.close();
+            long diff = ChronoUnit.MILLIS.between(before, after);
+
+            assertThat(diff).isCloseTo(timeoutSeconds * 1000, Percentage.withPercentage(95));
+            socket.close();
+        });
     }
 
     @Test
@@ -147,7 +191,7 @@ class TimeoutSpec {
 
     @Test
     void givenNewClientConnectsAndDoesNotWriteAnythingAndHostSendsEveryOneSecond_whenTimeoutElapses_thenClientIsShutDown() throws InterruptedException, IOException {
-        mockHostToSendEverySecond();
+        mockHostToSendEverySecond(false);
 
         Socket socket = new Socket("localhost", port);
         clientConnected.await();
@@ -164,7 +208,7 @@ class TimeoutSpec {
 
     @Test
     void givenNewClientConnects_whenBothClientAndHostKeepCommunicating_thenNoTimeout() throws IOException, InterruptedException {
-        mockHostToSendEverySecond();
+        mockHostToSendEverySecond(true);
 
         Socket socket = new Socket("localhost", port);
         clientConnected.await();

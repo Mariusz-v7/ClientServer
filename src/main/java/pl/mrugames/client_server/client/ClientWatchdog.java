@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -27,13 +28,15 @@ public class ClientWatchdog implements Runnable {
 
     private final String name;
     private final long timeoutSeconds;
+    private final CountDownLatch startSignal;
     final CopyOnWriteArraySet<Container> comms;
     final Semaphore semaphore;
     private volatile boolean running;
 
-    ClientWatchdog(String name, long timeoutSeconds) {
+    public ClientWatchdog(String name, long timeoutSeconds) {
         this.name = name;
         this.timeoutSeconds = timeoutSeconds;
+        this.startSignal = new CountDownLatch(1);
         comms = new CopyOnWriteArraySet<>();
         semaphore = new Semaphore(0);
     }
@@ -42,10 +45,14 @@ public class ClientWatchdog implements Runnable {
     public void run() {
         try {
             running = true;
+            startSignal.countDown();
+
             logger.info("[{}] Watchdog have started in thread: {}", name, Thread.currentThread().getName());
 
             long nextTimeout = -1;
+            int permitsToBeRestored = 0;
             while (!Thread.currentThread().isInterrupted()) {
+                // TODO: implementation is wrong at the moment...
                 try {
                     if (nextTimeout == -1) {
                         logger.info("[{}] There are no connections registered. Waiting.", name);
@@ -55,13 +62,18 @@ public class ClientWatchdog implements Runnable {
                         semaphore.tryAcquire(nextTimeout, TimeUnit.SECONDS);
                     }
 
+                    if (permitsToBeRestored > 0) {
+                        semaphore.release(permitsToBeRestored);
+                    }
+
                     nextTimeout = -1;
+                    permitsToBeRestored = 0;
 
                     logger.info("[{}] Starting cleanup.", name);
 
                     long amount = 0;
                     for (Container container : comms) {
-                        if (isTimeout(container.comm)) {
+                        if (isTimeout(container.comm, container.clientName)) {
                             logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, container.clientName);
 
                             ++amount;
@@ -75,6 +87,7 @@ public class ClientWatchdog implements Runnable {
 
                             logger.info("[{}] Connection closed. Client: {}", name, container.clientName);
                         } else {
+                            ++permitsToBeRestored;
                             long timeout = calculateSecondsToTimeout(container.comm);
                             if (nextTimeout == -1 || timeout < nextTimeout) {
                                 nextTimeout = timeout;
@@ -93,18 +106,31 @@ public class ClientWatchdog implements Runnable {
         }
     }
 
-    boolean isTimeout(CommV2 comm) {
+    boolean isTimeout(CommV2 comm, String clientName) {
         Instant timeout = Instant.now().minusSeconds(timeoutSeconds);
-        return comm.getLastDataReceived().isBefore(timeout) || comm.getLastDataSent().isBefore(timeout);
+        if (comm.getLastDataReceived().isBefore(timeout)) {
+            logger.info("[{}] Reception timeout. Client: {}", name, clientName);
+            return true;
+        }
+
+        if (comm.getLastDataSent().isBefore(timeout)) {
+            logger.info("[{}] Send timeout. Client: {}", name, clientName);
+            return true;
+        }
+
+        return false;
     }
 
     long calculateSecondsToTimeout(CommV2 comm) {
         Instant timeout = Instant.now().minusSeconds(timeoutSeconds);
 
-        long receiveTimeout = Duration.between(timeout, comm.getLastDataReceived()).toSeconds();
-        long sendTimeout = Duration.between(timeout, comm.getLastDataSent()).toSeconds();
+        long receiveTimeout = Duration.between(timeout, comm.getLastDataReceived()).toMillis();
+        long sendTimeout = Duration.between(timeout, comm.getLastDataSent()).toMillis();
 
-        return receiveTimeout > sendTimeout ? sendTimeout : receiveTimeout;
+        double result = receiveTimeout > sendTimeout ? sendTimeout : receiveTimeout;
+        result /= 1000.0;
+
+        return (long) Math.ceil(result);
     }
 
     synchronized void register(CommV2 comm, Socket socket, String clientName) {
@@ -115,5 +141,9 @@ public class ClientWatchdog implements Runnable {
 
     public boolean isRunning() {
         return running;
+    }
+
+    boolean awaitStart(long timeout, TimeUnit timeUnit) throws InterruptedException {
+        return startSignal.await(timeout, timeUnit);
     }
 }
