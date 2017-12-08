@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.Socket;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Semaphore;
@@ -59,6 +60,15 @@ public class ClientWatchdog implements Runnable {
     boolean isTimeout(CommV2 comm) {
         Instant timeout = Instant.now().minusSeconds(timeoutSeconds);
         return comm.getLastDataReceived().isBefore(timeout) || comm.getLastDataSent().isBefore(timeout);
+    }
+
+    long calculateSecondsToTimeout(CommV2 comm) {
+        Instant timeout = Instant.now().minusSeconds(timeoutSeconds);
+
+        long receiveTimeout = Duration.between(timeout, comm.getLastDataReceived()).toSeconds();
+        long sendTimeout = Duration.between(timeout, comm.getLastDataSent()).toSeconds();
+
+        return receiveTimeout > sendTimeout ? sendTimeout : receiveTimeout;
     }
 
     synchronized void register(CommV2 comm, Socket socket) {
