@@ -62,6 +62,10 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
     }
 
     public ClientV2 create(Socket socket) throws Exception {
+        if (!watchdog.isRunning()) {
+            throw new IllegalStateException("Client Watchdog is dead! Cannot accept new connection.");
+        }
+
         try {
             logger.info("[{}] New client is being created!", factoryName);
 

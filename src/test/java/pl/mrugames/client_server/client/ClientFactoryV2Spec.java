@@ -57,6 +57,7 @@ class ClientFactoryV2Spec {
         executorService = mock(ExecutorService.class);
 
         clientWatchdog = mock(ClientWatchdog.class);
+        doReturn(true).when(clientWatchdog).isRunning();
 
         clientFactory = spy(new ClientFactoryV2<>("factory",
                 "client",
@@ -163,4 +164,13 @@ class ClientFactoryV2Spec {
 
         verify(clientWatchdog).register(comm, socket, client.getName());
     }
+
+    @Test
+    void givenWatchdogNotRunning_whenCreate_thenException() {
+        doReturn(false).when(clientWatchdog).isRunning();
+
+        IllegalStateException illegalStateException = assertThrows(IllegalStateException.class, () -> clientFactory.create(mock(Socket.class)));
+        assertThat(illegalStateException.getMessage()).isEqualTo("Client Watchdog is dead! Cannot accept new connection.");
+    }
+
 }

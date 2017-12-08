@@ -29,64 +29,68 @@ public class ClientWatchdog implements Runnable {
     private final long timeoutSeconds;
     final CopyOnWriteArraySet<Container> comms;
     final Semaphore semaphore;
+    private volatile boolean running;
 
     ClientWatchdog(String name, long timeoutSeconds) {
         this.name = name;
         this.timeoutSeconds = timeoutSeconds;
         comms = new CopyOnWriteArraySet<>();
         semaphore = new Semaphore(0);
-        // TODO: remember to run it somewhere in factory
     }
 
     @Override
     public void run() {
-        logger.info("[{}] Watchdog have started in thread: {}", name, Thread.currentThread().getName());
+        try {
+            running = true;
+            logger.info("[{}] Watchdog have started in thread: {}", name, Thread.currentThread().getName());
 
-        long nextTimeout = -1;
-        while (!Thread.currentThread().isInterrupted()) {
-            try {
-                if (nextTimeout == -1) {
-                    logger.info("[{}] There are no connections registered. Waiting.", name);
-                    semaphore.acquire();
-                } else {
-                    logger.info("[{}] Next possible timeout in {} seconds. Waiting.", name, nextTimeout);
-                    semaphore.tryAcquire(nextTimeout, TimeUnit.SECONDS);
-                }
-
-                nextTimeout = -1;
-
-                logger.info("[{}] Starting cleanup.", name);
-
-                long amount = 0;
-                for (Container container : comms) {
-                    if (isTimeout(container.comm)) {
-                        logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, container.clientName);
-
-                        ++amount;
-                        try {
-                            container.socket.close();
-                        } catch (Exception e) {
-                            logger.error("[{}] Error during socket close. Client: {}", name, container.clientName, e);
-                        } finally {
-                            comms.remove(container);
-                        }
-
-                        logger.info("[{}] Connection closed. Client: {}", name, container.clientName);
+            long nextTimeout = -1;
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    if (nextTimeout == -1) {
+                        logger.info("[{}] There are no connections registered. Waiting.", name);
+                        semaphore.acquire();
                     } else {
-                        long timeout = calculateSecondsToTimeout(container.comm);
-                        if (nextTimeout == -1 || timeout < nextTimeout) {
-                            nextTimeout = timeout;
-                        }
+                        logger.info("[{}] Next possible timeout in {} seconds. Waiting.", name, nextTimeout);
+                        semaphore.tryAcquire(nextTimeout, TimeUnit.SECONDS);
                     }
 
-                    logger.info("[{}] Total connections closed: {}. Amount of connections registered after cleanup: {}", name, amount, comms.size());
-                }
-            } catch (InterruptedException e) {
-                break;
-            }
-        }
+                    nextTimeout = -1;
 
-        logger.info("[{}] Watchdog have finished in thread: {}", name, Thread.currentThread().getName());
+                    logger.info("[{}] Starting cleanup.", name);
+
+                    long amount = 0;
+                    for (Container container : comms) {
+                        if (isTimeout(container.comm)) {
+                            logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, container.clientName);
+
+                            ++amount;
+                            try {
+                                container.socket.close();
+                            } catch (Exception e) {
+                                logger.error("[{}] Error during socket close. Client: {}", name, container.clientName, e);
+                            } finally {
+                                comms.remove(container);
+                            }
+
+                            logger.info("[{}] Connection closed. Client: {}", name, container.clientName);
+                        } else {
+                            long timeout = calculateSecondsToTimeout(container.comm);
+                            if (nextTimeout == -1 || timeout < nextTimeout) {
+                                nextTimeout = timeout;
+                            }
+                        }
+
+                        logger.info("[{}] Total connections closed: {}. Amount of connections registered after cleanup: {}", name, amount, comms.size());
+                    }
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        } finally {
+            running = false;
+            logger.info("[{}] Watchdog have finished in thread: {}", name, Thread.currentThread().getName());
+        }
     }
 
     boolean isTimeout(CommV2 comm) {
@@ -109,4 +113,7 @@ public class ClientWatchdog implements Runnable {
         logger.info("[{}] New connection has been registered. Client: {}", name, clientName);
     }
 
+    public boolean isRunning() {
+        return running;
+    }
 }
