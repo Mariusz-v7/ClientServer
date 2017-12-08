@@ -161,6 +161,6 @@ class ClientFactoryV2Spec {
 
         clientFactory.create(socket);
 
-        verify(clientWatchdog).register(comm, socket);
+        verify(clientWatchdog).register(comm, socket, client.getName());
     }
 }

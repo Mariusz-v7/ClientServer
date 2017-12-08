@@ -71,7 +71,7 @@ public class ClientFactoryV2<In, Out, Reader extends Serializable, Writer extend
             List<Initializer> initializers = createInitializers(clientName, socket);
             CommV2<In, Out, Reader, Writer> comm = createComms(clientName, socket);
 
-            watchdog.register(comm, socket);
+            watchdog.register(comm, socket, clientName);
 
             Runnable clientWorker = createWorker(clientName, comm, clientInfo);
 

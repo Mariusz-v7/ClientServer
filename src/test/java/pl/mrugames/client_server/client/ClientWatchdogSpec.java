@@ -28,7 +28,7 @@ class ClientWatchdogSpec {
 
     @Test
     void whenRegister_thenIncreaseSemaphore() {
-        watchdog.register(mock(CommV2.class), mock(Socket.class));
+        watchdog.register(mock(CommV2.class), mock(Socket.class), "client");
         assertThat(watchdog.semaphore.availablePermits()).isEqualTo(1);
     }
 
