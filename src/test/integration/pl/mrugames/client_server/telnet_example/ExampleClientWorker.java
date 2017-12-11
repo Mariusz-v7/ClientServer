@@ -47,14 +47,13 @@ public class ExampleClientWorker implements Runnable {
                     } else if (received.equals("shutdown")) {
                         comm.send("Shutdown procedure initiated!\n");
                         onShutdownCommand.run();
+                        break;
                     }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        onShutdownCommand.run();
 
         logger.info("Client worker has been terminated");
     }
