@@ -2,25 +2,17 @@ package pl.mrugames.client_server.client_example;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.client.ClientWorker;
-import pl.mrugames.client_server.client.Comm;
+import pl.mrugames.client_server.client.CommV2;
 
 import java.util.concurrent.CountDownLatch;
 
-public class LocalClientWorker implements ClientWorker {
+public class LocalClientWorker implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(LocalClientWorker.class);
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
-    private final Comm<String, String> comm;
-    private final Runnable shutdownSwitch;
+    private final CommV2<String, String, String, String> comm;
 
-    public LocalClientWorker(Comm<String, String> comm, Runnable shutdownSwitch) {
+    public LocalClientWorker(CommV2<String, String, String, String> comm) {
         this.comm = comm;
-        this.shutdownSwitch = shutdownSwitch;
-    }
-
-    @Override
-    public void onClientTermination() {
-        shutdownSwitch.run();
     }
 
     @Override
@@ -33,14 +25,14 @@ public class LocalClientWorker implements ClientWorker {
                 logger.info("Sending command: {}", i);
                 comm.send("Command: " + i + "\n");
             }
+
+            logger.info("Sending shutdown command");
+            comm.send("shutdown\n");
+
         } catch (Exception e) {
             logger.error("Exception", e);
         }
 
-        logger.info("Sending shutdown command");
-        comm.send("shutdown\n");
-
-        shutdownSwitch.run();
         shutdownLatch.countDown();
 
         logger.info("Local client shutdown");

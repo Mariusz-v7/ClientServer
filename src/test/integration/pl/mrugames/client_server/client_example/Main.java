@@ -4,19 +4,21 @@ import com.codahale.metrics.MetricRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.HealthCheckManager;
-import pl.mrugames.client_server.client.ClientFactory;
-import pl.mrugames.client_server.client.helpers.ClientFactoryBuilder;
+import pl.mrugames.client_server.client.ClientFactoryBuilder;
+import pl.mrugames.client_server.client.ClientFactoryV2;
+import pl.mrugames.client_server.client.ClientV2;
 import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
 
-import java.io.IOException;
 import java.net.Socket;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String... args) throws InterruptedException, IOException, ExecutionException {
+    public static void main(String... args) throws Exception {
         if (args.length != 2) {
             logger.error("Please provide address and port");
             return;
@@ -29,15 +31,17 @@ public class Main {
         final String address = args[0];
         final int port = Integer.valueOf(args[1]);
 
-        ClientFactory<String, String, String, String> clientFactory =
-                new ClientFactoryBuilder<>(TextWriter::new, TextReader::new, new LocalClientWorkerFactory())
-                        .setClientName("Local Client")
+        ExecutorService executorService = Executors.newCachedThreadPool();
+
+        ClientFactoryV2<String, String, String, String> clientFactory =
+                new ClientFactoryBuilder<>(TextWriter::new, TextReader::new, new LocalClientWorkerFactory(), executorService)
+                        .setName("Local Client")
                         .build();
 
-        LocalClientWorker localClientWorker = (LocalClientWorker) clientFactory.create(new Socket(address, port)).get();
+        ClientV2 localClientWorker = clientFactory.create(new Socket(address, port));
 
-        localClientWorker.getShutdownLatch().await();
+        localClientWorker.awaitStop(1, TimeUnit.DAYS);
 
-        clientFactory.shutdown();
+        executorService.shutdownNow();
     }
 }

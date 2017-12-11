@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-class ClientV2 implements Runnable {
+public class ClientV2 implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientV2.class);
 
     private final String name;
@@ -18,6 +18,7 @@ class ClientV2 implements Runnable {
     private final Runnable clientWorker;
     private final Socket socket;
     private final CountDownLatch startSignal;
+    private final CountDownLatch shutdownSignal;
 
     ClientV2(String name, List<Initializer> initializers, Runnable clientWorker, Socket socket) {
         this.name = name;
@@ -25,6 +26,7 @@ class ClientV2 implements Runnable {
         this.clientWorker = clientWorker;
         this.socket = socket;
         this.startSignal = new CountDownLatch(1);
+        this.shutdownSignal = new CountDownLatch(1);
 
         logger.info("[{}] New client has been created", name);
     }
@@ -51,6 +53,8 @@ class ClientV2 implements Runnable {
             logger.info("[{}] Client's socket has been closed by other thread!", name);
         } catch (Exception e) {
             logger.info("[{}] Client finished with exception", name, e);
+        } finally {
+            shutdownSignal.countDown();
         }
 
         logger.info("[{}] Client has been terminated in thread: {}", name, Thread.currentThread().getName());
@@ -68,7 +72,11 @@ class ClientV2 implements Runnable {
         return clientWorker;
     }
 
-    boolean awaitStart(long timeout, TimeUnit timeUnit) throws InterruptedException {
+    public boolean awaitStart(long timeout, TimeUnit timeUnit) throws InterruptedException {
         return startSignal.await(timeout, timeUnit);
+    }
+
+    public boolean awaitStop(long timeout, TimeUnit timeUnit) throws InterruptedException {
+        return shutdownSignal.await(timeout, timeUnit);
     }
 }

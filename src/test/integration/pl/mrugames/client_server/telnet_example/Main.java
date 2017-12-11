@@ -4,15 +4,13 @@ import com.codahale.metrics.MetricRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.HealthCheckManager;
+import pl.mrugames.client_server.client.ClientFactoryBuilder;
 import pl.mrugames.client_server.client.ClientFactoryV2;
-import pl.mrugames.client_server.client.ClientWatchdog;
-import pl.mrugames.client_server.client.filters.FilterProcessorV2;
 import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
 import pl.mrugames.client_server.host.HostManager;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -36,21 +34,9 @@ public class Main {
 
         logger.info("Main started...");
 
-        ClientWatchdog watchdog = new ClientWatchdog("Test watchdog", 60);
-        executorService.execute(watchdog);
-
-        ClientFactoryV2 clientFactory = new ClientFactoryV2<>(
-                "Test factory",
-                "Test client",
-                new ExampleClientWorkerFactory(Main::shutdown),
-                Collections.emptyList(),
-                TextWriter::new,
-                TextReader::new,
-                new FilterProcessorV2(Collections.emptyList()),
-                new FilterProcessorV2(Collections.emptyList()),
-                executorService,
-                watchdog
-        );
+        ClientFactoryV2 clientFactory = new ClientFactoryBuilder<>(TextWriter::new, TextReader::new, new ExampleClientWorkerFactory(Main::shutdown), executorService)
+                .setName("Text Server")
+                .build();
 
         hostManager.newHost("Main Host", port, clientFactory);
 

@@ -1,6 +1,5 @@
-package pl.mrugames.client_server.client.helpers;
+package pl.mrugames.client_server.client;
 
-import pl.mrugames.client_server.client.*;
 import pl.mrugames.client_server.client.filters.FilterProcessorV2;
 import pl.mrugames.client_server.client.filters.StringToWebSocketFrameFilter;
 import pl.mrugames.client_server.client.filters.WebSocketFrameToStringFilter;
@@ -37,11 +36,15 @@ public class ClientFactories {
         );
     }
 
-    public static ClientFactory<? extends Serializable, ? extends Serializable, ? extends Serializable, ? extends Serializable> createClientFactoryForJavaServer(
-            String name, int timeoutSeconds, ClientWorkerFactory<? extends Serializable, ? extends Serializable> clientWorkerFactory) {
+    public static ClientFactoryV2<?, ?, ? extends Serializable, ? extends Serializable> createClientFactoryForJavaServer(
+            String name,
+            int timeoutSeconds,
+            ClientWorkerFactoryV2<?, ?, ? extends Serializable, ? extends Serializable> clientWorkerFactory,
+            ExecutorService executorService
+    ) {
 
-        return new ClientFactoryBuilder<>(ObjectWriter::new, ObjectReader::new, clientWorkerFactory)
-                .setClientName(name)
+        return new ClientFactoryBuilder<>(ObjectWriter::new, ObjectReader::new, clientWorkerFactory, executorService)
+                .setName(name)
                 .setTimeout(timeoutSeconds)
                 .build();
     }
