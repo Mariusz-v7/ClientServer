@@ -195,4 +195,34 @@ class ClientWatchdogSpec {
 
         assertThat(watchdog.check()).isEqualTo(20);
     }
+
+    @Test
+    void givenConnectionNotTimedOut_whenWatchdogIsRun_thenWaitGivenAmountOfSeconds() throws InterruptedException {
+        doReturn(false).when(watchdog).isTimeout(any(), any());
+        doReturn(1L).when(watchdog).calculateSecondsToTimeout(any());
+
+        watchdog.register(mock(CommV2.class), mock(Socket.class), "");
+
+        Thread.sleep(550);
+        verify(watchdog, times(1)).check();
+
+        Thread.sleep(550);
+        verify(watchdog, times(2)).check();
+    }
+
+    @Test
+    void givenConnectionNotTimedOut_whenWatchdogIsRun_thenNextCallIsWhenNewConnectionIsRegistered() throws InterruptedException {
+        doReturn(false).when(watchdog).isTimeout(any(), any());
+        doReturn(10L).when(watchdog).calculateSecondsToTimeout(any());
+
+        watchdog.register(mock(CommV2.class), mock(Socket.class), "");
+
+        Thread.sleep(550);
+        verify(watchdog, times(1)).check();
+
+        watchdog.register(mock(CommV2.class), mock(Socket.class), "");
+
+        Thread.sleep(550);
+        verify(watchdog, times(2)).check();
+    }
 }

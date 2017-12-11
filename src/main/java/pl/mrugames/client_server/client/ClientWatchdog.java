@@ -49,16 +49,27 @@ public class ClientWatchdog implements Runnable {
 
             logger.info("[{}] Watchdog have started in thread: {}", name, Thread.currentThread().getName());
 
+            long nextPossibleTimeout = -1;
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    if (semaphore.availablePermits() == 0) {
+                    if (nextPossibleTimeout == -1) {
                         logger.info("[{}] There are no connections registered.", name);
+                        semaphore.acquire();
+                        semaphore.release();
+                    } else {
+                        int connections = comms.size();
+                        logger.info("[{}] There are {} connections registered. Next possible timeout in: {} s.", name, connections, nextPossibleTimeout);
+
+                        if (semaphore.tryAcquire(connections + 1, nextPossibleTimeout, TimeUnit.SECONDS)) {
+                            logger.info("[{}] New connection has been registered. Running next check.", name);
+                            semaphore.release(connections + 1);
+                        } else {
+                            logger.info("[{}] Possible timeout elapsed. Running next check.", name);
+                        }
                     }
 
-                    semaphore.acquire();
-
                     logger.info("[{}] There are {} connections registered. Starting clean up.", name, comms.size());
-                    check();
+                    nextPossibleTimeout = check();
                     logger.info("[{}] Clean up finished. There are {} connections registered.", name, comms.size());
 
                 } catch (InterruptedException e) {
@@ -71,10 +82,12 @@ public class ClientWatchdog implements Runnable {
         }
     }
 
-    long check() {
+    long check() throws InterruptedException {
         long nextPossibleTimeout = -1;
 
         for (Container container : comms) {
+            semaphore.acquire();
+
             if (isTimeout(container.comm, container.clientName)) {
                 logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, container.clientName);
 
@@ -93,6 +106,8 @@ public class ClientWatchdog implements Runnable {
                 if (nextPossibleTimeout == -1 || nextPossibleTimeout > nextTimeout) {
                     nextPossibleTimeout = nextTimeout;
                 }
+
+                semaphore.release();
             }
         }
 
