@@ -25,7 +25,9 @@ public class SimpleClientWorker implements Runnable {
     @Override
     public void run() {
         try {
-            comm.receive();
+            while (!Thread.currentThread().isInterrupted()) {
+                comm.receive();
+            }
         } catch (Exception e) {
             logger.info("Client exception:", e);
         }
