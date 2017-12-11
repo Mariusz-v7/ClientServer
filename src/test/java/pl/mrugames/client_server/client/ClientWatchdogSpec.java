@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.net.Socket;
 import java.time.Instant;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +31,10 @@ class ClientWatchdogSpec {
 
     @AfterEach
     void after() throws InterruptedException {
+        stop();
+    }
+
+    private void stop() throws InterruptedException {
         executorService.shutdownNow();
         if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
             fail("Failed to stop");
@@ -43,10 +48,7 @@ class ClientWatchdogSpec {
 
     @Test
     void whenRegister_thenIncreaseSemaphore() throws InterruptedException {
-        executorService.shutdownNow();
-        if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) { // stop it to prevent decreasing permit
-            fail("Failed to stop");
-        }
+        stop(); // stop it to prevent decreasing permit
 
         watchdog.register(mock(CommV2.class), mock(Socket.class), "client");
         assertThat(watchdog.semaphore.availablePermits()).isEqualTo(1);
@@ -124,9 +126,73 @@ class ClientWatchdogSpec {
     @Test
     void givenConnectionRegistered_whenWatchdogIsRun_thenCallCheck() throws InterruptedException {
         Thread.sleep(100);
+        doReturn(true).when(watchdog).isTimeout(any(), any());
         watchdog.register(mock(CommV2.class), mock(Socket.class), "");
 
         Thread.sleep(100);
         verify(watchdog, times(1)).check();
+    }
+
+    @Test
+    void givenConnectionRegistered_whenIsTimeoutReturnTrue_thenRemove() throws InterruptedException, IOException {
+        stop();
+
+        doReturn(true).when(watchdog).isTimeout(any(), any());
+        Socket socket = mock(Socket.class);
+
+        watchdog.register(mock(CommV2.class), socket, "");
+
+        watchdog.check();
+
+        verify(socket).close();
+        assertThat(watchdog.comms).isEmpty();
+    }
+
+    @Test
+    void givenSocketThrowsException_whenCheck_thenCatchIt() throws InterruptedException, IOException {
+        stop();
+
+        doReturn(true).when(watchdog).isTimeout(any(), any());
+        Socket socket = mock(Socket.class);
+        doThrow(IOException.class).when(socket).close();
+
+        watchdog.register(mock(CommV2.class), socket, "");
+
+        watchdog.check();
+
+        verify(socket).close();
+        assertThat(watchdog.comms).isEmpty();
+    }
+
+    @Test
+    void givenAllConnectionsTimedOut_whenCheck_thenReturnMinusOne() throws InterruptedException {
+        stop();
+
+        doReturn(true).when(watchdog).isTimeout(any(), any());
+
+        watchdog.register(mock(CommV2.class), mock(Socket.class), "");
+        watchdog.register(mock(CommV2.class), mock(Socket.class), "");
+
+        assertThat(watchdog.check()).isEqualTo(-1);
+    }
+
+    @Test
+    void givenConnectionsNotTimedOut_whenCheck_thenReturnSoonestPossibleTimeout() throws InterruptedException {
+        stop();
+
+        doReturn(true, false, false).when(watchdog).isTimeout(any(), any());
+
+        CommV2 comm1 = mock(CommV2.class);
+        CommV2 comm2 = mock(CommV2.class);
+        CommV2 comm3 = mock(CommV2.class);
+
+        watchdog.register(comm1, mock(Socket.class), "");
+        watchdog.register(comm2, mock(Socket.class), "");
+        watchdog.register(comm3, mock(Socket.class), "");
+
+        doReturn(30L).when(watchdog).calculateSecondsToTimeout(comm2);
+        doReturn(20L).when(watchdog).calculateSecondsToTimeout(comm3);
+
+        assertThat(watchdog.check()).isEqualTo(20);
     }
 }

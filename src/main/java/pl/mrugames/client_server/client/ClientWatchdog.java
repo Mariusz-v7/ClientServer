@@ -71,8 +71,32 @@ public class ClientWatchdog implements Runnable {
         }
     }
 
-    void check() {
+    long check() {
+        long nextPossibleTimeout = -1;
 
+        for (Container container : comms) {
+            if (isTimeout(container.comm, container.clientName)) {
+                logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, container.clientName);
+
+                try {
+                    container.socket.close();
+                    logger.info("[{}] Connection closed. Client: {}", name, container.clientName);
+                } catch (Exception e) {
+                    logger.error("[{}] Error during socket close. Client: {}", name, container.clientName, e);
+                } finally {
+                    comms.remove(container);
+                }
+
+                logger.info("[{}] Connection removed. Client: {}", name, container.clientName);
+            } else {
+                long nextTimeout = calculateSecondsToTimeout(container.comm);
+                if (nextPossibleTimeout == -1 || nextPossibleTimeout > nextTimeout) {
+                    nextPossibleTimeout = nextTimeout;
+                }
+            }
+        }
+
+        return nextPossibleTimeout;
     }
 
     boolean isTimeout(CommV2 comm, String clientName) {
