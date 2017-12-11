@@ -8,17 +8,17 @@ import java.util.concurrent.CountDownLatch;
 public class SimpleClientWorker implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public static class Factory implements ClientWorkerFactoryV2<String, String, String, String> {
+    public static class Factory implements ClientWorkerFactory<String, String, String, String> {
         @Override
-        public Runnable create(CommV2<String, String, String, String> comm, ClientInfo clientInfo) {
+        public Runnable create(Comm<String, String, String, String> comm, ClientInfo clientInfo) {
             return new SimpleClientWorker(comm);
         }
     }
 
-    private final CommV2<String, String, String, String> comm;
+    private final Comm<String, String, String, String> comm;
     final CountDownLatch shutdownSignal = new CountDownLatch(1);
 
-    public SimpleClientWorker(CommV2<String, String, String, String> comm) {
+    public SimpleClientWorker(Comm<String, String, String, String> comm) {
         this.comm = comm;
     }
 
@@ -43,7 +43,7 @@ public class SimpleClientWorker implements Runnable {
         return shutdownSignal.getCount() == 0;
     }
 
-    CommV2<String, String, String, String> getComm() {
+    Comm<String, String, String, String> getComm() {
         return comm;
     }
 }

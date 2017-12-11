@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.HealthCheckManager;
 import pl.mrugames.client_server.client.ClientFactories;
-import pl.mrugames.client_server.client.ClientFactoryV2;
+import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
 import pl.mrugames.client_server.host.HostManager;
 
@@ -34,7 +34,7 @@ public class Main {
 
         HealthCheckManager.setMetricRegistry(new MetricRegistry());
 
-        ClientFactoryV2<String, String, WebSocketFrame, WebSocketFrame> clientFactory = ClientFactories.createClientFactoryForWSServer(
+        ClientFactory<String, String, WebSocketFrame, WebSocketFrame> clientFactory = ClientFactories.createClientFactoryForWSServer(
                 "WebSocket Host",
                 60,
                 new WebSocketWorkerFactory(Main::shutdown),

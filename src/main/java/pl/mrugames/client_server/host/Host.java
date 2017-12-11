@@ -2,7 +2,7 @@ package pl.mrugames.client_server.host;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.client.ClientFactoryV2;
+import pl.mrugames.client_server.client.ClientFactory;
 
 import java.nio.channels.ServerSocketChannel;
 
@@ -11,10 +11,10 @@ class Host {
 
     private final String name;
     private final int port;
-    private final ClientFactoryV2 clientFactory;
+    private final ClientFactory clientFactory;
     private volatile ServerSocketChannel serverSocketChannel;
 
-    Host(String name, int port, ClientFactoryV2 clientFactory) {
+    Host(String name, int port, ClientFactory clientFactory) {
         this.name = name;
         this.port = port;
         this.clientFactory = clientFactory;
@@ -28,7 +28,7 @@ class Host {
         return port;
     }
 
-    ClientFactoryV2 getClientFactory() {
+    ClientFactory getClientFactory() {
         return clientFactory;
     }
 

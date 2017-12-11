@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.HealthCheckManager;
-import pl.mrugames.client_server.client.filters.FilterProcessorV2;
+import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
 import pl.mrugames.client_server.host.HostManager;
@@ -59,15 +59,15 @@ class TimeoutSpec {
         executorService.execute(watchdog);
         watchdog.awaitStart(10, TimeUnit.SECONDS);
 
-        ClientFactoryV2 clientFactory = new ClientFactoryV2<>(
+        ClientFactory clientFactory = new ClientFactory<>(
                 "Timeout Client",
                 "Test Client",
                 workerFactory,
                 Collections.emptyList(),
                 TextWriter::new,
                 TextReader::new,
-                new FilterProcessorV2(Collections.emptyList()),
-                new FilterProcessorV2(Collections.emptyList()),
+                new FilterProcessor(Collections.emptyList()),
+                new FilterProcessor(Collections.emptyList()),
                 executorService,
                 watchdog
         );

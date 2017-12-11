@@ -50,13 +50,13 @@ class ClientWatchdogSpec {
     void whenRegister_thenIncreaseSemaphore() throws InterruptedException {
         stop(); // stop it to prevent decreasing permit
 
-        watchdog.register(mock(CommV2.class), mock(Socket.class), "client");
+        watchdog.register(mock(Comm.class), mock(Socket.class), "client");
         assertThat(watchdog.semaphore.availablePermits()).isEqualTo(1);
     }
 
     @Test
     void sendTimeout() {
-        CommV2 comm = mock(CommV2.class);
+        Comm comm = mock(Comm.class);
         doReturn(Instant.now().minusSeconds(31)).when(comm).getLastDataSent();
         doReturn(Instant.now()).when(comm).getLastDataReceived();
 
@@ -65,7 +65,7 @@ class ClientWatchdogSpec {
 
     @Test
     void receiveTimeout() {
-        CommV2 comm = mock(CommV2.class);
+        Comm comm = mock(Comm.class);
         doReturn(Instant.now()).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(31)).when(comm).getLastDataReceived();
 
@@ -74,7 +74,7 @@ class ClientWatchdogSpec {
 
     @Test
     void noTimeout() {
-        CommV2 comm = mock(CommV2.class);
+        Comm comm = mock(Comm.class);
         doReturn(Instant.now()).when(comm).getLastDataSent();
         doReturn(Instant.now()).when(comm).getLastDataReceived();
 
@@ -83,7 +83,7 @@ class ClientWatchdogSpec {
 
     @Test
     void calculateSecondsToSendTimeout() {
-        CommV2 comm = mock(CommV2.class);
+        Comm comm = mock(Comm.class);
         doReturn(Instant.now().minusSeconds(10)).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(5)).when(comm).getLastDataReceived();
 
@@ -92,7 +92,7 @@ class ClientWatchdogSpec {
 
     @Test
     void calculateSecondsToReceiveTimeout() {
-        CommV2 comm = mock(CommV2.class);
+        Comm comm = mock(Comm.class);
         doReturn(Instant.now().minusSeconds(5)).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(10)).when(comm).getLastDataReceived();
 
@@ -101,7 +101,7 @@ class ClientWatchdogSpec {
 
     @Test
     void givenSameTimeOnSendAndReceive_calculateSecondsToTimeout() {
-        CommV2 comm = mock(CommV2.class);
+        Comm comm = mock(Comm.class);
         doReturn(Instant.now().minusSeconds(15)).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(15)).when(comm).getLastDataReceived();
 
@@ -110,7 +110,7 @@ class ClientWatchdogSpec {
 
     @Test
     void calculateTimeoutCeiling() {
-        CommV2 comm = mock(CommV2.class);
+        Comm comm = mock(Comm.class);
         doReturn(Instant.now().minusSeconds(29).minusMillis(50)).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(15)).when(comm).getLastDataReceived();
 
@@ -127,7 +127,7 @@ class ClientWatchdogSpec {
     void givenConnectionRegistered_whenWatchdogIsRun_thenCallCheck() throws InterruptedException {
         Thread.sleep(100);
         doReturn(true).when(watchdog).isTimeout(any(), any());
-        watchdog.register(mock(CommV2.class), mock(Socket.class), "");
+        watchdog.register(mock(Comm.class), mock(Socket.class), "");
 
         Thread.sleep(100);
         verify(watchdog, times(1)).check();
@@ -140,7 +140,7 @@ class ClientWatchdogSpec {
         doReturn(true).when(watchdog).isTimeout(any(), any());
         Socket socket = mock(Socket.class);
 
-        watchdog.register(mock(CommV2.class), socket, "");
+        watchdog.register(mock(Comm.class), socket, "");
 
         watchdog.check();
 
@@ -156,7 +156,7 @@ class ClientWatchdogSpec {
         Socket socket = mock(Socket.class);
         doThrow(IOException.class).when(socket).close();
 
-        watchdog.register(mock(CommV2.class), socket, "");
+        watchdog.register(mock(Comm.class), socket, "");
 
         watchdog.check();
 
@@ -170,8 +170,8 @@ class ClientWatchdogSpec {
 
         doReturn(true).when(watchdog).isTimeout(any(), any());
 
-        watchdog.register(mock(CommV2.class), mock(Socket.class), "");
-        watchdog.register(mock(CommV2.class), mock(Socket.class), "");
+        watchdog.register(mock(Comm.class), mock(Socket.class), "");
+        watchdog.register(mock(Comm.class), mock(Socket.class), "");
 
         assertThat(watchdog.check()).isEqualTo(-1);
     }
@@ -182,9 +182,9 @@ class ClientWatchdogSpec {
 
         doReturn(true, false, false).when(watchdog).isTimeout(any(), any());
 
-        CommV2 comm1 = mock(CommV2.class);
-        CommV2 comm2 = mock(CommV2.class);
-        CommV2 comm3 = mock(CommV2.class);
+        Comm comm1 = mock(Comm.class);
+        Comm comm2 = mock(Comm.class);
+        Comm comm3 = mock(Comm.class);
 
         watchdog.register(comm1, mock(Socket.class), "");
         watchdog.register(comm2, mock(Socket.class), "");
@@ -201,7 +201,7 @@ class ClientWatchdogSpec {
         doReturn(false).when(watchdog).isTimeout(any(), any());
         doReturn(1L).when(watchdog).calculateSecondsToTimeout(any());
 
-        watchdog.register(mock(CommV2.class), mock(Socket.class), "");
+        watchdog.register(mock(Comm.class), mock(Socket.class), "");
 
         Thread.sleep(550);
         verify(watchdog, times(1)).check();
@@ -215,12 +215,12 @@ class ClientWatchdogSpec {
         doReturn(false).when(watchdog).isTimeout(any(), any());
         doReturn(10L).when(watchdog).calculateSecondsToTimeout(any());
 
-        watchdog.register(mock(CommV2.class), mock(Socket.class), "");
+        watchdog.register(mock(Comm.class), mock(Socket.class), "");
 
         Thread.sleep(550);
         verify(watchdog, times(1)).check();
 
-        watchdog.register(mock(CommV2.class), mock(Socket.class), "");
+        watchdog.register(mock(Comm.class), mock(Socket.class), "");
 
         Thread.sleep(550);
         verify(watchdog, times(2)).check();

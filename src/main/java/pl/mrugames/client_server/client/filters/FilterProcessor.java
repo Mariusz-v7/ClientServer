@@ -3,10 +3,10 @@ package pl.mrugames.client_server.client.filters;
 import java.util.List;
 import java.util.Optional;
 
-public class FilterProcessorV2 {
+public class FilterProcessor {
     private final List<Filter<?, ?>> filters;
 
-    public FilterProcessorV2(List<Filter<?, ?>> filters) {
+    public FilterProcessor(List<Filter<?, ?>> filters) {
         this.filters = filters;
     }
 

@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class ClientV2Spec {
-    private ClientV2 client;
+class ClientSpec {
+    private Client client;
     private List<Initializer> initializers;
     private Runnable clientWorker;
     private Socket socket;
@@ -29,7 +29,7 @@ class ClientV2Spec {
         clientWorker = mock(Runnable.class);
         socket = mock(Socket.class);
 
-        client = new ClientV2("Test Client", initializers, clientWorker, socket);
+        client = new Client("Test Client", initializers, clientWorker, socket);
     }
 
     @Test

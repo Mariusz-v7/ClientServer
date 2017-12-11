@@ -2,14 +2,14 @@ package pl.mrugames.client_server.object_server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.client.CommV2;
+import pl.mrugames.client_server.client.Comm;
 
 class Worker implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final CommV2<Frame, Frame, Frame, Frame> comm;
+    private final Comm<Frame, Frame, Frame, Frame> comm;
     private final Runnable onShutDown;
 
-    Worker(CommV2<Frame, Frame, Frame, Frame> comm, Runnable onShutDown) {
+    Worker(Comm<Frame, Frame, Frame, Frame> comm, Runnable onShutDown) {
         this.comm = comm;
         this.onShutDown = onShutDown;
     }

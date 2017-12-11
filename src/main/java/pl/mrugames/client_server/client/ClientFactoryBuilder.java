@@ -1,7 +1,7 @@
 package pl.mrugames.client_server.client;
 
 import pl.mrugames.client_server.client.filters.Filter;
-import pl.mrugames.client_server.client.filters.FilterProcessorV2;
+import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.initializers.Initializer;
 import pl.mrugames.client_server.client.io.ClientReader;
 import pl.mrugames.client_server.client.io.ClientWriter;
@@ -18,7 +18,7 @@ import java.util.function.Function;
 public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer extends Serializable> {
     private final Function<OutputStream, ClientWriter<Writer>> clientWriterFactory;
     private final Function<InputStream, ClientReader<Reader>> clientReaderFactory;
-    private final ClientWorkerFactoryV2<In, Out, Reader, Writer> clientWorkerFactory;
+    private final ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory;
     private final ExecutorService executorService;
 
     private String name = "Client";
@@ -29,7 +29,7 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
 
     public ClientFactoryBuilder(Function<OutputStream, ClientWriter<Writer>> clientWriterFactory,
                                 Function<InputStream, ClientReader<Reader>> clientReaderFactory,
-                                ClientWorkerFactoryV2<In, Out, Reader, Writer> clientWorkerFactory,
+                                ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory,
                                 ExecutorService executorService) {
         this.clientWriterFactory = clientWriterFactory;
         this.clientReaderFactory = clientReaderFactory;
@@ -62,19 +62,19 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
         return this;
     }
 
-    public ClientFactoryV2<In, Out, Reader, Writer> build() {
+    public ClientFactory<In, Out, Reader, Writer> build() {
         ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeout);
         executorService.execute(clientWatchdog);
 
-        return new ClientFactoryV2<>(
+        return new ClientFactory<>(
                 name,
                 name + "-client",
                 clientWorkerFactory,
                 initializerFactories,
                 clientWriterFactory,
                 clientReaderFactory,
-                new FilterProcessorV2(inputFilters),
-                new FilterProcessorV2(outputFilters),
+                new FilterProcessor(inputFilters),
+                new FilterProcessor(outputFilters),
                 executorService,
                 clientWatchdog
         );

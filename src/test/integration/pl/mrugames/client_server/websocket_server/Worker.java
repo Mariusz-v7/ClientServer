@@ -1,14 +1,14 @@
 package pl.mrugames.client_server.websocket_server;
 
-import pl.mrugames.client_server.client.CommV2;
+import pl.mrugames.client_server.client.Comm;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
 import pl.mrugames.client_server.websocket.WebsocketConstants;
 
 public class Worker implements Runnable {
-    private final CommV2<String, String, WebSocketFrame, WebSocketFrame> comm;
+    private final Comm<String, String, WebSocketFrame, WebSocketFrame> comm;
     private final Runnable onClientShutDown;
 
-    public Worker(CommV2<String, String, WebSocketFrame, WebSocketFrame> comm, Runnable onClientShutDown) {
+    public Worker(Comm<String, String, WebSocketFrame, WebSocketFrame> comm, Runnable onClientShutDown) {
         this.comm = comm;
         this.onClientShutDown = onClientShutDown;
     }

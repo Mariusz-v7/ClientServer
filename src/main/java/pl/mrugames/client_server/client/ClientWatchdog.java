@@ -15,11 +15,11 @@ public class ClientWatchdog implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientWatchdog.class);
 
     private static class Container {
-        private final CommV2 comm;
+        private final Comm comm;
         private final Socket socket;
         private final String clientName;
 
-        Container(CommV2 comm, Socket socket, String clientName) {
+        Container(Comm comm, Socket socket, String clientName) {
             this.comm = comm;
             this.socket = socket;
             this.clientName = clientName;
@@ -114,7 +114,7 @@ public class ClientWatchdog implements Runnable {
         return nextPossibleTimeout;
     }
 
-    boolean isTimeout(CommV2 comm, String clientName) {
+    boolean isTimeout(Comm comm, String clientName) {
         Instant timeout = Instant.now().minusSeconds(timeoutSeconds);
         if (comm.getLastDataReceived().isBefore(timeout)) {
             logger.info("[{}] Reception timeout. Client: {}", name, clientName);
@@ -129,7 +129,7 @@ public class ClientWatchdog implements Runnable {
         return false;
     }
 
-    long calculateSecondsToTimeout(CommV2 comm) {
+    long calculateSecondsToTimeout(Comm comm) {
         Instant timeout = Instant.now().minusSeconds(timeoutSeconds);
 
         long receiveTimeout = Duration.between(timeout, comm.getLastDataReceived()).toMillis();
@@ -141,7 +141,7 @@ public class ClientWatchdog implements Runnable {
         return (long) Math.ceil(result);
     }
 
-    synchronized void register(CommV2 comm, Socket socket, String clientName) {
+    synchronized void register(Comm comm, Socket socket, String clientName) {
         comms.add(new Container(comm, socket, clientName));
         semaphore.release();
         logger.info("[{}] New connection has been registered. Client: {}", name, clientName);

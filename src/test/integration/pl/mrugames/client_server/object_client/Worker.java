@@ -2,7 +2,7 @@ package pl.mrugames.client_server.object_client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.client.CommV2;
+import pl.mrugames.client_server.client.Comm;
 import pl.mrugames.client_server.object_server.Frame;
 
 import java.util.concurrent.CountDownLatch;
@@ -10,10 +10,10 @@ import java.util.stream.Stream;
 
 class Worker implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(Worker.class);
-    private final CommV2<Frame, Frame, Frame, Frame> comm;
+    private final Comm<Frame, Frame, Frame, Frame> comm;
     private final CountDownLatch shutdownSignal = new CountDownLatch(1);
 
-    Worker(CommV2<Frame, Frame, Frame, Frame> comm) {
+    Worker(Comm<Frame, Frame, Frame, Frame> comm) {
         this.comm = comm;
     }
 

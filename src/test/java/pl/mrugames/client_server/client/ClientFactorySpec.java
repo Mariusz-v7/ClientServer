@@ -3,7 +3,7 @@ package pl.mrugames.client_server.client;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import pl.mrugames.client_server.client.filters.FilterProcessorV2;
+import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.initializers.Initializer;
 import pl.mrugames.client_server.client.io.ClientReader;
 import pl.mrugames.client_server.client.io.ClientWriter;
@@ -25,16 +25,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-class ClientFactoryV2Spec {
-    private ClientFactoryV2<String, String, String, String> clientFactory;
-    private ClientWorkerFactoryV2<String, String, String, String> clientWorkerFactory;
+class ClientFactorySpec {
+    private ClientFactory<String, String, String, String> clientFactory;
+    private ClientWorkerFactory<String, String, String, String> clientWorkerFactory;
     private List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories;
     private ClientWriter<String> clientWriter;
     private ClientReader<String> clientReader;
-    private FilterProcessorV2 inputFilterProcessor;
-    private FilterProcessorV2 outputFilterProcessor;
+    private FilterProcessor inputFilterProcessor;
+    private FilterProcessor outputFilterProcessor;
     private ExecutorService executorService;
-    private ClientV2 client;
+    private Client client;
     private boolean shouldTimeoutClientCreation;
     private ClientWatchdog clientWatchdog;
 
@@ -43,8 +43,8 @@ class ClientFactoryV2Spec {
     void before() throws InterruptedException {
         initializerFactories = new LinkedList<>();
 
-        inputFilterProcessor = mock(FilterProcessorV2.class);
-        outputFilterProcessor = mock(FilterProcessorV2.class);
+        inputFilterProcessor = mock(FilterProcessor.class);
+        outputFilterProcessor = mock(FilterProcessor.class);
 
         clientWriter = mock(ClientWriter.class);
         clientReader = mock(ClientReader.class);
@@ -52,14 +52,14 @@ class ClientFactoryV2Spec {
         Function<OutputStream, ClientWriter<String>> clientWriterFactory = i -> clientWriter;
         Function<InputStream, ClientReader<String>> clientReaderFactory = o -> clientReader;
 
-        clientWorkerFactory = mock(ClientWorkerFactoryV2.class);
+        clientWorkerFactory = mock(ClientWorkerFactory.class);
 
         executorService = mock(ExecutorService.class);
 
         clientWatchdog = mock(ClientWatchdog.class);
         doReturn(true).when(clientWatchdog).isRunning();
 
-        clientFactory = spy(new ClientFactoryV2<>("factory",
+        clientFactory = spy(new ClientFactory<>("factory",
                 "client",
                 clientWorkerFactory,
                 initializerFactories,
@@ -71,7 +71,7 @@ class ClientFactoryV2Spec {
                 clientWatchdog));
 
         doAnswer(a -> {
-            client = (ClientV2) a.callRealMethod();
+            client = (Client) a.callRealMethod();
             client = spy(client);
             doReturn(!shouldTimeoutClientCreation).when(client).awaitStart(anyLong(), any());
 
@@ -81,8 +81,8 @@ class ClientFactoryV2Spec {
 
     @Test
     void givenClientCreated_setProperName() throws Exception {
-        ClientV2 client1 = clientFactory.create(mock(Socket.class));
-        ClientV2 client2 = clientFactory.create(mock(Socket.class));
+        Client client1 = clientFactory.create(mock(Socket.class));
+        Client client2 = clientFactory.create(mock(Socket.class));
 
         assertThat(client1.getName()).isEqualTo("client-1");
         assertThat(client2.getName()).isEqualTo("client-2");
@@ -96,7 +96,7 @@ class ClientFactoryV2Spec {
         initializerFactories.add((i, o) -> initializer1);
         initializerFactories.add((i, o) -> initializer2);
 
-        ClientV2 client = clientFactory.create(mock(Socket.class));
+        Client client = clientFactory.create(mock(Socket.class));
 
         assertThat(client.getInitializers()).containsExactly(initializer1, initializer2);
     }
@@ -106,7 +106,7 @@ class ClientFactoryV2Spec {
         Runnable worker = mock(Runnable.class);
         doReturn(worker).when(clientWorkerFactory).create(any(), any());
 
-        ClientV2 client = clientFactory.create(mock(Socket.class));
+        Client client = clientFactory.create(mock(Socket.class));
 
         assertThat(client.getClientWorker()).isSameAs(worker);
     }
@@ -123,7 +123,7 @@ class ClientFactoryV2Spec {
 
     @Test
     void whenCreateComm_thenSetProperComponents() throws IOException {
-        CommV2<String, String, String, String> comm = clientFactory.createComms("test", mock(Socket.class));
+        Comm<String, String, String, String> comm = clientFactory.createComms("test", mock(Socket.class));
 
         assertThat(comm.getClientReader()).isSameAs(clientReader);
         assertThat(comm.getClientWriter()).isSameAs(clientWriter);
@@ -155,7 +155,7 @@ class ClientFactoryV2Spec {
 
     @Test
     void whenCreateClient_thenRegisterToWatchdog() throws Exception {
-        CommV2 comm = mock(CommV2.class);
+        Comm comm = mock(Comm.class);
         doReturn(comm).when(clientFactory).createComms(anyString(), any());
 
         Socket socket = mock(Socket.class);

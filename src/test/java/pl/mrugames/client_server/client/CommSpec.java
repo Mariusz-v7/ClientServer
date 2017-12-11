@@ -2,7 +2,7 @@ package pl.mrugames.client_server.client;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.mrugames.client_server.client.filters.FilterProcessorV2;
+import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.io.ClientReader;
 import pl.mrugames.client_server.client.io.ClientWriter;
 
@@ -15,12 +15,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-class CommV2Spec {
-    private CommV2<String, String, String, String> comm;
+class CommSpec {
+    private Comm<String, String, String, String> comm;
     private ClientWriter<String> clientWriter;
     private ClientReader<String> clientReader;
-    private FilterProcessorV2 inputFilterProcessor;
-    private FilterProcessorV2 outputFilterProcessor;
+    private FilterProcessor inputFilterProcessor;
+    private FilterProcessor outputFilterProcessor;
     private Instant commCreation;
 
     @BeforeEach
@@ -28,14 +28,14 @@ class CommV2Spec {
     void before() {
         clientWriter = mock(ClientWriter.class);
         clientReader = mock(ClientReader.class);
-        inputFilterProcessor = mock(FilterProcessorV2.class);
-        outputFilterProcessor = mock(FilterProcessorV2.class);
+        inputFilterProcessor = mock(FilterProcessor.class);
+        outputFilterProcessor = mock(FilterProcessor.class);
 
         doAnswer(a -> Optional.of(a.getArguments()[0] + "filtered")).when(inputFilterProcessor).filter(anyString());
         doAnswer(a -> Optional.of(a.getArguments()[0] + "filtered")).when(outputFilterProcessor).filter(anyString());
 
         commCreation = Instant.now();
-        comm = new CommV2<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor);
+        comm = new Comm<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor);
     }
 
     @Test

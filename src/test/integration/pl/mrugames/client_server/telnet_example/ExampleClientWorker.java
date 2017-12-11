@@ -3,18 +3,18 @@ package pl.mrugames.client_server.telnet_example;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientInfo;
-import pl.mrugames.client_server.client.CommV2;
+import pl.mrugames.client_server.client.Comm;
 
 public class ExampleClientWorker implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ExampleClientWorker.class);
 
     private final String name;
-    private final CommV2<String, String, String, String> comm;
+    private final Comm<String, String, String, String> comm;
     private final Runnable onShutdownCommand;
 
     private volatile Thread thisThread;
 
-    public ExampleClientWorker(CommV2<String, String, String, String> comm, Runnable onShutdownCommand, ClientInfo clientInfo) {
+    public ExampleClientWorker(Comm<String, String, String, String> comm, Runnable onShutdownCommand, ClientInfo clientInfo) {
         this.comm = comm;
         this.onShutdownCommand = onShutdownCommand;
         this.name = clientInfo.getName();

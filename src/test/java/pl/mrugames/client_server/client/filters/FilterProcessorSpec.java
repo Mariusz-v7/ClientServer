@@ -10,15 +10,15 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.spy;
 
-class FilterProcessorV2Spec {
-    private FilterProcessorV2 filterProcessor;
+class FilterProcessorSpec {
+    private FilterProcessor filterProcessor;
     private List<Filter<?, ?>> filters;
 
 
     @BeforeEach
     void before() {
         filters = new LinkedList<>();
-        filterProcessor = spy(new FilterProcessorV2(filters));
+        filterProcessor = spy(new FilterProcessor(filters));
     }
 
     @Test

@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public class ClientV2 implements Runnable {
-    private final static Logger logger = LoggerFactory.getLogger(ClientV2.class);
+public class Client implements Runnable {
+    private final static Logger logger = LoggerFactory.getLogger(Client.class);
 
     private final String name;
     private final List<Initializer> initializers;
@@ -20,7 +20,7 @@ public class ClientV2 implements Runnable {
     private final CountDownLatch startSignal;
     private final CountDownLatch shutdownSignal;
 
-    ClientV2(String name, List<Initializer> initializers, Runnable clientWorker, Socket socket) {
+    Client(String name, List<Initializer> initializers, Runnable clientWorker, Socket socket) {
         this.name = name;
         this.initializers = initializers;
         this.clientWorker = clientWorker;

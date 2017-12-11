@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.HealthCheckManager;
 import pl.mrugames.client_server.client.ClientFactories;
-import pl.mrugames.client_server.client.ClientFactoryV2;
+import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.host.HostManager;
 
 import java.io.IOException;
@@ -31,7 +31,7 @@ public class Main {
 
         logger.info("Main started...");
 
-        ClientFactoryV2 clientFactory = ClientFactories.createClientFactoryForJavaServer("Java server", 60, new WorkerFactory(Main::shutdown), executorService);
+        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Java server", 60, new WorkerFactory(Main::shutdown), executorService);
 
         hostManager = new HostManager();
         hostManager.newHost("Main Host", port, clientFactory);

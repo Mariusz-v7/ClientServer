@@ -2,7 +2,7 @@ package pl.mrugames.client_server.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.client.filters.FilterProcessorV2;
+import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.io.ClientReader;
 import pl.mrugames.client_server.client.io.ClientWriter;
 
@@ -10,18 +10,18 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Optional;
 
-public class CommV2<In, Out, Reader extends Serializable, Writer extends Serializable> {
-    private final static Logger logger = LoggerFactory.getLogger(CommV2.class);
+public class Comm<In, Out, Reader extends Serializable, Writer extends Serializable> {
+    private final static Logger logger = LoggerFactory.getLogger(Comm.class);
 
     private final ClientWriter<Writer> clientWriter;
     private final ClientReader<Reader> clientReader;
-    private final FilterProcessorV2 inputFilterProcessor;
-    private final FilterProcessorV2 outputFilterProcessor;
+    private final FilterProcessor inputFilterProcessor;
+    private final FilterProcessor outputFilterProcessor;
 
     private volatile Instant lastDataSent;
     private volatile Instant lastDataReceived;
 
-    CommV2(ClientWriter<Writer> clientWriter, ClientReader<Reader> clientReader, FilterProcessorV2 inputFilterProcessor, FilterProcessorV2 outputFilterProcessor) {
+    Comm(ClientWriter<Writer> clientWriter, ClientReader<Reader> clientReader, FilterProcessor inputFilterProcessor, FilterProcessor outputFilterProcessor) {
         this.clientWriter = clientWriter;
         this.clientReader = clientReader;
         this.inputFilterProcessor = inputFilterProcessor;
@@ -87,11 +87,11 @@ public class CommV2<In, Out, Reader extends Serializable, Writer extends Seriali
         return clientReader;
     }
 
-    FilterProcessorV2 getInputFilterProcessor() {
+    FilterProcessor getInputFilterProcessor() {
         return inputFilterProcessor;
     }
 
-    FilterProcessorV2 getOutputFilterProcessor() {
+    FilterProcessor getOutputFilterProcessor() {
         return outputFilterProcessor;
     }
 }
