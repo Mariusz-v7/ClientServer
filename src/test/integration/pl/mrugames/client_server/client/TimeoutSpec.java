@@ -1,13 +1,11 @@
 package pl.mrugames.client_server.client;
 
-import com.codahale.metrics.MetricRegistry;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.HealthCheckManager;
 import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
@@ -50,7 +48,6 @@ class TimeoutSpec {
         executorService = Executors.newCachedThreadPool();
         hostManager = new HostManager();
 
-        HealthCheckManager.setMetricRegistry(new MetricRegistry());
         clientConnected = new CountDownLatch(1);
 
         SimpleClientWorker.Factory workerFactory = spy(new SimpleClientWorker.Factory());

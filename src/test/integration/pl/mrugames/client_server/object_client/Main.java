@@ -1,9 +1,7 @@
 package pl.mrugames.client_server.object_client;
 
-import com.codahale.metrics.MetricRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.HealthCheckManager;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactories;
 import pl.mrugames.client_server.client.ClientFactory;
@@ -26,8 +24,6 @@ public class Main {
 
         final String address = args[0];
         final int port = Integer.valueOf(args[1]);
-
-        HealthCheckManager.setMetricRegistry(new MetricRegistry());
 
         ExecutorService executorService = Executors.newCachedThreadPool();
 

@@ -1,9 +1,7 @@
 package pl.mrugames.client_server.object_server;
 
-import com.codahale.metrics.MetricRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.HealthCheckManager;
 import pl.mrugames.client_server.client.ClientFactories;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.host.HostManager;
@@ -24,8 +22,6 @@ public class Main {
             logger.error("Please provide port");
             return;
         }
-
-        HealthCheckManager.setMetricRegistry(new MetricRegistry());
 
         final int port = Integer.valueOf(args[0]);
 
