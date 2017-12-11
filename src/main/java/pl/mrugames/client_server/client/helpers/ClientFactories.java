@@ -1,7 +1,7 @@
 package pl.mrugames.client_server.client.helpers;
 
-import pl.mrugames.client_server.client.ClientFactory;
-import pl.mrugames.client_server.client.ClientWorkerFactory;
+import pl.mrugames.client_server.client.*;
+import pl.mrugames.client_server.client.filters.FilterProcessorV2;
 import pl.mrugames.client_server.client.filters.StringToWebSocketFrameFilter;
 import pl.mrugames.client_server.client.filters.WebSocketFrameToStringFilter;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
@@ -14,19 +14,26 @@ import pl.mrugames.client_server.websocket.WebSocketHandshakeParser;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.concurrent.ExecutorService;
 
 public class ClientFactories {
-    public static ClientFactory<WebSocketFrame, WebSocketFrame, String, String> createClientFactoryForWSServer(
-            String name, int timeoutSeconds, ClientWorkerFactory<String, String> clientWorkerFactory) {
-        return new ClientFactory<>(
+    public static ClientFactoryV2<String, String, WebSocketFrame, WebSocketFrame> createClientFactoryForWSServer(
+            String name, int timeoutSeconds, ClientWorkerFactoryV2<String, String, WebSocketFrame, WebSocketFrame> clientWorkerFactory, ExecutorService executorService) {
+
+        ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeoutSeconds);
+        executorService.execute(clientWatchdog);
+
+        return new ClientFactoryV2<>(
                 name,
-                timeoutSeconds,
-                WebSocketWriter::new,
-                WebSocketReader::new,
+                name + "-client",
                 clientWorkerFactory,
                 Collections.singletonList(WebSocketInitializer.create(WebSocketHandshakeParser.getInstance())),
-                Collections.singletonList(WebSocketFrameToStringFilter.getInstance()),
-                Collections.singletonList(StringToWebSocketFrameFilter.getInstance())
+                WebSocketWriter::new,
+                WebSocketReader::new,
+                new FilterProcessorV2(Collections.singletonList(WebSocketFrameToStringFilter.getInstance())),
+                new FilterProcessorV2(Collections.singletonList(StringToWebSocketFrameFilter.getInstance())),
+                executorService,
+                clientWatchdog
         );
     }
 
