@@ -1,5 +1,6 @@
 package pl.mrugames.client_server.host;
 
+import com.codahale.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientFactory;
@@ -12,7 +13,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class HostManager implements Runnable {
+public class HostManager implements Runnable, HostManagerMetrics {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     volatile Selector selector;
@@ -71,8 +72,14 @@ public class HostManager implements Runnable {
         SelectableChannel channel = selectionKey.channel();
 
         if (selectionKey.isAcceptable()) {
-            Host host = (Host) selectionKey.attachment();
-            acceptConnection(host, (ServerSocketChannel) channel);
+            Timer.Context context = clientAcceptMetric.time();
+            try {
+                Host host = (Host) selectionKey.attachment();
+                acceptConnection(host, (ServerSocketChannel) channel);
+            } finally {
+                context.stop();
+            }
+
             return;
         }
     }
