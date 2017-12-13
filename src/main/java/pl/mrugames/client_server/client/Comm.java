@@ -1,5 +1,6 @@
 package pl.mrugames.client_server.client;
 
+import com.codahale.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.filters.FilterProcessor;
@@ -17,15 +18,24 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
     private final ClientReader<Reader> clientReader;
     private final FilterProcessor inputFilterProcessor;
     private final FilterProcessor outputFilterProcessor;
+    private final Timer sendMetric;
+    private final Timer receiveMetric;
 
     private volatile Instant lastDataSent;
     private volatile Instant lastDataReceived;
 
-    Comm(ClientWriter<Writer> clientWriter, ClientReader<Reader> clientReader, FilterProcessor inputFilterProcessor, FilterProcessor outputFilterProcessor) {
+    Comm(ClientWriter<Writer> clientWriter,
+         ClientReader<Reader> clientReader,
+         FilterProcessor inputFilterProcessor,
+         FilterProcessor outputFilterProcessor,
+         Timer sendMetric,
+         Timer receiveMetric) {
         this.clientWriter = clientWriter;
         this.clientReader = clientReader;
         this.inputFilterProcessor = inputFilterProcessor;
         this.outputFilterProcessor = outputFilterProcessor;
+        this.sendMetric = sendMetric;
+        this.receiveMetric = receiveMetric;
 
         Instant now = Instant.now();
 
@@ -34,41 +44,45 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
     }
 
     public synchronized void send(Out frame) throws Exception {
-        logger.debug("[SEND] Transforming to raw frame: '{}'", frame);
+        try (Timer.Context ignored = sendMetric.time()) {
+            logger.debug("[SEND] Transforming to raw frame: '{}'", frame);
 
-        Optional<Writer> result = outputFilterProcessor.filter(frame);
-        if (result.isPresent()) {
-            Writer rawFrame = result.get();
-            logger.debug("[SEND] Frame after transformation: '{}'", rawFrame);
-            clientWriter.next(rawFrame);
-        } else {
-            logger.debug("[SEND] Frame '{}' filtered out!", frame);
+            Optional<Writer> result = outputFilterProcessor.filter(frame);
+            if (result.isPresent()) {
+                Writer rawFrame = result.get();
+                logger.debug("[SEND] Frame after transformation: '{}'", rawFrame);
+                clientWriter.next(rawFrame);
+            } else {
+                logger.debug("[SEND] Frame '{}' filtered out!", frame);
+            }
+
+            lastDataSent = Instant.now();
         }
-
-        lastDataSent = Instant.now();
     }
 
     public synchronized In receive() throws Exception {
-        In frame;
+        try (Timer.Context ignored = receiveMetric.time()) {
+            In frame;
 
-        do {
-            Reader rawFrame = clientReader.next();
+            do {
+                Reader rawFrame = clientReader.next();
 
-            logger.debug("[RECEIVE] Transforming from raw frame: '{}'", rawFrame);
+                logger.debug("[RECEIVE] Transforming from raw frame: '{}'", rawFrame);
 
-            Optional<In> result = inputFilterProcessor.filter(rawFrame);
-            if (result.isPresent()) {
-                frame = result.get();
-                logger.debug("[RECEIVE] Frame after transformation: '{}'", frame);
+                Optional<In> result = inputFilterProcessor.filter(rawFrame);
+                if (result.isPresent()) {
+                    frame = result.get();
+                    logger.debug("[RECEIVE] Frame after transformation: '{}'", frame);
 
-                lastDataReceived = Instant.now();
-                return frame;
-            } else {
-                logger.debug("[RECEIVE] Frame '{}' filtered out!", rawFrame);
-            }
-        } while (!Thread.currentThread().isInterrupted());
+                    lastDataReceived = Instant.now();
+                    return frame;
+                } else {
+                    logger.debug("[RECEIVE] Frame '{}' filtered out!", rawFrame);
+                }
+            } while (!Thread.currentThread().isInterrupted());
 
-        throw new InterruptedException("Thread interrupted before receiving message!");
+            throw new InterruptedException("Thread interrupted before receiving message!");
+        }
     }
 
     Instant getLastDataSent() {

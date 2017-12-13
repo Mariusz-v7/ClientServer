@@ -39,8 +39,11 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     private final FilterProcessor outputFilterProcessor;
     private final ExecutorService executorService;
     private final ClientWatchdog watchdog;
-    private final Timer clientLifespanMetric;
     final long clientStartTimeoutMilliseconds = 1000;
+
+    private final Timer clientLifespanMetric;
+    private final Timer clientSendMetric;
+    private final Timer clientReceiveMetric;
 
     ClientFactory(String factoryName,
                   String clientNamePrefix,
@@ -65,6 +68,8 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         this.executorService = executorService;
         this.watchdog = clientWatchdog;
         this.clientLifespanMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "lifespan"));
+        this.clientSendMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "send"));
+        this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
     }
 
     public Client create(Socket socket) throws Exception {
@@ -133,7 +138,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         ClientWriter<Writer> clientWriter = clientWriterFactory.apply(outputStream);
         ClientReader<Reader> clientReader = clientReaderFactory.apply(inputStream);
 
-        Comm<In, Out, Reader, Writer> comm = new Comm<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor);
+        Comm<In, Out, Reader, Writer> comm = new Comm<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor, clientSendMetric, clientReceiveMetric);
         logger.info("[{}] Comms has been created for client: {}", factoryName, clientName);
 
         return comm;

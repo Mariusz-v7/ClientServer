@@ -1,5 +1,6 @@
 package pl.mrugames.client_server.client;
 
+import com.codahale.metrics.Timer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.client.filters.FilterProcessor;
@@ -35,7 +36,7 @@ class CommSpec {
         doAnswer(a -> Optional.of(a.getArguments()[0] + "filtered")).when(outputFilterProcessor).filter(anyString());
 
         commCreation = Instant.now();
-        comm = new Comm<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor);
+        comm = new Comm<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor, mock(Timer.class), mock(Timer.class));
     }
 
     @Test
