@@ -1,7 +1,9 @@
 package pl.mrugames.client_server.client;
 
+import com.codahale.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.initializers.Initializer;
 import pl.mrugames.client_server.client.io.ClientReader;
@@ -21,6 +23,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.codahale.metrics.MetricRegistry.name;
+
 public class ClientFactory<In, Out, Reader extends Serializable, Writer extends Serializable> {
     private static final Logger logger = LoggerFactory.getLogger(ClientFactory.class);
 
@@ -35,6 +39,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     private final FilterProcessor outputFilterProcessor;
     private final ExecutorService executorService;
     private final ClientWatchdog watchdog;
+    private final Timer clientLifespanMetric;
     final long clientStartTimeoutMilliseconds = 1000;
 
     ClientFactory(String factoryName,
@@ -59,6 +64,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         this.outputFilterProcessor = outputFilterProcessor;
         this.executorService = executorService;
         this.watchdog = clientWatchdog;
+        this.clientLifespanMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "lifespan"));
     }
 
     public Client create(Socket socket) throws Exception {
@@ -144,7 +150,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     }
 
     Client createClient(String clientName, List<Initializer> initializers, Runnable clientWorker, Socket socket) {
-        return new Client(clientName, initializers, clientWorker, socket);
+        return new Client(clientName, initializers, clientWorker, socket, clientLifespanMetric);
     }
 
 }

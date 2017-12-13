@@ -1,5 +1,6 @@
 package pl.mrugames.client_server.client;
 
+import com.codahale.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.initializers.Initializer;
@@ -19,14 +20,16 @@ public class Client implements Runnable {
     private final Socket socket;
     private final CountDownLatch startSignal;
     private final CountDownLatch shutdownSignal;
+    private final Timer clientLifespanMetric;
 
-    Client(String name, List<Initializer> initializers, Runnable clientWorker, Socket socket) {
+    Client(String name, List<Initializer> initializers, Runnable clientWorker, Socket socket, Timer clientLifespanMetric) {
         this.name = name;
         this.initializers = initializers;
         this.clientWorker = clientWorker;
         this.socket = socket;
         this.startSignal = new CountDownLatch(1);
         this.shutdownSignal = new CountDownLatch(1);
+        this.clientLifespanMetric = clientLifespanMetric;
 
         logger.info("[{}] New client has been created", name);
     }
@@ -35,7 +38,7 @@ public class Client implements Runnable {
     public void run() {
         logger.info("[{}] Client has been started in thread: {}", name, Thread.currentThread().getName());
 
-        try (socket) {
+        try (socket; Timer.Context ignored = clientLifespanMetric.time()) {
             startSignal.countDown();
 
             for (Initializer initializer : initializers) {

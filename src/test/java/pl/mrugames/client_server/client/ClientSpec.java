@@ -1,5 +1,6 @@
 package pl.mrugames.client_server.client;
 
+import com.codahale.metrics.Timer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -29,7 +30,7 @@ class ClientSpec {
         clientWorker = mock(Runnable.class);
         socket = mock(Socket.class);
 
-        client = new Client("Test Client", initializers, clientWorker, socket);
+        client = new Client("Test Client", initializers, clientWorker, socket, mock(Timer.class));
     }
 
     @Test
