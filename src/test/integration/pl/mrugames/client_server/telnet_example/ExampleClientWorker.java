@@ -52,7 +52,7 @@ public class ExampleClientWorker implements Runnable {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.warn("Exception in client: ", e);
         }
 
         logger.info("Client worker has been terminated");
