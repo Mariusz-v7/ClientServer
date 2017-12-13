@@ -1,11 +1,13 @@
 package pl.mrugames.client_server.client;
 
+import com.codahale.metrics.MetricFilter;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
@@ -91,6 +93,8 @@ class TimeoutSpec {
         executorService.shutdownNow();
         boolean result = executorService.awaitTermination(10, TimeUnit.SECONDS);
         assertTrue(result);
+
+        Metrics.getRegistry().removeMatching(MetricFilter.ALL);
     }
 
     private void mockHostToSendEverySecond(boolean shouldKeepReceiving) {

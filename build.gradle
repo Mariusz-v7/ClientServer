@@ -20,6 +20,7 @@ dependencies {
     compile group: 'ch.qos.logback', name: 'logback-core', version: '1.2.3'
     compile group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
     compile group: 'io.dropwizard.metrics', name: 'metrics-core', version: '4.0.0-alpha3'
+    compile group: 'io.dropwizard.metrics', name: 'metrics-healthchecks', version: '4.0.0-alpha3'
 
     testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.0.2'
     testCompile group: 'org.assertj', name: 'assertj-core', version: '3.8.0'

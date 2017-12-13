@@ -1,8 +1,10 @@
 package pl.mrugames.client_server.client;
 
+import com.codahale.metrics.MetricFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import pl.mrugames.client_server.Metrics;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -32,6 +34,7 @@ class ClientWatchdogSpec {
     @AfterEach
     void after() throws InterruptedException {
         stop();
+        Metrics.getRegistry().removeMatching(MetricFilter.ALL);
     }
 
     private void stop() throws InterruptedException {

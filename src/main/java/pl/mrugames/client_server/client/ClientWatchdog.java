@@ -1,7 +1,12 @@
 package pl.mrugames.client_server.client;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.health.HealthCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.client_server.Metrics;
 
 import java.net.Socket;
 import java.time.Duration;
@@ -11,7 +16,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class ClientWatchdog implements Runnable {
+class ClientWatchdog implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientWatchdog.class);
 
     private static class Container {
@@ -26,6 +31,7 @@ public class ClientWatchdog implements Runnable {
         }
     }
 
+    private final Timer cleanupMetric;
     private final String name;
     private final long timeoutSeconds;
     private final CountDownLatch startSignal;
@@ -33,12 +39,21 @@ public class ClientWatchdog implements Runnable {
     final Semaphore semaphore;
     private volatile boolean running;
 
-    public ClientWatchdog(String name, long timeoutSeconds) {
+    ClientWatchdog(String name, long timeoutSeconds) {
         this.name = name;
         this.timeoutSeconds = timeoutSeconds;
         this.startSignal = new CountDownLatch(1);
         comms = new CopyOnWriteArraySet<>();
         semaphore = new Semaphore(0);
+
+        cleanupMetric = Metrics.getRegistry().timer(MetricRegistry.name(ClientWatchdog.class, name, "cleanup"));
+        Metrics.getRegistry().register(MetricRegistry.name(ClientWatchdog.class, "clients", "registered"), (Gauge<Integer>) comms::size);
+        Metrics.getHealthCheckRegistry().register(MetricRegistry.name(ClientWatchdog.class, "running"), new HealthCheck() {
+            @Override
+            protected Result check() throws Exception {
+                return running ? HealthCheck.Result.healthy("Watchdog is running") : HealthCheck.Result.unhealthy("Watchdog is not running");
+            }
+        });
     }
 
     @Override
@@ -83,35 +98,38 @@ public class ClientWatchdog implements Runnable {
     }
 
     long check() throws InterruptedException {
-        long nextPossibleTimeout = -1;
+        try (Timer.Context ignored = cleanupMetric.time()) {
 
-        for (Container container : comms) {
-            semaphore.acquire();
+            long nextPossibleTimeout = -1;
 
-            if (isTimeout(container.comm, container.clientName)) {
-                logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, container.clientName);
+            for (Container container : comms) {
+                semaphore.acquire();
 
-                try {
-                    container.socket.close();
-                    logger.info("[{}] Connection closed. Client: {}", name, container.clientName);
-                } catch (Exception e) {
-                    logger.error("[{}] Error during socket close. Client: {}", name, container.clientName, e);
-                } finally {
-                    comms.remove(container);
+                if (isTimeout(container.comm, container.clientName)) {
+                    logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, container.clientName);
+
+                    try {
+                        container.socket.close();
+                        logger.info("[{}] Connection closed. Client: {}", name, container.clientName);
+                    } catch (Exception e) {
+                        logger.error("[{}] Error during socket close. Client: {}", name, container.clientName, e);
+                    } finally {
+                        comms.remove(container);
+                    }
+
+                    logger.info("[{}] Connection removed. Client: {}", name, container.clientName);
+                } else {
+                    long nextTimeout = calculateSecondsToTimeout(container.comm);
+                    if (nextPossibleTimeout == -1 || nextPossibleTimeout > nextTimeout) {
+                        nextPossibleTimeout = nextTimeout;
+                    }
+
+                    semaphore.release();
                 }
-
-                logger.info("[{}] Connection removed. Client: {}", name, container.clientName);
-            } else {
-                long nextTimeout = calculateSecondsToTimeout(container.comm);
-                if (nextPossibleTimeout == -1 || nextPossibleTimeout > nextTimeout) {
-                    nextPossibleTimeout = nextTimeout;
-                }
-
-                semaphore.release();
             }
-        }
 
-        return nextPossibleTimeout;
+            return nextPossibleTimeout;
+        }
     }
 
     boolean isTimeout(Comm comm, String clientName) {
