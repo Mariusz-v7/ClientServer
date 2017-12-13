@@ -34,10 +34,12 @@ public class Main {
                         .setName("Local Client")
                         .build();
 
-        Client localClientWorker = clientFactory.create(new Socket(address, port));
+        try {
+            Client localClientWorker = clientFactory.create(new Socket(address, port));
 
-        localClientWorker.awaitStop(1, TimeUnit.DAYS);
-
-        executorService.shutdownNow();
+            localClientWorker.awaitStop(1, TimeUnit.DAYS);
+        } finally {
+            executorService.shutdownNow();
+        }
     }
 }

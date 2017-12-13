@@ -29,10 +29,12 @@ public class Main {
 
         ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Local Client", 60, new WorkerFactory(), executorService);
 
-        Client client = clientFactory.create(new Socket(address, port));
+        try {
+            Client client = clientFactory.create(new Socket(address, port));
 
-        client.awaitStop(1, TimeUnit.DAYS);
-
-        executorService.shutdownNow();
+            client.awaitStop(1, TimeUnit.DAYS);
+        } finally {
+            executorService.shutdownNow();
+        }
     }
 }
