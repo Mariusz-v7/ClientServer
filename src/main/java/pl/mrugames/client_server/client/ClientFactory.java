@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.Socket;
+import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +73,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
     }
 
-    public Client create(Socket socket) throws Exception {
+    public Client create(SocketChannel channel) throws Exception {
         if (!watchdog.isRunning()) {
             throw new IllegalStateException("Client Watchdog is dead! Cannot accept new connection.");
         }
@@ -81,16 +82,16 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
             logger.info("[{}] New client is being created!", factoryName);
 
             String clientName = clientNamePrefix + "-" + clientId.incrementAndGet();
-            ClientInfo clientInfo = new ClientInfo(clientName, socket);
+            ClientInfo clientInfo = new ClientInfo(clientName, channel.socket());
 
-            List<Initializer> initializers = createInitializers(clientName, socket);
-            Comm<In, Out, Reader, Writer> comm = createComms(clientName, socket);
+            List<Initializer> initializers = createInitializers(clientName, channel.socket());
+            Comm<In, Out, Reader, Writer> comm = createComms(clientName, channel.socket());
 
-            watchdog.register(comm, socket, clientName);
+            watchdog.register(comm, channel, clientName);
 
             Runnable clientWorker = createWorker(clientName, comm, clientInfo);
 
-            Client client = createClient(clientName, initializers, clientWorker, socket);
+            Client client = createClient(clientName, initializers, clientWorker, channel);
 
             executorService.execute(client);
             boolean result = client.awaitStart(clientStartTimeoutMilliseconds, TimeUnit.MILLISECONDS);
@@ -101,15 +102,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
             logger.info("[{}] New client has been created: {}!", factoryName, client.getName());
             return client;
         } catch (Exception e) {
-            try {
-                logger.error("[{}] Exception during client initialization", factoryName);
-                logger.error("[{}] Closing the socket", factoryName);
-                socket.close();
-                logger.error("[{}] Socket closed", factoryName);
-            } catch (IOException e1) {
-                logger.error("[{}] Failed to close the socket", factoryName, e1);
-            }
-
+            closeChannel(channel);
             throw e;
         }
     }
@@ -154,8 +147,19 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         return clientWorker;
     }
 
-    Client createClient(String clientName, List<Initializer> initializers, Runnable clientWorker, Socket socket) {
-        return new Client(clientName, initializers, clientWorker, socket, clientLifespanMetric);
+    Client createClient(String clientName, List<Initializer> initializers, Runnable clientWorker, SocketChannel channel) {
+        return new Client(clientName, initializers, clientWorker, channel, clientLifespanMetric);
+    }
+
+    void closeChannel(SocketChannel channel) {
+        try {
+            logger.error("[{}] Exception during client initialization", factoryName);
+            logger.error("[{}] Closing the socket", factoryName);
+            channel.close();
+            logger.error("[{}] Socket closed", factoryName);
+        } catch (IOException e1) {
+            logger.error("[{}] Failed to close the socket", factoryName, e1);
+        }
     }
 
 }

@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -23,6 +23,7 @@ class HostManagerSpec {
     @BeforeEach
     void before() throws IOException, InterruptedException {
         hostManager = spy(new HostManager());
+        doNothing().when(hostManager).closeClientChannel(any());
     }
 
     @AfterEach
@@ -126,12 +127,12 @@ class HostManagerSpec {
 
         doReturn(clientFactory).when(host).getClientFactory();
 
-        Socket socket = mock(Socket.class);
+        SocketChannel socket = mock(SocketChannel.class);
 
         doReturn(socket).when(hostManager).accept(any(), any());
 
         hostManager.acceptConnection(host, mock(ServerSocketChannel.class));
 
-        verify(socket).close();
+        verify(hostManager).closeClientChannel(socket);
     }
 }

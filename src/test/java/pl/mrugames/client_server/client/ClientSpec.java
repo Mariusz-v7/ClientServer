@@ -8,7 +8,7 @@ import org.mockito.Mockito;
 import pl.mrugames.client_server.client.initializers.Initializer;
 
 import java.io.IOException;
-import java.net.Socket;
+import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,16 +21,18 @@ class ClientSpec {
     private Client client;
     private List<Initializer> initializers;
     private Runnable clientWorker;
-    private Socket socket;
+    private SocketChannel socket;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void before() {
         initializers = new LinkedList<>();
         clientWorker = mock(Runnable.class);
-        socket = mock(Socket.class);
+        socket = mock(SocketChannel.class);
 
-        client = new Client("Test Client", initializers, clientWorker, socket, mock(Timer.class));
+        client = spy(new Client("Test Client", initializers, clientWorker, socket, mock(Timer.class)));
+
+        doNothing().when(client).closeChannel(any());
     }
 
     @Test
@@ -43,14 +45,14 @@ class ClientSpec {
 
         client.run();
 
-        InOrder inOrder = Mockito.inOrder(initializer1, initializer2, clientWorker, socket);
+        InOrder inOrder = Mockito.inOrder(initializer1, initializer2, clientWorker, client);
 
         inOrder.verify(initializer1).run();
         inOrder.verify(initializer2).run();
 
         inOrder.verify(clientWorker).run();
 
-        inOrder.verify(socket).close();
+        inOrder.verify(client).closeChannel(socket);
     }
 
     @Test
@@ -59,7 +61,7 @@ class ClientSpec {
 
         client.run();
 
-        verify(socket).close();
+        verify(client).closeChannel(socket);
     }
 
     @Test
@@ -72,7 +74,7 @@ class ClientSpec {
 
         client.run();
 
-        verify(socket).close();
+        verify(client).closeChannel(socket);
     }
 
     @Test

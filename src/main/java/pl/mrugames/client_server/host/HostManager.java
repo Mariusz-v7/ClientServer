@@ -7,7 +7,6 @@ import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.channels.*;
 import java.util.List;
 import java.util.Set;
@@ -107,18 +106,18 @@ public class HostManager implements Runnable, HostManagerMetrics {
     void acceptConnection(Host host, ServerSocketChannel channel) {
         logger.info("[{}] New Client is connecting", host.getName());
 
-        Socket socket = null;
+        SocketChannel clientChannel = null;
         try {
-            socket = accept(host, channel);
-            host.getClientFactory().create(socket);
+            clientChannel = accept(host, channel);
+            host.getClientFactory().create(clientChannel);
         } catch (Exception e) {
             logger.error("[{}] Error during client creation", host.getName(), e);
 
-            if (socket != null) {
+            if (clientChannel != null) {
                 logger.error("[{}] Closing client's socket", host.getName());
 
                 try {
-                    socket.close();
+                    closeClientChannel(clientChannel);
                     logger.error("[{}] Client's socket closed", host.getName());
                 } catch (IOException e1) {
                     logger.error("[{}] Failed to close client's socket", host.getName(), e1);
@@ -171,17 +170,21 @@ public class HostManager implements Runnable, HostManagerMetrics {
     /**
      * Method created for mocking purposes.
      */
-    Socket accept(Host host, ServerSocketChannel channel) throws IOException {
+    SocketChannel accept(Host host, ServerSocketChannel channel) throws IOException {
         SocketChannel socketChannel = channel.accept();
         socketChannel.configureBlocking(true);
 
         logger.info("[{}] New client has been accepted: {}/{}", host.getName(), socketChannel.getLocalAddress(), socketChannel.getRemoteAddress());
 
-        return socketChannel.socket();
+        return socketChannel;
     }
 
     void closeChannel(SelectionKey key) throws IOException {
         key.channel().close();
+    }
+
+    void closeClientChannel(SocketChannel socketChannel) throws IOException {
+        socketChannel.close();
     }
 
 }

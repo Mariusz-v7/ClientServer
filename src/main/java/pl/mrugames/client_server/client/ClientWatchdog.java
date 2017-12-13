@@ -8,7 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.Metrics;
 
-import java.net.Socket;
+import java.io.IOException;
+import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -21,12 +22,12 @@ class ClientWatchdog implements Runnable {
 
     private static class Container {
         private final Comm comm;
-        private final Socket socket;
+        private final SocketChannel channel;
         private final String clientName;
 
-        Container(Comm comm, Socket socket, String clientName) {
+        Container(Comm comm, SocketChannel channel, String clientName) {
             this.comm = comm;
-            this.socket = socket;
+            this.channel = channel;
             this.clientName = clientName;
         }
     }
@@ -109,10 +110,10 @@ class ClientWatchdog implements Runnable {
                     logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, container.clientName);
 
                     try {
-                        container.socket.close();
+                        closeChannel(container.channel);
                         logger.info("[{}] Connection closed. Client: {}", name, container.clientName);
                     } catch (Exception e) {
-                        logger.error("[{}] Error during socket close. Client: {}", name, container.clientName, e);
+                        logger.error("[{}] Error during channel close. Client: {}", name, container.clientName, e);
                     } finally {
                         comms.remove(container);
                     }
@@ -159,8 +160,8 @@ class ClientWatchdog implements Runnable {
         return (long) Math.ceil(result);
     }
 
-    synchronized void register(Comm comm, Socket socket, String clientName) {
-        comms.add(new Container(comm, socket, clientName));
+    synchronized void register(Comm comm, SocketChannel channel, String clientName) {
+        comms.add(new Container(comm, channel, clientName));
         semaphore.release();
         logger.info("[{}] New connection has been registered. Client: {}", name, clientName);
     }
@@ -171,5 +172,9 @@ class ClientWatchdog implements Runnable {
 
     boolean awaitStart(long timeout, TimeUnit timeUnit) throws InterruptedException {
         return startSignal.await(timeout, timeUnit);
+    }
+
+    void closeChannel(SocketChannel channel) throws IOException {
+        channel.close();
     }
 }

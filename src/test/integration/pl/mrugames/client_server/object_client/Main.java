@@ -6,7 +6,8 @@ import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactories;
 import pl.mrugames.client_server.client.ClientFactory;
 
-import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +31,8 @@ public class Main {
         ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Local Client", 60, new WorkerFactory(), executorService);
 
         try {
-            Client client = clientFactory.create(new Socket(address, port));
+            SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(address, port));
+            Client client = clientFactory.create(socketChannel);
 
             client.awaitStop(1, TimeUnit.DAYS);
         } finally {

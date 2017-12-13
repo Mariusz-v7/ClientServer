@@ -5,8 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.initializers.Initializer;
 
-import java.net.Socket;
-import java.nio.channels.ClosedChannelException;
+import java.io.IOException;
+import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -17,16 +17,16 @@ public class Client implements Runnable {
     private final String name;
     private final List<Initializer> initializers;
     private final Runnable clientWorker;
-    private final Socket socket;
+    private final SocketChannel channel;
     private final CountDownLatch startSignal;
     private final CountDownLatch shutdownSignal;
     private final Timer clientLifespanMetric;
 
-    Client(String name, List<Initializer> initializers, Runnable clientWorker, Socket socket, Timer clientLifespanMetric) {
+    Client(String name, List<Initializer> initializers, Runnable clientWorker, SocketChannel channel, Timer clientLifespanMetric) {
         this.name = name;
         this.initializers = initializers;
         this.clientWorker = clientWorker;
-        this.socket = socket;
+        this.channel = channel;
         this.startSignal = new CountDownLatch(1);
         this.shutdownSignal = new CountDownLatch(1);
         this.clientLifespanMetric = clientLifespanMetric;
@@ -38,7 +38,7 @@ public class Client implements Runnable {
     public void run() {
         logger.info("[{}] Client has been started in thread: {}", name, Thread.currentThread().getName());
 
-        try (socket; Timer.Context ignored = clientLifespanMetric.time()) {
+        try (Timer.Context ignored = clientLifespanMetric.time()) {
             startSignal.countDown();
 
             for (Initializer initializer : initializers) {
@@ -52,11 +52,10 @@ public class Client implements Runnable {
             clientWorker.run();
 
             logger.info("[{}] Client's main loop has finished", name);
-        } catch (ClosedChannelException e) {
-            logger.info("[{}] Client's socket has been closed by other thread!", name);
         } catch (Exception e) {
             logger.info("[{}] Client finished with exception", name, e);
         } finally {
+            closeChannel(channel);
             shutdownSignal.countDown();
         }
 
@@ -81,5 +80,13 @@ public class Client implements Runnable {
 
     public boolean awaitStop(long timeout, TimeUnit timeUnit) throws InterruptedException {
         return shutdownSignal.await(timeout, timeUnit);
+    }
+
+    void closeChannel(SocketChannel channel) {
+        try {
+            channel.close();
+        } catch (IOException e) {
+            logger.error("Failed to close channel", e);
+        }
     }
 }
