@@ -29,7 +29,7 @@ public class WebSocketInitializer implements Initializer {
     }
 
     @Override
-    public void run() {
+    public void run() {  // TODO: nonblocking
         logger.info("Initializing WebSocket handshake procedure.");
         List<String> requestLines = new LinkedList<>();
 

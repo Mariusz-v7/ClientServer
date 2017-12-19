@@ -3,6 +3,7 @@ package pl.mrugames.client_server.host;
 import com.codahale.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
@@ -68,18 +69,30 @@ public class HostManager implements Runnable, HostManagerMetrics {
     }
 
     private void progressKey(SelectionKey selectionKey) {
-        SelectableChannel channel = selectionKey.channel();
+        try {
+            SelectableChannel channel = selectionKey.channel();
 
-        if (selectionKey.isAcceptable()) {
-            Timer.Context context = clientAcceptMetric.time();
-            try {
-                Host host = (Host) selectionKey.attachment();
-                acceptConnection(host, (ServerSocketChannel) channel);
-            } finally {
-                context.stop();
+            if (selectionKey.isAcceptable()) {
+                Timer.Context context = clientAcceptMetric.time();
+                try {
+                    Host host = (Host) selectionKey.attachment();
+                    acceptConnection(host, (ServerSocketChannel) channel);  // TODO: should it be submitted to another thread as well??
+                } finally {
+                    context.stop();
+                }
+
+            } else if (selectionKey.isReadable()) {
+                Timer.Context context = clientReadMetric.time();
+                try {
+                    Client client = (Client) selectionKey.attachment();
+                    // TODO: read in new thread
+                    // TODO: set timeout
+                } finally {
+                    context.stop();
+                }
             }
-
-            return;
+        } catch (Exception e) {
+            logger.error("Failed to progress key: {}", selectionKey, e);
         }
     }
 
@@ -109,7 +122,9 @@ public class HostManager implements Runnable, HostManagerMetrics {
         SocketChannel clientChannel = null;
         try {
             clientChannel = accept(host, channel);
-            host.getClientFactory().create(clientChannel);
+            Client client = host.getClientFactory().create(clientChannel);
+
+            clientChannel.register(selector, SelectionKey.OP_READ, client);
         } catch (Exception e) {
             logger.error("[{}] Error during client creation", host.getName(), e);
 
@@ -172,7 +187,7 @@ public class HostManager implements Runnable, HostManagerMetrics {
      */
     SocketChannel accept(Host host, ServerSocketChannel channel) throws IOException {
         SocketChannel socketChannel = channel.accept();
-        socketChannel.configureBlocking(true);
+        socketChannel.configureBlocking(false);
 
         logger.info("[{}] New client has been accepted: {}/{}", host.getName(), socketChannel.getLocalAddress(), socketChannel.getRemoteAddress());
 
