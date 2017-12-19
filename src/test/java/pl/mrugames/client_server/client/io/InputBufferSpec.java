@@ -27,6 +27,7 @@ class InputBufferSpec {
     @AfterEach
     void after() throws Exception {
         socketHelper.close();
+        inputBuffer.close();
     }
 
     @Test

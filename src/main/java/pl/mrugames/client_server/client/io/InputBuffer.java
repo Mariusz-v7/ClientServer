@@ -37,7 +37,23 @@ public class InputBuffer implements AutoCloseable {
      * Should be called before reading actual message. It removes length field.
      */
     void clearLen() throws IOException {
-        bufferedInputStream.skip(4);
+        long result = bufferedInputStream.skip(4);
+        if (result != 4) {
+            throw new IllegalStateException("Failed to skip 4 bytes. Actual bytes skipped: " + result);
+        }
+    }
+
+    public byte[] read() throws IOException {
+        int len = dataInputStream.readInt();
+
+        byte[] bytes = new byte[len];
+        int result = dataInputStream.read(bytes);
+
+        if (result != len) {
+            throw new IllegalStateException("Length: " + len + ", bytes read: " + result);
+        }
+
+        return bytes;
     }
 
     @Override
