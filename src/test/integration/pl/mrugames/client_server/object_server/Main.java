@@ -30,7 +30,7 @@ public class Main {
         ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Java server", 60, new WorkerFactory(Main::shutdown), executorService);
 
         hostManager = new HostManager();
-        hostManager.newHost("Main Host", port, clientFactory);
+        hostManager.newHost("Main Host", port, clientFactory, executorService);
 
         executorService.execute(hostManager);
 

@@ -2,7 +2,6 @@ package pl.mrugames.client_server.client;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.initializers.Initializer;
 import pl.mrugames.client_server.client.io.ClientReader;
@@ -16,8 +15,6 @@ import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -86,7 +83,7 @@ class ClientFactorySpec {
             doReturn(!shouldTimeoutClientCreation).when(client).awaitStart(anyLong(), any());
 
             return client;
-        }).when(clientFactory).createClient(anyString(), anyList(), any(), any());
+        }).when(clientFactory).createClient(anyString(), anyList(), any(), any(), any());
     }
 
     @Test
@@ -113,7 +110,7 @@ class ClientFactorySpec {
 
     @Test
     void givenClientCreated_setProperClientWorker() throws Exception {
-        Runnable worker = mock(Runnable.class);
+        ClientWorker worker = mock(ClientWorker.class);
         doReturn(worker).when(clientWorkerFactory).create(any(), any());
 
         Client client = clientFactory.create(mockSocketChannel);
@@ -138,26 +135,6 @@ class ClientFactorySpec {
         assertThat(comm.getClientWriter()).isSameAs(clientWriter);
         assertThat(comm.getInputFilterProcessor()).isSameAs(inputFilterProcessor);
         assertThat(comm.getOutputFilterProcessor()).isSameAs(outputFilterProcessor);
-    }
-
-    @Test
-    void whenCreateClient_thenSubmitToExecutor_andWait() throws Exception {
-        clientFactory.create(mockSocketChannel);
-
-        InOrder inOrder = inOrder(client, executorService);
-
-        inOrder.verify(executorService).execute(client);
-        inOrder.verify(client).awaitStart(clientFactory.clientStartTimeoutMilliseconds, TimeUnit.MILLISECONDS);
-    }
-
-    @Test
-    void givenAwaitStartReturnsFalse_thenException_andCloseSocket() throws Exception {
-        shouldTimeoutClientCreation = true;
-
-        TimeoutException timeout = assertThrows(TimeoutException.class, () -> clientFactory.create(mockSocketChannel));
-        assertThat(timeout.getMessage()).isEqualTo("Failed to start client");
-
-        verify(clientFactory).closeChannel(mockSocketChannel);
     }
 
     @Test

@@ -5,12 +5,18 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
 
-public class SimpleClientWorker implements Runnable {
+public class SimpleClientWorker implements ClientWorker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Override
+    public Object onRequest(Object request) {
+        // TODO
+        return null;
+    }
 
     public static class Factory implements ClientWorkerFactory<String, String, String, String> {
         @Override
-        public Runnable create(Comm<String, String, String, String> comm, ClientInfo clientInfo) {
+        public ClientWorker create(Comm<String, String, String, String> comm, ClientInfo clientInfo) {
             return new SimpleClientWorker(comm);
         }
     }
@@ -22,7 +28,7 @@ public class SimpleClientWorker implements Runnable {
         this.comm = comm;
     }
 
-    @Override
+    @Deprecated
     public void run() {
         try {
             while (!Thread.currentThread().isInterrupted()) {

@@ -2,9 +2,10 @@ package pl.mrugames.client_server.object_server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
 
-class Worker implements Runnable {
+class Worker implements ClientWorker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Comm<Frame, Frame, Frame, Frame> comm;
     private final Runnable onShutDown;
@@ -14,7 +15,7 @@ class Worker implements Runnable {
         this.onShutDown = onShutDown;
     }
 
-    @Override
+    @Deprecated
     public void run() {
         Frame frame;
 
@@ -29,5 +30,11 @@ class Worker implements Runnable {
         } finally {
             onShutDown.run();
         }
+    }
+
+    @Override
+    public Object onRequest(Object request) {
+        //TODO
+        return null;
     }
 }

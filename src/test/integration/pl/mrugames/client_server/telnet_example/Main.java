@@ -34,7 +34,7 @@ public class Main {
                 .setName("Text Server")
                 .build();
 
-        hostManager.newHost("Main Host", port, clientFactory);
+        hostManager.newHost("Main Host", port, clientFactory, executorService);
 
         executorService.execute(hostManager);
 

@@ -3,9 +3,10 @@ package pl.mrugames.client_server.telnet_example;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientInfo;
+import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
 
-public class ExampleClientWorker implements Runnable {
+public class ExampleClientWorker implements ClientWorker {
     private final static Logger logger = LoggerFactory.getLogger(ExampleClientWorker.class);
 
     private final String name;
@@ -20,7 +21,7 @@ public class ExampleClientWorker implements Runnable {
         this.name = clientInfo.getName();
     }
 
-    @Override
+    @Deprecated
     public void run() {
         try {
 
@@ -56,5 +57,11 @@ public class ExampleClientWorker implements Runnable {
         }
 
         logger.info("Client worker has been terminated");
+    }
+
+    @Override
+    public Object onRequest(Object request) {
+        //TODO
+        return null;
     }
 }

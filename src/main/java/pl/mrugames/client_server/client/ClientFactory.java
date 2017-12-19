@@ -17,8 +17,6 @@ import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -89,15 +87,9 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
             watchdog.register(comm, channel, clientName);
 
-            Runnable clientWorker = createWorker(clientName, comm, clientInfo);
+            ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo);
 
-            Client client = createClient(clientName, initializers, clientWorker, channel);
-
-            executorService.execute(client);
-            boolean result = client.awaitStart(clientStartTimeoutMilliseconds, TimeUnit.MILLISECONDS);
-            if (!result) {
-                throw new TimeoutException("Failed to start client");
-            }
+            Client client = createClient(clientName, initializers, comm, clientWorker, channel);
 
             logger.info("[{}] New client has been created: {}!", factoryName, client.getName());
             return client;
@@ -137,18 +129,18 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         return comm;
     }
 
-    Runnable createWorker(String clientName, Comm<In, Out, Reader, Writer> comm, ClientInfo clientInfo) {
+    ClientWorker<In, Out> createWorker(String clientName, Comm<In, Out, Reader, Writer> comm, ClientInfo clientInfo) {
         logger.info("[{}] Creating client worker for client: {}", factoryName, clientName);
 
-        Runnable clientWorker = clientWorkerFactory.create(comm, clientInfo);
+        ClientWorker<In, Out> clientWorker = clientWorkerFactory.create(comm, clientInfo);
 
         logger.info("[{}] Client worker has been created for client: {}", factoryName, clientName);
 
         return clientWorker;
     }
 
-    Client createClient(String clientName, List<Initializer> initializers, Runnable clientWorker, SocketChannel channel) {
-        return new Client(clientName, initializers, clientWorker, channel, clientLifespanMetric);
+    Client<In, Out, Reader, Writer> createClient(String clientName, List<Initializer> initializers, Comm<In, Out, Reader, Writer> comm, ClientWorker<In, Out> clientWorker, SocketChannel channel) {
+        return new Client<>(clientName, initializers, comm, clientWorker, channel, clientLifespanMetric);
     }
 
     void closeChannel(SocketChannel channel) {

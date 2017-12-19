@@ -12,6 +12,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,7 +45,7 @@ class HostManagerSpec {
     void givenManagerIsStarted_whenNewHost_thenException() throws IOException {
         hostManager.started = true;
 
-        HostManagerIsRunningException e = assertThrows(HostManagerIsRunningException.class, () -> hostManager.newHost("test", 1999, mock(ClientFactory.class)));
+        HostManagerIsRunningException e = assertThrows(HostManagerIsRunningException.class, () -> hostManager.newHost("test", 1999, mock(ClientFactory.class), mock(ExecutorService.class)));
         assertThat(e.getMessage()).isEqualTo("Host Manager is running. Please submit your hosts before starting Host Manager's thread!");
     }
 
@@ -55,7 +56,7 @@ class HostManagerSpec {
 
     @Test
     void whenNewHost_thenAddToList() {
-        hostManager.newHost("Test", 1234, mock(ClientFactory.class));
+        hostManager.newHost("Test", 1234, mock(ClientFactory.class), mock(ExecutorService.class));
         assertThat(hostManager.hosts).hasSize(1);
 
         Host host = hostManager.hosts.get(0);
@@ -69,8 +70,8 @@ class HostManagerSpec {
         ServerSocketChannel factoryProduct = mock(ServerSocketChannel.class);
         doReturn(factoryProduct).when(hostManager).serverSocketChannelFactory(any(Host.class));
 
-        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class));
-        Host host2 = new Host("Host 2", 1235, mock(ClientFactory.class));
+        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class), mock(ExecutorService.class));
+        Host host2 = new Host("Host 2", 1235, mock(ClientFactory.class), mock(ExecutorService.class));
 
         hostManager.hosts.add(host1);
         hostManager.hosts.add(host2);
@@ -88,7 +89,7 @@ class HostManagerSpec {
     void factoryThrowsException_catchIt() throws IOException {
         doThrow(RuntimeException.class).when(hostManager).serverSocketChannelFactory(any());
 
-        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class));
+        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class), mock(ExecutorService.class));
         hostManager.hosts.add(host1);
 
         hostManager.startHosts();

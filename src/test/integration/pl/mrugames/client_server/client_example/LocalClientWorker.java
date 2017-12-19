@@ -2,11 +2,12 @@ package pl.mrugames.client_server.client_example;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
 
 import java.util.concurrent.CountDownLatch;
 
-public class LocalClientWorker implements Runnable {
+public class LocalClientWorker implements ClientWorker {
     private final static Logger logger = LoggerFactory.getLogger(LocalClientWorker.class);
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
     private final Comm<String, String, String, String> comm;
@@ -15,7 +16,7 @@ public class LocalClientWorker implements Runnable {
         this.comm = comm;
     }
 
-    @Override
+    @Deprecated
     public void run() {
         logger.info("Local client started");
 
@@ -40,5 +41,11 @@ public class LocalClientWorker implements Runnable {
 
     public CountDownLatch getShutdownLatch() {
         return shutdownLatch;
+    }
+
+    @Override
+    public Object onRequest(Object request) {
+        //TODO
+        return null;
     }
 }

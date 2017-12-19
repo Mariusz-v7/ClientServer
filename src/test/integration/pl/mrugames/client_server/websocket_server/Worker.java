@@ -1,10 +1,11 @@
 package pl.mrugames.client_server.websocket_server;
 
+import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
 import pl.mrugames.client_server.websocket.WebsocketConstants;
 
-public class Worker implements Runnable {
+public class Worker implements ClientWorker {
     private final Comm<String, String, WebSocketFrame, WebSocketFrame> comm;
     private final Runnable onClientShutDown;
 
@@ -13,7 +14,7 @@ public class Worker implements Runnable {
         this.onClientShutDown = onClientShutDown;
     }
 
-    @Override
+    @Deprecated
     public void run() {
         try {
             String message;
@@ -41,5 +42,11 @@ public class Worker implements Runnable {
         }
 
         onClientShutDown.run();
+    }
+
+    @Override
+    public Object onRequest(Object request) {
+        //TODO
+        return null;
     }
 }

@@ -12,6 +12,7 @@ import java.nio.channels.*;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 
 public class HostManager implements Runnable, HostManagerMetrics {
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -24,12 +25,12 @@ public class HostManager implements Runnable, HostManagerMetrics {
         this.hosts = new CopyOnWriteArrayList<>();
     }
 
-    public synchronized void newHost(String name, int port, ClientFactory clientFactory) {
+    public synchronized void newHost(String name, int port, ClientFactory clientFactory, ExecutorService clientExecutor) {
         if (started) {
             throw new HostManagerIsRunningException("Host Manager is running. Please submit your hosts before starting Host Manager's thread!");
         }
 
-        Host host = new Host(name, port, clientFactory);
+        Host host = new Host(name, port, clientFactory, clientExecutor);
         hosts.add(host);
 
         logger.info("New Host has been submitted: {}", host);

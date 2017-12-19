@@ -20,23 +20,25 @@ import static org.mockito.Mockito.*;
 class ClientSpec {
     private Client client;
     private List<Initializer> initializers;
-    private Runnable clientWorker;
+    private ClientWorker clientWorker;
     private SocketChannel socket;
+    private Comm comm;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void before() {
         initializers = new LinkedList<>();
-        clientWorker = mock(Runnable.class);
+        clientWorker = mock(ClientWorker.class);
         socket = mock(SocketChannel.class);
+        comm = mock(Comm.class);
 
-        client = spy(new Client("Test Client", initializers, clientWorker, socket, mock(Timer.class)));
+        client = spy(new Client("Test Client", initializers, comm, clientWorker, socket, mock(Timer.class)));
 
         doNothing().when(client).closeChannel(any());
     }
 
     @Test
-    void givenSomeInitializers_whenRun_thenRunAllInitializersInOrderThenWorkerThenCloseSocket() throws IOException {
+    void givenSomeInitializers_whenRun_thenRunAllInitializersInOrderThenCloseSocket() throws IOException {
         Initializer initializer1 = mock(Initializer.class);
         Initializer initializer2 = mock(Initializer.class);
 
@@ -45,23 +47,12 @@ class ClientSpec {
 
         client.run();
 
-        InOrder inOrder = Mockito.inOrder(initializer1, initializer2, clientWorker, client);
+        InOrder inOrder = Mockito.inOrder(initializer1, initializer2, client);
 
         inOrder.verify(initializer1).run();
         inOrder.verify(initializer2).run();
 
-        inOrder.verify(clientWorker).run();
-
         inOrder.verify(client).closeChannel(socket);
-    }
-
-    @Test
-    void givenMainLoopThrowsException_whenFinish_thenCloseSocketAnyway() throws IOException {
-        doThrow(RuntimeException.class).when(clientWorker).run();
-
-        client.run();
-
-        verify(client).closeChannel(socket);
     }
 
     @Test

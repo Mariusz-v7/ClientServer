@@ -37,7 +37,7 @@ public class Main {
                 executorService
         );
 
-        hostManager.newHost("Main Host", port, clientFactory);
+        hostManager.newHost("Main Host", port, clientFactory, executorService);
         executorService.execute(hostManager);
 
         logger.info("Main finished...");

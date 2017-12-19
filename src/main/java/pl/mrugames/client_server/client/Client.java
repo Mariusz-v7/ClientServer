@@ -6,27 +6,31 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.initializers.Initializer;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-public class Client implements Runnable {
+public class Client<In, Out, Reader extends Serializable, Writer extends Serializable> {
     private final static Logger logger = LoggerFactory.getLogger(Client.class);
 
     private final String name;
     private final List<Initializer> initializers;
-    private final Runnable clientWorker;
+    private final ClientWorker<In, Out> clientWorker;
     private final SocketChannel channel;
+    private final Comm<In, Out, Reader, Writer> comm;
+
     private final CountDownLatch startSignal;
     private final CountDownLatch shutdownSignal;
     private final Timer clientLifespanMetric;
 
-    Client(String name, List<Initializer> initializers, Runnable clientWorker, SocketChannel channel, Timer clientLifespanMetric) {
+    Client(String name, List<Initializer> initializers, Comm<In, Out, Reader, Writer> comm, ClientWorker<In, Out> clientWorker, SocketChannel channel, Timer clientLifespanMetric) {
         this.name = name;
         this.initializers = initializers;
         this.clientWorker = clientWorker;
         this.channel = channel;
+        this.comm = comm;
         this.startSignal = new CountDownLatch(1);
         this.shutdownSignal = new CountDownLatch(1);
         this.clientLifespanMetric = clientLifespanMetric;
@@ -34,7 +38,18 @@ public class Client implements Runnable {
         logger.info("[{}] New client has been created", name);
     }
 
-    @Override
+    void onRequestReady() {
+        try {
+            //TODO: tests, metrics, etc
+            In in = comm.receive();
+            Out out = clientWorker.onRequest(in);
+            comm.send(out);
+        } catch (Exception e) {
+            //TODO
+        }
+    }
+
+    @Deprecated
     public void run() {
         logger.info("[{}] Client has been started in thread: {}", name, Thread.currentThread().getName());
 
@@ -49,7 +64,7 @@ public class Client implements Runnable {
 
             logger.info("[{}] Starting client's main loop", name);
 
-            clientWorker.run();
+//            clientWorker.run();
 
             logger.info("[{}] Client's main loop has finished", name);
         } catch (Exception e) {
@@ -70,14 +85,16 @@ public class Client implements Runnable {
         return initializers;
     }
 
-    Runnable getClientWorker() {
+    ClientWorker getClientWorker() {
         return clientWorker;
     }
 
+    @Deprecated
     public boolean awaitStart(long timeout, TimeUnit timeUnit) throws InterruptedException {
         return startSignal.await(timeout, timeUnit);
     }
 
+    @Deprecated
     public boolean awaitStop(long timeout, TimeUnit timeUnit) throws InterruptedException {
         return shutdownSignal.await(timeout, timeUnit);
     }
