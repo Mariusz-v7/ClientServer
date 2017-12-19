@@ -14,7 +14,7 @@ public class InputBuffer implements AutoCloseable {
         this.dataInputStream = new DataInputStream(bufferedInputStream);
     }
 
-    boolean isReady() throws IOException {
+    public boolean isReady() throws IOException {
         if (bufferedInputStream.available() < 4) {
             return false;
         }
@@ -26,20 +26,6 @@ public class InputBuffer implements AutoCloseable {
             return bufferedInputStream.available() >= len;
         } finally {
             bufferedInputStream.reset();
-        }
-    }
-
-    BufferedInputStream getBufferedInputStream() {
-        return bufferedInputStream;
-    }
-
-    /**
-     * Should be called before reading actual message. It removes length field.
-     */
-    void clearLen() throws IOException {
-        long result = bufferedInputStream.skip(4);
-        if (result != 4) {
-            throw new IllegalStateException("Failed to skip 4 bytes. Actual bytes skipped: " + result);
         }
     }
 
@@ -60,5 +46,19 @@ public class InputBuffer implements AutoCloseable {
     public void close() throws Exception {
         bufferedInputStream.close();
         dataInputStream.close();
+    }
+
+    BufferedInputStream getBufferedInputStream() {
+        return bufferedInputStream;
+    }
+
+    /**
+     * Should be called before reading actual message. It removes length field.
+     */
+    void clearLen() throws IOException {
+        long result = bufferedInputStream.skip(4);
+        if (result != 4) {
+            throw new IllegalStateException("Failed to skip 4 bytes. Actual bytes skipped: " + result);
+        }
     }
 }
