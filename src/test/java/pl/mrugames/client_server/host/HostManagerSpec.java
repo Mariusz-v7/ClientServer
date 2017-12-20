@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -24,7 +23,6 @@ class HostManagerSpec {
     @BeforeEach
     void before() throws IOException, InterruptedException {
         hostManager = spy(new HostManager());
-        doNothing().when(hostManager).closeClientChannel(any());
     }
 
     @AfterEach
@@ -120,20 +118,4 @@ class HostManagerSpec {
         verify(hostManager).closeChannel(key3);
     }
 
-    @Test
-    void givenFactoryThrowsException_whenClientAccept_thenCloseSocket() throws Exception {
-        Host host = mock(Host.class);
-        ClientFactory clientFactory = mock(ClientFactory.class);
-        doThrow(RuntimeException.class).when(clientFactory).create(any());
-
-        doReturn(clientFactory).when(host).getClientFactory();
-
-        SocketChannel socket = mock(SocketChannel.class);
-
-        doReturn(socket).when(hostManager).accept(any(), any());
-
-        hostManager.acceptConnection(host, mock(ServerSocketChannel.class));
-
-        verify(hostManager).closeClientChannel(socket);
-    }
 }

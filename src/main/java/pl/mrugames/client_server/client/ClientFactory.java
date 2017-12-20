@@ -71,7 +71,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
     }
 
-    public Client create(SocketChannel channel) throws Exception {
+    public Client<In, Out, Reader, Writer> create(SocketChannel channel) throws Exception {
         if (!watchdog.isRunning()) {
             throw new IllegalStateException("Client Watchdog is dead! Cannot accept new connection.");
         }

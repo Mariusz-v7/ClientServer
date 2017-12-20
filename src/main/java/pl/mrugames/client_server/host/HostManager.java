@@ -5,14 +5,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
+import pl.mrugames.client_server.host.tasks.NewClientAcceptTask;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.*;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 public class HostManager implements Runnable, HostManagerMetrics {
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -69,6 +74,7 @@ public class HostManager implements Runnable, HostManagerMetrics {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void progressKey(SelectionKey selectionKey) {
         try {
             SelectableChannel channel = selectionKey.channel();
@@ -77,7 +83,9 @@ public class HostManager implements Runnable, HostManagerMetrics {
                 Timer.Context context = clientAcceptMetric.time();
                 try {
                     Host host = (Host) selectionKey.attachment();
-                    acceptConnection(host, (ServerSocketChannel) channel);  // TODO: should it be submitted to another thread as well??
+                    NewClientAcceptTask acceptTask = new NewClientAcceptTask<>(host.getName(), host.getClientFactory(), (ServerSocketChannel) channel, selector);
+                    Future result = host.getClientExecutor().submit(acceptTask);
+                    //TODO: timeout result
                 } finally {
                     context.stop();
                 }
@@ -115,32 +123,6 @@ public class HostManager implements Runnable, HostManagerMetrics {
         }
 
         logger.info("All hosts started");
-    }
-
-    void acceptConnection(Host host, ServerSocketChannel channel) {
-        logger.info("[{}] New Client is connecting", host.getName());
-
-        SocketChannel clientChannel = null;
-        try {
-            clientChannel = accept(host, channel);
-            Client client = host.getClientFactory().create(clientChannel);
-
-            clientChannel.register(selector, SelectionKey.OP_READ, client);
-        } catch (Exception e) {
-            logger.error("[{}] Error during client creation", host.getName(), e);
-
-            if (clientChannel != null) {
-                logger.error("[{}] Closing client's socket", host.getName());
-
-                try {
-                    closeClientChannel(clientChannel);
-                    logger.error("[{}] Client's socket closed", host.getName());
-                } catch (IOException e1) {
-                    logger.error("[{}] Failed to close client's socket", host.getName(), e1);
-                }
-            }
-        }
-
     }
 
     public synchronized void shutdown() {
@@ -183,24 +165,8 @@ public class HostManager implements Runnable, HostManagerMetrics {
         return serverSocketChannel;
     }
 
-    /**
-     * Method created for mocking purposes.
-     */
-    SocketChannel accept(Host host, ServerSocketChannel channel) throws IOException {
-        SocketChannel socketChannel = channel.accept();
-        socketChannel.configureBlocking(false);
-
-        logger.info("[{}] New client has been accepted: {}/{}", host.getName(), socketChannel.getLocalAddress(), socketChannel.getRemoteAddress());
-
-        return socketChannel;
-    }
-
     void closeChannel(SelectionKey key) throws IOException {
         key.channel().close();
-    }
-
-    void closeClientChannel(SocketChannel socketChannel) throws IOException {
-        socketChannel.close();
     }
 
 }
