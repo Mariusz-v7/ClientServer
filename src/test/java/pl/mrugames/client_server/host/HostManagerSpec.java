@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.client.ClientFactory;
+import pl.mrugames.client_server.host.tasks.NewClientAcceptTask;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -116,6 +117,18 @@ class HostManagerSpec {
         verify(hostManager).closeChannel(key1);
         verify(hostManager).closeChannel(key2);
         verify(hostManager).closeChannel(key3);
+    }
+
+    @Test
+    void whenAccept_thenSubmitNewTask() {
+        ServerSocketChannel serverSocketChannel = mock(ServerSocketChannel.class);
+        Host host = mock(Host.class);
+        ExecutorService executorService = mock(ExecutorService.class);
+        doReturn(executorService).when(host).getClientExecutor();
+
+        hostManager.accept(serverSocketChannel, host);
+
+        verify(executorService).submit(any(NewClientAcceptTask.class));
     }
 
 }

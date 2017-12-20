@@ -74,22 +74,13 @@ public class HostManager implements Runnable, HostManagerMetrics {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void progressKey(SelectionKey selectionKey) {
         try {
             SelectableChannel channel = selectionKey.channel();
 
             if (selectionKey.isAcceptable()) {
-                Timer.Context context = clientAcceptMetric.time();
-                try {
-                    Host host = (Host) selectionKey.attachment();
-                    NewClientAcceptTask acceptTask = new NewClientAcceptTask<>(host.getName(), host.getClientFactory(), (ServerSocketChannel) channel, selector);
-                    Future result = host.getClientExecutor().submit(acceptTask);
-                    //TODO: timeout result
-                } finally {
-                    context.stop();
-                }
-
+                Host host = (Host) selectionKey.attachment();
+                accept((ServerSocketChannel) channel, host);
             } else if (selectionKey.isReadable()) {
                 Timer.Context context = clientReadMetric.time();
                 try {
@@ -102,6 +93,18 @@ public class HostManager implements Runnable, HostManagerMetrics {
             }
         } catch (Exception e) {
             logger.error("Failed to progress key: {}", selectionKey, e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    void accept(ServerSocketChannel channel, Host host) {
+        Timer.Context context = clientAcceptMetric.time();
+        try {
+            NewClientAcceptTask acceptTask = new NewClientAcceptTask<>(host.getName(), host.getClientFactory(), channel, selector);
+            Future result = host.getClientExecutor().submit(acceptTask);
+            //TODO: timeout result
+        } finally {
+            context.stop();
         }
     }
 
