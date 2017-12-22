@@ -7,6 +7,7 @@ import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.io.ClientReader;
 import pl.mrugames.client_server.client.io.ClientWriter;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Optional;
@@ -60,28 +61,27 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
         }
     }
 
+    @Nullable
     public synchronized In receive() throws Exception {
         try (Timer.Context ignored = receiveMetric.time()) {
             In frame;
 
-            do {
-                Reader rawFrame = clientReader.next();
+            Reader rawFrame = clientReader.next();
 
-                logger.debug("[RECEIVE] Transforming from raw frame: '{}'", rawFrame);
+            logger.debug("[RECEIVE] Transforming from raw frame: '{}'", rawFrame);
 
-                Optional<In> result = inputFilterProcessor.filter(rawFrame);
-                if (result.isPresent()) {
-                    frame = result.get();
-                    logger.debug("[RECEIVE] Frame after transformation: '{}'", frame);
+            Optional<In> result = inputFilterProcessor.filter(rawFrame);
+            if (result.isPresent()) {
+                frame = result.get();
+                logger.debug("[RECEIVE] Frame after transformation: '{}'", frame);
 
-                    lastDataReceived = Instant.now();
-                    return frame;
-                } else {
-                    logger.debug("[RECEIVE] Frame '{}' filtered out!", rawFrame);
-                }
-            } while (!Thread.currentThread().isInterrupted());
+                lastDataReceived = Instant.now();
+                return frame;
+            } else {
+                logger.debug("[RECEIVE] Frame '{}' filtered out!", rawFrame);
+            }
 
-            throw new InterruptedException("Thread interrupted before receiving message!");
+            return null;
         }
     }
 

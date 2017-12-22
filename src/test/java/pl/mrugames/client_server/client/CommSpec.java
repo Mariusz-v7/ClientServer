@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -84,7 +83,7 @@ class CommSpec {
     }
 
     @Test
-    void givenTwoFramesFilteredOut_whenRead_thenReturnThirdFrame() throws Exception {
+    void givenTwoFramesFilteredOut_whenRead_thenReturnNullNullAndThirdFrame() throws Exception {
         doReturn("next1", "next2", "next3").when(clientReader).next();
 
         AtomicLong counter = new AtomicLong();
@@ -97,18 +96,9 @@ class CommSpec {
             }
         }).when(inputFilterProcessor).filter(anyString());
 
-        String result = comm.receive();
-
-        assertThat(result).isEqualTo("next3filtered");
+        assertThat(comm.receive()).isNull();
+        assertThat(comm.receive()).isNull();
+        assertThat(comm.receive()).isEqualTo("next3filtered");
     }
 
-    @Test
-    void givenThreadInterrupted_whenReceive_thenInterruptedException() {
-        Thread.currentThread().interrupt();
-
-        InterruptedException e = assertThrows(InterruptedException.class, () -> comm.receive());
-        assertThat(e.getMessage()).isEqualTo("Thread interrupted before receiving message!");
-
-        Thread.interrupted(); // clear interrupted flag
-    }
 }
