@@ -9,7 +9,7 @@ public class OutputBuffer implements AutoCloseable {
     private final BufferedOutputStream bufferedOutputStream;
     private final DataOutputStream dataOutputStream;
 
-    OutputBuffer(OutputStream outputStream) {
+    public OutputBuffer(OutputStream outputStream) {
         bufferedOutputStream = new BufferedOutputStream(outputStream);
         dataOutputStream = new DataOutputStream(bufferedOutputStream);
     }

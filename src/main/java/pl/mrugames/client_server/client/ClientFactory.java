@@ -76,8 +76,10 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
             String clientName = clientNamePrefix + "-" + clientId.incrementAndGet();
             ClientInfo clientInfo = new ClientInfo(clientName, channel.socket());
 
-            List<Initializer> initializers = createInitializers(clientName, channel.socket());
-            Comm<In, Out, Reader, Writer> comm = createComms(clientName, channel.socket());
+            Socket socket = channel.socket();
+
+            List<Initializer> initializers = createInitializers(clientName, socket);
+            Comm<In, Out, Reader, Writer> comm = createComms(clientName, socket);
 
             watchdog.register(comm, channel, clientName);
 
@@ -133,7 +135,13 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         return clientWorker;
     }
 
-    Client<In, Out, Reader, Writer> createClient(String clientName, ExecutorService clientsRequestExecutor, List<Initializer> initializers, Comm<In, Out, Reader, Writer> comm, ClientWorker<In, Out> clientWorker, SocketChannel channel) {
+    Client<In, Out, Reader, Writer> createClient(String clientName,
+                                                 ExecutorService clientsRequestExecutor,
+                                                 List<Initializer> initializers,
+                                                 Comm<In, Out, Reader, Writer> comm,
+                                                 ClientWorker<In, Out> clientWorker,
+                                                 SocketChannel channel
+    ) {
         return new Client<>(clientName, clientsRequestExecutor, initializers, comm, clientWorker, channel);
     }
 
