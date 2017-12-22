@@ -72,7 +72,6 @@ class ClientFactorySpec {
                 clientReaderFactory,
                 inputFilterProcessor,
                 outputFilterProcessor,
-                executorService,
                 clientWatchdog));
 
         doNothing().when(clientFactory).closeChannel(any());
@@ -80,16 +79,15 @@ class ClientFactorySpec {
         doAnswer(a -> {
             client = (Client) a.callRealMethod();
             client = spy(client);
-            doReturn(!shouldTimeoutClientCreation).when(client).awaitStart(anyLong(), any());
 
             return client;
-        }).when(clientFactory).createClient(anyString(), anyList(), any(), any(), any());
+        }).when(clientFactory).createClient(anyString(), any(), anyList(), any(), any(), any());
     }
 
     @Test
     void givenClientCreated_setProperName() throws Exception {
-        Client client1 = clientFactory.create(mockSocketChannel);
-        Client client2 = clientFactory.create(mockSocketChannel);
+        Client client1 = clientFactory.create(mockSocketChannel, executorService);
+        Client client2 = clientFactory.create(mockSocketChannel, executorService);
 
         assertThat(client1.getName()).isEqualTo("client-1");
         assertThat(client2.getName()).isEqualTo("client-2");
@@ -103,7 +101,7 @@ class ClientFactorySpec {
         initializerFactories.add((i, o) -> initializer1);
         initializerFactories.add((i, o) -> initializer2);
 
-        Client client = clientFactory.create(mockSocketChannel);
+        Client client = clientFactory.create(mockSocketChannel, executorService);
 
         assertThat(client.getInitializers()).containsExactly(initializer1, initializer2);
     }
@@ -113,7 +111,7 @@ class ClientFactorySpec {
         ClientWorker worker = mock(ClientWorker.class);
         doReturn(worker).when(clientWorkerFactory).create(any(), any());
 
-        Client client = clientFactory.create(mockSocketChannel);
+        Client client = clientFactory.create(mockSocketChannel, executorService);
 
         assertThat(client.getClientWorker()).isSameAs(worker);
     }
@@ -122,7 +120,7 @@ class ClientFactorySpec {
     void givenFactoryThrowsException_whenCreate_thenException() throws IOException {
         doThrow(RuntimeException.class).when(clientWorkerFactory).create(any(), any());
 
-        assertThrows(RuntimeException.class, () -> clientFactory.create(mockSocketChannel));
+        assertThrows(RuntimeException.class, () -> clientFactory.create(mockSocketChannel, executorService));
 
         verify(clientFactory).closeChannel(mockSocketChannel);
     }
@@ -142,7 +140,7 @@ class ClientFactorySpec {
         Comm comm = mock(Comm.class);
         doReturn(comm).when(clientFactory).createComms(anyString(), any());
 
-        clientFactory.create(mockSocketChannel);
+        clientFactory.create(mockSocketChannel, executorService);
 
         verify(clientWatchdog).register(comm, mockSocketChannel, client.getName());
     }
@@ -151,7 +149,7 @@ class ClientFactorySpec {
     void givenWatchdogNotRunning_whenCreate_thenException() {
         doReturn(false).when(clientWatchdog).isRunning();
 
-        IllegalStateException illegalStateException = assertThrows(IllegalStateException.class, () -> clientFactory.create(mock(SocketChannel.class)));
+        IllegalStateException illegalStateException = assertThrows(IllegalStateException.class, () -> clientFactory.create(mock(SocketChannel.class), executorService));
         assertThat(illegalStateException.getMessage()).isEqualTo("Client Watchdog is dead! Cannot accept new connection.");
     }
 

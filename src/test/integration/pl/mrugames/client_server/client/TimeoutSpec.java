@@ -69,7 +69,6 @@ class TimeoutSpec {
                 TextReader::new,
                 new FilterProcessor(Collections.emptyList()),
                 new FilterProcessor(Collections.emptyList()),
-                executorService,
                 watchdog
         );
 

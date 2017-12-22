@@ -1,7 +1,9 @@
 package pl.mrugames.client_server.host.tasks;
 
+import com.codahale.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
 
@@ -9,6 +11,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.channels.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer extends Serializable> implements Callable<Client<In, Out, Reader, Writer>> {
     private final static Logger logger = LoggerFactory.getLogger(NewClientAcceptTask.class);
@@ -17,12 +22,20 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
     private final ClientFactory<In, Out, Reader, Writer> clientFactory;
     private final ServerSocketChannel channel;
     private final Selector selector;
+    private final ExecutorService clientRequestExecutor;
+    private final Timer clientAcceptMetric;
 
-    public NewClientAcceptTask(String hostName, ClientFactory<In, Out, Reader, Writer> clientFactory, ServerSocketChannel channel, Selector selector) {
+    public NewClientAcceptTask(String hostName,
+                               ClientFactory<In, Out, Reader, Writer> clientFactory,
+                               ServerSocketChannel channel,
+                               Selector selector,
+                               ExecutorService clientRequestExecutor) {
         this.hostName = hostName;
         this.clientFactory = clientFactory;
         this.channel = channel;
         this.selector = selector;
+        this.clientRequestExecutor = clientRequestExecutor;
+        clientAcceptMetric = Metrics.getRegistry().timer(name(NewClientAcceptTask.class, hostName));
     }
 
     @Override
@@ -30,14 +43,14 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
         logger.info("[{}] New Client is connecting", hostName);
 
         SocketChannel clientChannel = null;
-        try {
+        try (Timer.Context ignored = clientAcceptMetric.time()) {
             clientChannel = channel.accept();
 
             logger.info("[{}] New client has been accepted: {}/{}", hostName, clientChannel.getLocalAddress(), clientChannel.getRemoteAddress());
 
             configure(clientChannel);
 
-            Client<In, Out, Reader, Writer> client = clientFactory.create(clientChannel);
+            Client<In, Out, Reader, Writer> client = clientFactory.create(clientChannel, clientRequestExecutor);
 
             register(clientChannel, client);
 

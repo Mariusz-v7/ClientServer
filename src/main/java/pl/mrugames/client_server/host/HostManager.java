@@ -1,10 +1,10 @@
 package pl.mrugames.client_server.host;
 
-import com.codahale.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
+import pl.mrugames.client_server.host.tasks.ClientRequestTask;
 import pl.mrugames.client_server.host.tasks.NewClientAcceptTask;
 
 import java.io.IOException;
@@ -19,7 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-public class HostManager implements Runnable, HostManagerMetrics {
+public class HostManager implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     volatile Selector selector;
@@ -82,14 +82,8 @@ public class HostManager implements Runnable, HostManagerMetrics {
                 Host host = (Host) selectionKey.attachment();
                 accept((ServerSocketChannel) channel, host);
             } else if (selectionKey.isReadable()) {
-                Timer.Context context = clientReadMetric.time();
-                try {
-                    Client client = (Client) selectionKey.attachment();
-                    // TODO: read in new thread
-                    // TODO: set timeout
-                } finally {
-                    context.stop();
-                }
+                Client client = (Client) selectionKey.attachment();
+                read(client);
             }
         } catch (Exception e) {
             logger.error("Failed to progress key: {}", selectionKey, e);
@@ -97,15 +91,20 @@ public class HostManager implements Runnable, HostManagerMetrics {
     }
 
     @SuppressWarnings("unchecked")
+    void read(Client client) {
+        ClientRequestTask clientRequestTask = new ClientRequestTask(client.getName(), client.getComm(), client.getClientWorker());
+
+        Future<Void> result = client.getRequestExecutor().submit(clientRequestTask);
+        // TODO: log exceptions
+        // TODO: set timeout
+    }
+
+    @SuppressWarnings("unchecked")
     void accept(ServerSocketChannel channel, Host host) {
-        Timer.Context context = clientAcceptMetric.time();
-        try {
-            NewClientAcceptTask acceptTask = new NewClientAcceptTask<>(host.getName(), host.getClientFactory(), channel, selector);
-            Future result = host.getClientExecutor().submit(acceptTask);
-            //TODO: timeout result
-        } finally {
-            context.stop();
-        }
+        NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), channel, selector, host.getClientExecutor());
+        Future result = host.getClientExecutor().submit(acceptTask);
+        //TODO: log exceptions
+        //TODO: timeout result
     }
 
     void startHosts() {

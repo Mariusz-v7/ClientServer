@@ -3,7 +3,9 @@ package pl.mrugames.client_server.host;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
+import pl.mrugames.client_server.host.tasks.ClientRequestTask;
 import pl.mrugames.client_server.host.tasks.NewClientAcceptTask;
 
 import java.io.IOException;
@@ -120,6 +122,7 @@ class HostManagerSpec {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void whenAccept_thenSubmitNewTask() {
         ServerSocketChannel serverSocketChannel = mock(ServerSocketChannel.class);
         Host host = mock(Host.class);
@@ -131,4 +134,14 @@ class HostManagerSpec {
         verify(executorService).submit(any(NewClientAcceptTask.class));
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void whenRead_thenSubmitNewTask() {
+        Client client = mock(Client.class);
+        ExecutorService executorService = mock(ExecutorService.class);
+        doReturn(executorService).when(client).getRequestExecutor();
+
+        hostManager.read(client);
+        verify(executorService).submit(any(ClientRequestTask.class));
+    }
 }

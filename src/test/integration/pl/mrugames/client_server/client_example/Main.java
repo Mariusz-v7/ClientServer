@@ -12,7 +12,6 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
@@ -37,9 +36,9 @@ public class Main {
 
         try {
             SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(address, port));
-            Client localClientWorker = clientFactory.create(socketChannel);
+            Client localClientWorker = clientFactory.create(socketChannel, executorService);
 
-            localClientWorker.awaitStop(1, TimeUnit.DAYS);
+//            localClientWorker.awaitStop(1, TimeUnit.DAYS);
         } finally {
             executorService.shutdownNow();
         }

@@ -36,11 +36,8 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     private final Function<InputStream, ClientReader<Reader>> clientReaderFactory;
     private final FilterProcessor inputFilterProcessor;
     private final FilterProcessor outputFilterProcessor;
-    private final ExecutorService executorService;
     private final ClientWatchdog watchdog;
-    final long clientStartTimeoutMilliseconds = 1000;
 
-    private final Timer clientLifespanMetric;
     private final Timer clientSendMetric;
     private final Timer clientReceiveMetric;
 
@@ -52,7 +49,6 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
                   Function<InputStream, ClientReader<Reader>> clientReaderFactory,
                   FilterProcessor inputFilterProcessor,
                   FilterProcessor outputFilterProcessor,
-                  ExecutorService executorService,
                   ClientWatchdog clientWatchdog
     ) {
         this.clientId = new AtomicLong();
@@ -64,14 +60,12 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         this.clientReaderFactory = clientReaderFactory;
         this.inputFilterProcessor = inputFilterProcessor;
         this.outputFilterProcessor = outputFilterProcessor;
-        this.executorService = executorService;
         this.watchdog = clientWatchdog;
-        this.clientLifespanMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "lifespan"));
         this.clientSendMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "send"));
         this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
     }
 
-    public Client<In, Out, Reader, Writer> create(SocketChannel channel) throws Exception {
+    public Client<In, Out, Reader, Writer> create(SocketChannel channel, ExecutorService clientRequestExecutor) throws Exception {
         if (!watchdog.isRunning()) {
             throw new IllegalStateException("Client Watchdog is dead! Cannot accept new connection.");
         }
@@ -89,7 +83,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
             ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo);
 
-            Client client = createClient(clientName, initializers, comm, clientWorker, channel);
+            Client client = createClient(clientName, clientRequestExecutor, initializers, comm, clientWorker, channel);
 
             logger.info("[{}] New client has been created: {}!", factoryName, client.getName());
             return client;
@@ -139,8 +133,8 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         return clientWorker;
     }
 
-    Client<In, Out, Reader, Writer> createClient(String clientName, List<Initializer> initializers, Comm<In, Out, Reader, Writer> comm, ClientWorker<In, Out> clientWorker, SocketChannel channel) {
-        return new Client<>(clientName, initializers, comm, clientWorker, channel, clientLifespanMetric);
+    Client<In, Out, Reader, Writer> createClient(String clientName, ExecutorService clientsRequestExecutor, List<Initializer> initializers, Comm<In, Out, Reader, Writer> comm, ClientWorker<In, Out> clientWorker, SocketChannel channel) {
+        return new Client<>(clientName, clientsRequestExecutor, initializers, comm, clientWorker, channel);
     }
 
     void closeChannel(SocketChannel channel) {

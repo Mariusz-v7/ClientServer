@@ -75,7 +75,6 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
                 clientReaderFactory,
                 new FilterProcessor(inputFilters),
                 new FilterProcessor(outputFilters),
-                executorService,
                 clientWatchdog
         );
     }

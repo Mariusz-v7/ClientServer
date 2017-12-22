@@ -31,7 +31,6 @@ public class ClientFactories {
                 WebSocketReader::new,
                 new FilterProcessor(Collections.singletonList(WebSocketFrameToStringFilter.getInstance())),
                 new FilterProcessor(Collections.singletonList(StringToWebSocketFrameFilter.getInstance())),
-                executorService,
                 clientWatchdog
         );
     }

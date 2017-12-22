@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.ExecutorService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -22,6 +23,7 @@ class NewClientAcceptTaskSpec {
     private Selector selector;
     private SocketChannel clientChannel;
     private Client client;
+    private ExecutorService clientExecutor;
 
     @SuppressWarnings("unchecked")
     @BeforeEach
@@ -32,10 +34,12 @@ class NewClientAcceptTaskSpec {
         clientChannel = mock(SocketChannel.class);
         client = mock(Client.class);
 
-        doReturn(clientChannel).when(serverSocketChannel).accept();
-        doReturn(client).when(clientFactory).create(clientChannel);
+        clientExecutor = mock(ExecutorService.class);
 
-        task = spy(new NewClientAcceptTask("Test host", clientFactory, serverSocketChannel, selector));
+        doReturn(clientChannel).when(serverSocketChannel).accept();
+        doReturn(client).when(clientFactory).create(clientChannel, clientExecutor);
+
+        task = spy(new NewClientAcceptTask("Test host", clientFactory, serverSocketChannel, selector, clientExecutor));
         doNothing().when(task).configure(clientChannel);
         doNothing().when(task).close(clientChannel);
         doNothing().when(task).register(clientChannel, client);
@@ -58,7 +62,7 @@ class NewClientAcceptTaskSpec {
         Client result = task.call();
 
         inOrder.verify(task).configure(clientChannel);
-        inOrder.verify(clientFactory).create(clientChannel);
+        inOrder.verify(clientFactory).create(clientChannel, clientExecutor);
         inOrder.verify(task).register(clientChannel, client);
 
         assertThat(result).isSameAs(client);
@@ -78,7 +82,7 @@ class NewClientAcceptTaskSpec {
     @Test
     void givenFactoryThrowsException_whenCall_thenCloseSocketAndRethrow() throws Exception {
         RuntimeException e = new RuntimeException();
-        doThrow(e).when(clientFactory).create(clientChannel);
+        doThrow(e).when(clientFactory).create(clientChannel, clientExecutor);
 
         RuntimeException thrown = assertThrows(RuntimeException.class, () -> task.call());
 
