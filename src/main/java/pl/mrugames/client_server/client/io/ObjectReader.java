@@ -19,9 +19,19 @@ public class ObjectReader<FrameType extends Serializable> implements ClientReade
     }
 
     @Override
+    public boolean isReady() throws Exception {
+        return false; // TODO
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     // well.. other side may send data which is not instance of a FrameType, but we cannot do anything about it but fail the client connection...
-    public FrameType next() throws Exception {
+    public FrameType read() throws Exception {
         return (FrameType) stream.readUnshared();
+    }
+
+    @Override
+    public void close() throws Exception {
+        stream.close();
     }
 }

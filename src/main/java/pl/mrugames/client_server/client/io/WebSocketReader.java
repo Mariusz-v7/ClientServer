@@ -19,7 +19,12 @@ public class WebSocketReader implements ClientReader<WebSocketFrame> {
     }
 
     @Override
-    public WebSocketFrame next() throws Exception {
+    public boolean isReady() throws Exception {
+        return false; // TODO
+    }
+
+    @Override
+    public WebSocketFrame read() throws Exception {
 
         byte first = (byte) stream.read();
         boolean fin = (first & 0x80) != 0;
@@ -114,5 +119,10 @@ public class WebSocketReader implements ClientReader<WebSocketFrame> {
             mask[i] = (byte) stream.read();
         }
         return mask;
+    }
+
+    @Override
+    public void close() throws Exception {
+        stream.close();
     }
 }

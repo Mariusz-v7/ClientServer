@@ -5,15 +5,16 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class InputBuffer implements AutoCloseable {
+public class ByteReader implements ClientReader<byte[]> {
     private final BufferedInputStream bufferedInputStream;
     private final DataInputStream dataInputStream;
 
-    public InputBuffer(InputStream inputStream) {
+    public ByteReader(InputStream inputStream) {
         this.bufferedInputStream = new BufferedInputStream(inputStream);
         this.dataInputStream = new DataInputStream(bufferedInputStream);
     }
 
+    @Override
     public boolean isReady() throws IOException {
         if (bufferedInputStream.available() < 4) {
             return false;
@@ -29,6 +30,7 @@ public class InputBuffer implements AutoCloseable {
         }
     }
 
+    @Override
     public byte[] read() throws IOException {
         int len = dataInputStream.readInt();
 

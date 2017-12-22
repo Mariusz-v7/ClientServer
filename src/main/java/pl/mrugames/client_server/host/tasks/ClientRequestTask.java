@@ -24,8 +24,16 @@ public class ClientRequestTask implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
+        if (!comm.canRead()) {
+            return null;
+        }
+
         try (Timer.Context ignored = requestProcessingMetric.time()) {
             Object request = comm.receive();
+            if (request == null) {
+                return null;
+            }
+
             Object response = clientWorker.onRequest(request);
             comm.send(response);
         }

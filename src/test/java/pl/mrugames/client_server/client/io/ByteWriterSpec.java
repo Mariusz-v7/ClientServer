@@ -9,35 +9,35 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class OutputBufferSpec {
+class ByteWriterSpec {
     private SocketHelper socketHelper;
-    private InputBuffer inputBuffer;
-    private OutputBuffer outputBuffer;
+    private ByteReader byteReader;
+    private ByteWriter byteWriter;
 
     @BeforeEach
     void before() throws IOException {
         socketHelper = new SocketHelper();
 
-        inputBuffer = new InputBuffer(socketHelper.getInputStream());
-        outputBuffer = new OutputBuffer(socketHelper.getOutputStream());
+        byteReader = new ByteReader(socketHelper.getInputStream());
+        byteWriter = new ByteWriter(socketHelper.getOutputStream());
     }
 
     @AfterEach
     void after() throws Exception {
         socketHelper.close();
-        inputBuffer.close();
-        outputBuffer.close();
+        byteReader.close();
+        byteWriter.close();
     }
 
     @Test
     void writeReadTest() throws IOException {
-        outputBuffer.write((byte) 1, (byte) 2, (byte) 3);
-        outputBuffer.write((byte) 3, (byte) 4, (byte) 5, (byte) 6);
+        byteWriter.write((byte) 1, (byte) 2, (byte) 3);
+        byteWriter.write((byte) 3, (byte) 4, (byte) 5, (byte) 6);
 
-        byte[] bytes = inputBuffer.read();
+        byte[] bytes = byteReader.read();
         assertThat(bytes).containsExactly(1, 2, 3);
 
-        bytes = inputBuffer.read();
+        bytes = byteReader.read();
         assertThat(bytes).containsExactly(3, 4, 5, 6);
     }
 

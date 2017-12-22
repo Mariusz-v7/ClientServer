@@ -19,9 +19,14 @@ public class ObjectWriter<FrameType extends Serializable> implements ClientWrite
     }
 
     @Override
-    public void next(FrameType frameToSend) throws Exception {
+    public void write(FrameType frameToSend) throws Exception {
         stream.writeUnshared(frameToSend);
         stream.flush();
         stream.reset();
+    }
+
+    @Override
+    public void close() throws Exception {
+        stream.close();
     }
 }

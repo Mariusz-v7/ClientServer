@@ -5,11 +5,11 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class OutputBuffer implements AutoCloseable {
+public class ByteWriter implements AutoCloseable {
     private final BufferedOutputStream bufferedOutputStream;
     private final DataOutputStream dataOutputStream;
 
-    public OutputBuffer(OutputStream outputStream) {
+    public ByteWriter(OutputStream outputStream) {
         bufferedOutputStream = new BufferedOutputStream(outputStream);
         dataOutputStream = new DataOutputStream(bufferedOutputStream);
     }

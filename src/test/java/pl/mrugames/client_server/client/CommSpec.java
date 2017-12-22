@@ -46,7 +46,7 @@ class CommSpec {
 
     @Test
     void whenReceive_thenUpdateLastDataReceived() throws Exception {
-        doReturn("next").when(clientReader).next();
+        doReturn("next").when(clientReader).read();
 
         Instant now = Instant.now();
         comm.receive();
@@ -68,12 +68,12 @@ class CommSpec {
 
         verify(outputFilterProcessor).filter("test");
 
-        verify(clientWriter).next("testfiltered");
+        verify(clientWriter).write("testfiltered");
     }
 
     @Test
     void whenReceive_thenFilterFrame() throws Exception {
-        doReturn("next").when(clientReader).next();
+        doReturn("next").when(clientReader).read();
 
         String result = comm.receive();
 
@@ -84,7 +84,7 @@ class CommSpec {
 
     @Test
     void givenTwoFramesFilteredOut_whenRead_thenReturnNullNullAndThirdFrame() throws Exception {
-        doReturn("next1", "next2", "next3").when(clientReader).next();
+        doReturn("next1", "next2", "next3").when(clientReader).read();
 
         AtomicLong counter = new AtomicLong();
 

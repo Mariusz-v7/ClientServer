@@ -17,8 +17,11 @@ class ClientRequestTaskSpec {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-    void before() {
+    void before() throws Exception {
         comm = mock(Comm.class);
+        doReturn(true).when(comm).canRead();
+        doReturn("request").when(comm).receive();
+
         worker = mock(ClientWorker.class);
 
         task = new ClientRequestTask("Test", comm, worker);
@@ -36,5 +39,19 @@ class ClientRequestTaskSpec {
         doReturn("def").when(worker).onRequest(any());
         task.call();
         verify(comm).send("def");
+    }
+
+    @Test
+    void givenCommCanReadReturnsFalse_whenCall_thenReturnImmediately() throws Exception {
+        doReturn(false).when(comm).canRead();
+        task.call();
+        verify(comm, never()).receive();
+    }
+
+    @Test
+    void givenCommReceiveReturnsFalse_whenCall_thenReturnImmefiately() throws Exception {
+        doReturn(null).when(comm).receive();
+        task.call();
+        verify(worker, never()).onRequest(any());
     }
 }

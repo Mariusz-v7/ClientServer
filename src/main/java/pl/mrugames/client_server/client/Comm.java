@@ -44,6 +44,10 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
         this.lastDataSent = now;
     }
 
+    public synchronized boolean canRead() throws Exception {
+        return clientReader.isReady();
+    }
+
     public synchronized void send(Out frame) throws Exception {
         try (Timer.Context ignored = sendMetric.time()) {
             logger.debug("[SEND] Transforming to raw frame: '{}'", frame);
@@ -52,7 +56,7 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
             if (result.isPresent()) {
                 Writer rawFrame = result.get();
                 logger.debug("[SEND] Frame after transformation: '{}'", rawFrame);
-                clientWriter.next(rawFrame);
+                clientWriter.write(rawFrame);
             } else {
                 logger.debug("[SEND] Frame '{}' filtered out!", frame);
             }
@@ -66,7 +70,7 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
         try (Timer.Context ignored = receiveMetric.time()) {
             In frame;
 
-            Reader rawFrame = clientReader.next();
+            Reader rawFrame = clientReader.read();
 
             logger.debug("[RECEIVE] Transforming from raw frame: '{}'", rawFrame);
 

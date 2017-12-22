@@ -14,7 +14,7 @@ public class WebSocketWriter implements ClientWriter<WebSocketFrame> {
     }
 
     @Override
-    public void next(WebSocketFrame frameToSend) throws Exception {
+    public void write(WebSocketFrame frameToSend) throws Exception {
         switch (frameToSend.getFrameType()) {
             case CLOSE:
                 stream.write(0x88);
@@ -41,5 +41,10 @@ public class WebSocketWriter implements ClientWriter<WebSocketFrame> {
         }
 
         stream.flush();
+    }
+
+    @Override
+    public void close() throws Exception {
+        stream.close();
     }
 }

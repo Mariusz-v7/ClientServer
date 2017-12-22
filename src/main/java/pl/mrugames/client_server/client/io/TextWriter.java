@@ -12,8 +12,13 @@ public class TextWriter implements ClientWriter<String> {
     }
 
     @Override
-    public void next(String frameToSend) throws Exception {
+    public void write(String frameToSend) throws Exception {
         bufferedWriter.write(frameToSend);
         bufferedWriter.flush();
+    }
+
+    @Override
+    public void close() throws Exception {
+        bufferedWriter.close();
     }
 }

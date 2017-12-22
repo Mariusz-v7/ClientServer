@@ -12,8 +12,17 @@ public class TextReader implements ClientReader<String> {
     }
 
     @Override
-    public String next() throws Exception {
+    public boolean isReady() throws Exception {
+        return false; // TODO
+    }
+
+    @Override
+    public String read() throws Exception {
         return bufferedReader.readLine();
     }
 
+    @Override
+    public void close() throws Exception {
+        bufferedReader.close();
+    }
 }

@@ -26,7 +26,7 @@ class WebSocketReaderSpec {
     @Test
     void givenFrameWithStringHello_thenDecodeProperly() throws Exception {
         mockReader(0x81, 0x85, 0xB5, 0x9C, 0x1E, 0x93, 0xDD, 0xF9, 0x72, 0xFF, 0xDA);
-        WebSocketFrame frame = reader.next();
+        WebSocketFrame frame = reader.read();
         assertThat(frame.getPayload()).containsExactly(0x68, 0x65, 0x6C, 0x6C, 0x6F);
     }
 
@@ -36,8 +36,8 @@ class WebSocketReaderSpec {
                 0x81, 0x85, 0xB5, 0x9C, 0x1E, 0x93, 0xDD, 0xF9, 0x72, 0xFF, 0xDA,
                 0x81, 0x85, 0xB5, 0x9C, 0x1E, 0x93, 0xDD, 0xF9, 0x72, 0xFF, 0xDA
         );
-        WebSocketFrame frame1 = reader.next();
-        WebSocketFrame frame2 = reader.next();
+        WebSocketFrame frame1 = reader.read();
+        WebSocketFrame frame2 = reader.read();
         assertThat(frame1.getPayload()).containsExactly(0x68, 0x65, 0x6C, 0x6C, 0x6F);
         assertThat(frame2.getPayload()).containsExactly(0x68, 0x65, 0x6C, 0x6C, 0x6F);
 
