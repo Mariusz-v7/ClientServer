@@ -1,66 +1,47 @@
 package pl.mrugames.client_server.client.io;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 public class ByteReader implements ClientReader<byte[]> {
-    private final BufferedInputStream bufferedInputStream;
-    private final DataInputStream dataInputStream;
+    private final ByteBuffer byteBuffer;
 
-    public ByteReader(InputStream inputStream) {
-        this.bufferedInputStream = new BufferedInputStream(inputStream);
-        this.dataInputStream = new DataInputStream(bufferedInputStream);
+    public ByteReader(ByteBuffer byteBuffer) {
+        this.byteBuffer = byteBuffer;
     }
 
     @Override
     public boolean isReady() throws IOException {
-        if (bufferedInputStream.available() < 4) {
+        if (!byteBuffer.hasRemaining()) {
+            return false;
+        }
+
+        if (byteBuffer.limit() - byteBuffer.position() < 4) {
             return false;
         }
 
         try {
-            bufferedInputStream.mark(4);
-            int len = dataInputStream.readInt();
+            byteBuffer.mark();
+            int len = byteBuffer.getInt();
 
-            return bufferedInputStream.available() >= len;
+            return byteBuffer.limit() - byteBuffer.position() >= len;
         } finally {
-            bufferedInputStream.reset();
+            byteBuffer.reset();
         }
     }
 
     @Override
     public byte[] read() throws IOException {
-        int len = dataInputStream.readInt();
+        int len = byteBuffer.getInt();
 
         byte[] bytes = new byte[len];
-        int result = dataInputStream.read(bytes);
-
-        if (result != len) {
-            throw new IllegalStateException("Length: " + len + ", bytes read: " + result);
-        }
+        byteBuffer.get(bytes);
 
         return bytes;
     }
 
     @Override
+    @Deprecated
     public void close() throws Exception {
-        bufferedInputStream.close();
-        dataInputStream.close();
-    }
-
-    BufferedInputStream getBufferedInputStream() {
-        return bufferedInputStream;
-    }
-
-    /**
-     * Should be called before reading actual message. It removes length field.
-     */
-    void clearLen() throws IOException {
-        long result = bufferedInputStream.skip(4);
-        if (result != 4) {
-            throw new IllegalStateException("Failed to skip 4 bytes. Actual bytes skipped: " + result);
-        }
     }
 }

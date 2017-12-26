@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -23,12 +24,26 @@ class SocketHelperSpec {
 
     @Test
     void communicationTest() throws IOException {
-        assertThat(socketHelper.getInputStream().available()).isEqualTo(0);
+        ByteBuffer read = socketHelper.read();
+        assertThat(read.hasRemaining()).isFalse();
 
-        socketHelper.getOutputStream().write(1);
-        socketHelper.getOutputStream().write(1);
-        socketHelper.getOutputStream().flush();
+        socketHelper.write((byte) 1, (byte) 2, (byte) 3);
+        read = socketHelper.read();
+        assertThat(read.hasRemaining()).isTrue();
 
-        assertThat(socketHelper.getInputStream().available()).isEqualTo(2);
+        assertThat(read.get()).isEqualTo((byte) 1);
+        assertThat(read.get()).isEqualTo((byte) 2);
+        assertThat(read.get()).isEqualTo((byte) 3);
+
+        socketHelper.write((byte) 3, (byte) 4);
+        read = socketHelper.read();
+
+        assertThat(read.get()).isEqualTo((byte) 3);
+
+        socketHelper.write((byte) 5);
+        read = socketHelper.read();
+
+        assertThat(read.get()).isEqualTo((byte) 4);
+        assertThat(read.get()).isEqualTo((byte) 5);
     }
 }

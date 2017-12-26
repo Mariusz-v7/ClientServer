@@ -11,22 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ByteWriterSpec {
     private SocketHelper socketHelper;
-    private ByteReader byteReader;
     private ByteWriter byteWriter;
 
     @BeforeEach
     void before() throws IOException {
         socketHelper = new SocketHelper();
 
-        byteReader = new ByteReader(socketHelper.getInputStream());
-        byteWriter = new ByteWriter(socketHelper.getOutputStream());
+        byteWriter = new ByteWriter(socketHelper.getWriteBuffer());
     }
 
     @AfterEach
     void after() throws Exception {
         socketHelper.close();
-        byteReader.close();
-        byteWriter.close();
     }
 
     @Test
@@ -34,10 +30,20 @@ class ByteWriterSpec {
         byteWriter.write((byte) 1, (byte) 2, (byte) 3);
         byteWriter.write((byte) 3, (byte) 4, (byte) 5, (byte) 6);
 
-        byte[] bytes = byteReader.read();
+        socketHelper.flush();
+
+        int len = socketHelper.getReadBuffer().getInt();
+        assertThat(len).isEqualTo(3);
+
+        byte[] bytes = new byte[3];
+        socketHelper.getReadBuffer().get(bytes);
         assertThat(bytes).containsExactly(1, 2, 3);
 
-        bytes = byteReader.read();
+        len = socketHelper.getReadBuffer().getInt();
+        assertThat(len).isEqualTo(4);
+
+        bytes = new byte[4];
+        socketHelper.getReadBuffer().get(bytes);
         assertThat(bytes).containsExactly(3, 4, 5, 6);
     }
 

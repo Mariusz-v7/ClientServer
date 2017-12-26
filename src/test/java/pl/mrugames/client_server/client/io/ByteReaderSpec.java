@@ -5,29 +5,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.SocketHelper;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 class ByteReaderSpec {
     private ByteReader byteReader;
-    private DataOutputStream dataOutputStream;
 
     private SocketHelper socketHelper;
 
     @BeforeEach
     void before() throws IOException {
         socketHelper = new SocketHelper();
-        dataOutputStream = new DataOutputStream(socketHelper.getOutputStream());
 
-        byteReader = new ByteReader(socketHelper.getInputStream());
+        byteReader = new ByteReader(socketHelper.getReadBuffer());
     }
 
     @AfterEach
     void after() throws Exception {
         socketHelper.close();
-        byteReader.close();
     }
 
     @Test
@@ -37,103 +33,101 @@ class ByteReaderSpec {
 
     @Test
     void givenLenFieldNotComplete_whenCheckReady_thenFalse() throws IOException {
-        dataOutputStream.writeByte(1);  // one byte means only 1/4 of len field
+        socketHelper.write((byte) 1);  // one byte means only 1/4 of len field
         assertThat(byteReader.isReady()).isFalse();
     }
 
     @Test
     void givenLenIs4_andOnly2Sent_whenCheckReady_thenFalse() throws IOException {
-        dataOutputStream.writeInt(4);
+        socketHelper.writeInt(4);
+        socketHelper.writeShort((short) 1);
         assertThat(byteReader.isReady()).isFalse();
     }
 
     @Test
     void givenLenIs4_andFullMessageSent_whenCheckReady_thenTrue() throws IOException {
-        dataOutputStream.writeInt(4);
+        socketHelper.writeInt(4);
+        socketHelper.writeInt(1);
 
-        dataOutputStream.writeInt(1);
         assertThat(byteReader.isReady()).isTrue();
     }
 
     @Test
     void givenFullMessageArrivesInTwoSteps_whenCheckReadyTwice_firstIsFalseSecondIsTrue() throws IOException {
-        dataOutputStream.writeInt(4);
+        socketHelper.writeInt(4);
 
-        dataOutputStream.writeShort(3);
+        socketHelper.writeShort((short) 3);
         assertThat(byteReader.isReady()).isFalse();
 
-        dataOutputStream.writeShort(3);
+        socketHelper.writeShort((short) 3);
         assertThat(byteReader.isReady()).isTrue();
     }
 
     @Test
     void readTest() throws IOException {
-        dataOutputStream.writeInt(4); // len
+        socketHelper.writeInt(4); // len
 
         assertThat(byteReader.isReady()).isFalse();
 
-        dataOutputStream.writeInt(0);
+        socketHelper.writeInt(0);
         assertThat(byteReader.isReady()).isTrue();
 
-        byteReader.clearLen();
-        byteReader.getBufferedInputStream().read(new byte[4]);
+        byte[] bytes = byteReader.read();
+        assertThat(bytes).hasSize(4);
 
         assertThat(byteReader.isReady()).isFalse();
 
         // second message
 
-        dataOutputStream.writeInt(2); // len
+        socketHelper.writeInt(2); // len
         assertThat(byteReader.isReady()).isFalse();
 
-        dataOutputStream.writeShort(1);
+        socketHelper.writeShort((short) 1);
         assertThat(byteReader.isReady()).isTrue();
 
-        byteReader.clearLen();
-        byteReader.getBufferedInputStream().read(new byte[2]);
+        bytes = byteReader.read();
+        assertThat(bytes).hasSize(2);
 
         assertThat(byteReader.isReady()).isFalse();
 
         // third message
-        dataOutputStream.writeShort(0);  //len 1/2
+        socketHelper.writeShort((short) 0);  //len 1/2
         assertThat(byteReader.isReady()).isFalse();
-        dataOutputStream.writeShort(1); // len 1/2
+        socketHelper.writeShort((short) 1); // len 1/2
         assertThat(byteReader.isReady()).isFalse();
 
-        dataOutputStream.writeByte(1);
+        socketHelper.write((byte) 1);
 
         assertThat(byteReader.isReady()).isTrue();
     }
 
     @Test
     void multiplePacketsTest() throws IOException {
-        dataOutputStream.writeInt(4); // len
+        socketHelper.writeInt(4); // len
         assertThat(byteReader.isReady()).isFalse();
 
-        dataOutputStream.writeInt(0);
+        socketHelper.writeInt(0);
         assertThat(byteReader.isReady()).isTrue();
 
-        dataOutputStream.writeInt(4); // len
+        socketHelper.writeInt(4); // len
         assertThat(byteReader.isReady()).isTrue();
 
-        dataOutputStream.writeInt(0);
+        socketHelper.writeInt(0);
         assertThat(byteReader.isReady()).isTrue();
 
-        byteReader.clearLen();
-        byteReader.getBufferedInputStream().read(new byte[4]);
+        byte[] bytes = byteReader.read();
         assertThat(byteReader.isReady()).isTrue();
 
-        dataOutputStream.writeInt(4); // len
+        socketHelper.writeInt(4); // len
         assertThat(byteReader.isReady()).isTrue();
 
-        dataOutputStream.writeInt(0);
+        socketHelper.writeInt(0);
         assertThat(byteReader.isReady()).isTrue();
 
-        byteReader.clearLen();
-        byteReader.getBufferedInputStream().read(new byte[4]);
+        bytes = byteReader.read();
         assertThat(byteReader.isReady()).isTrue();
 
-        byteReader.clearLen();
-        byteReader.getBufferedInputStream().read(new byte[4]);
+        bytes = byteReader.read();
         assertThat(byteReader.isReady()).isFalse();
 
     }

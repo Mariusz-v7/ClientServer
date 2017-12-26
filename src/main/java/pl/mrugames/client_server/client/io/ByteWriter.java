@@ -1,28 +1,17 @@
 package pl.mrugames.client_server.client.io;
 
-import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
-public class ByteWriter implements AutoCloseable {
-    private final BufferedOutputStream bufferedOutputStream;
-    private final DataOutputStream dataOutputStream;
+public class ByteWriter {
+    private final ByteBuffer byteBuffer;
 
-    public ByteWriter(OutputStream outputStream) {
-        bufferedOutputStream = new BufferedOutputStream(outputStream);
-        dataOutputStream = new DataOutputStream(bufferedOutputStream);
+    public ByteWriter(ByteBuffer byteBuffer) {
+        this.byteBuffer = byteBuffer;
     }
 
     void write(byte... bytes) throws IOException {
-        dataOutputStream.writeInt(bytes.length);
-        dataOutputStream.write(bytes);
-        dataOutputStream.flush();
-    }
-
-    @Override
-    public void close() throws Exception {
-        bufferedOutputStream.close();
-        dataOutputStream.close();
+        byteBuffer.putInt(bytes.length);
+        byteBuffer.put(bytes);
     }
 }
