@@ -1,24 +1,24 @@
 package pl.mrugames.client_server.client.io;
 
-import java.io.BufferedWriter;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 public class TextWriter implements ClientWriter<String> {
-    private final BufferedWriter bufferedWriter;
+    private final ByteBuffer byteBuffer;
+    private final Charset charset = StandardCharsets.UTF_8;
 
-    public TextWriter(OutputStream outputStream) {
-        bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+    public TextWriter(ByteBuffer byteBuffer) {
+        this.byteBuffer = byteBuffer;
     }
 
     @Override
     public void write(String frameToSend) throws Exception {
-        bufferedWriter.write(frameToSend);
-        bufferedWriter.flush();
+        byteBuffer.put(frameToSend.getBytes(charset));
     }
 
     @Override
+    @Deprecated
     public void close() throws Exception {
-        bufferedWriter.close();
     }
 }
