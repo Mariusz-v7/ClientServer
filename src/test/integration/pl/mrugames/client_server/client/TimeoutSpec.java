@@ -69,7 +69,8 @@ class TimeoutSpec {
                 TextReader::new,
                 new FilterProcessor(Collections.emptyList()),
                 new FilterProcessor(Collections.emptyList()),
-                watchdog
+                watchdog,
+                1024
         );
 
         doAnswer(a -> {

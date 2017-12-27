@@ -38,6 +38,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     private final FilterProcessor inputFilterProcessor;
     private final FilterProcessor outputFilterProcessor;
     private final ClientWatchdog watchdog;
+    private final int bufferSize;
 
     private final Timer clientSendMetric;
     private final Timer clientReceiveMetric;
@@ -50,7 +51,8 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
                   Function<ByteBuffer, ClientReader<Reader>> clientReaderFactory,
                   FilterProcessor inputFilterProcessor,
                   FilterProcessor outputFilterProcessor,
-                  ClientWatchdog clientWatchdog
+                  ClientWatchdog clientWatchdog,
+                  int bufferSize
     ) {
         this.clientId = new AtomicLong();
         this.factoryName = factoryName;
@@ -62,6 +64,8 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         this.inputFilterProcessor = inputFilterProcessor;
         this.outputFilterProcessor = outputFilterProcessor;
         this.watchdog = clientWatchdog;
+        this.bufferSize = bufferSize;
+
         this.clientSendMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "send"));
         this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
     }
@@ -86,7 +90,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
             ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo);
 
-            Client client = createClient(clientName, clientRequestExecutor, initializers, comm, clientWorker, channel);
+            Client<In, Out, Reader, Writer> client = createClient(clientName, clientRequestExecutor, initializers, comm, clientWorker, channel);
 
             logger.info("[{}] New client has been created: {}!", factoryName, client.getName());
             return client;
@@ -114,8 +118,8 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     Comm<In, Out, Reader, Writer> createComms(String clientName, SocketChannel channel) throws IOException {
         logger.info("[{}] Creating comms for client: {}", factoryName, clientName);
 
-        ByteBuffer readBuffer = ByteBuffer.allocate(0);//TODO
-        ByteBuffer writeBuffer = ByteBuffer.allocate(0);//TODO
+        ByteBuffer readBuffer = ByteBuffer.allocate(bufferSize);
+        ByteBuffer writeBuffer = ByteBuffer.allocate(bufferSize);
 
         ClientWriter<Writer> clientWriter = clientWriterFactory.apply(writeBuffer);
         ClientReader<Reader> clientReader = clientReaderFactory.apply(readBuffer);

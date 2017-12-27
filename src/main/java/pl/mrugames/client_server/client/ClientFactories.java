@@ -13,7 +13,11 @@ import java.util.concurrent.ExecutorService;
 
 public class ClientFactories {
     public static ClientFactory<String, String, WebSocketFrame, WebSocketFrame> createClientFactoryForWSServer(
-            String name, int timeoutSeconds, ClientWorkerFactory<String, String, WebSocketFrame, WebSocketFrame> clientWorkerFactory, ExecutorService executorService) {
+            String name,
+            int timeoutSeconds,
+            ClientWorkerFactory<String, String, WebSocketFrame, WebSocketFrame> clientWorkerFactory,
+            ExecutorService executorService,
+            int bufferSize) {
 
         ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeoutSeconds);
         executorService.execute(clientWatchdog);
@@ -29,7 +33,8 @@ public class ClientFactories {
 //                WebSocketReader::new,
                 new FilterProcessor(Collections.singletonList(WebSocketFrameToStringFilter.getInstance())),
                 new FilterProcessor(Collections.singletonList(StringToWebSocketFrameFilter.getInstance())),
-                clientWatchdog
+                clientWatchdog,
+                bufferSize
         );
     }
 

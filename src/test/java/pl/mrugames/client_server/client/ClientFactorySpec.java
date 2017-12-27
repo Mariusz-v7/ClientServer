@@ -73,7 +73,8 @@ class ClientFactorySpec {
                 clientReaderFactory,
                 inputFilterProcessor,
                 outputFilterProcessor,
-                clientWatchdog));
+                clientWatchdog,
+                1024));
 
         doNothing().when(clientFactory).closeChannel(any());
 

@@ -34,7 +34,8 @@ public class Main {
                 "WebSocket Host",
                 60,
                 new WebSocketWorkerFactory(Main::shutdown),
-                executorService
+                executorService,
+                1024
         );
 
         hostManager.newHost("Main Host", port, clientFactory, executorService);

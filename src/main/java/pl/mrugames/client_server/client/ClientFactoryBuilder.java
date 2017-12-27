@@ -27,6 +27,7 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
     private List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories = Collections.emptyList();
     private List<Filter<?, ?>> inputFilters = Collections.emptyList();
     private List<Filter<?, ?>> outputFilters = Collections.emptyList();
+    private int bufferSize = 1024;
 
     public ClientFactoryBuilder(Function<ByteBuffer, ClientWriter<Writer>> clientWriterFactory,
                                 Function<ByteBuffer, ClientReader<Reader>> clientReaderFactory,
@@ -63,6 +64,11 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
         return this;
     }
 
+    public ClientFactoryBuilder<In, Out, Reader, Writer> setBufferSize(int bufferSize) {
+        this.bufferSize = bufferSize;
+        return this;
+    }
+
     public ClientFactory<In, Out, Reader, Writer> build() {
         ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeout);
         executorService.execute(clientWatchdog);
@@ -77,7 +83,8 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
 //                clientReaderFactory,
                 new FilterProcessor(inputFilters),
                 new FilterProcessor(outputFilters),
-                clientWatchdog
+                clientWatchdog,
+                bufferSize
         );
     }
 }
