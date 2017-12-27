@@ -101,10 +101,14 @@ public class HostManager implements Runnable {
 
     @SuppressWarnings("unchecked")
     void accept(ServerSocketChannel channel, Host host) {
-        NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), channel, selector, host.getClientExecutor());
-        Future result = host.getClientExecutor().submit(acceptTask);
-        //TODO: log exceptions
-        //TODO: timeout result
+        try {
+            NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), channel.accept(), selector, host.getClientExecutor());
+            Future result = host.getClientExecutor().submit(acceptTask);
+            //TODO: log exceptions
+            //TODO: timeout result
+        } catch (Exception e) {
+            logger.error("[{}] Failed to accept connection", host.getName());
+        }
     }
 
     void startHosts() {

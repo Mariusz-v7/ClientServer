@@ -8,7 +8,6 @@ import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
 import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 
@@ -19,7 +18,6 @@ import static org.mockito.Mockito.*;
 class NewClientAcceptTaskSpec {
     private NewClientAcceptTask task;
     private ClientFactory clientFactory;
-    private ServerSocketChannel serverSocketChannel;
     private Selector selector;
     private SocketChannel clientChannel;
     private Client client;
@@ -30,29 +28,17 @@ class NewClientAcceptTaskSpec {
     void before() throws Exception {
         clientFactory = mock(ClientFactory.class);
         selector = mock(Selector.class);
-        serverSocketChannel = mock(ServerSocketChannel.class);
         clientChannel = mock(SocketChannel.class);
         client = mock(Client.class);
 
         clientExecutor = mock(ExecutorService.class);
 
-        doReturn(clientChannel).when(serverSocketChannel).accept();
         doReturn(client).when(clientFactory).create(clientChannel, clientExecutor);
 
-        task = spy(new NewClientAcceptTask("Test host", clientFactory, serverSocketChannel, selector, clientExecutor));
+        task = spy(new NewClientAcceptTask("Test host", clientFactory, clientChannel, selector, clientExecutor));
         doNothing().when(task).configure(clientChannel);
         doNothing().when(task).close(clientChannel);
         doNothing().when(task).register(clientChannel, client);
-    }
-
-    @Test
-    void givenAcceptThrowsException_whenCall_thenRethrowIt() throws IOException {
-        RuntimeException e = new RuntimeException();
-        doThrow(e).when(serverSocketChannel).accept();
-
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> task.call());
-
-        assertThat(thrown).isSameAs(e);
     }
 
     @Test

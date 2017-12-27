@@ -78,9 +78,8 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
                 name + "-client",
                 clientWorkerFactory,
                 initializerFactories,
-                null, null,//todo
-//                clientWriterFactory,
-//                clientReaderFactory,
+                clientWriterFactory,
+                clientReaderFactory,
                 new FilterProcessor(inputFilters),
                 new FilterProcessor(outputFilters),
                 clientWatchdog,

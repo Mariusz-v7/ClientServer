@@ -9,7 +9,10 @@ import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.channels.*;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
@@ -20,19 +23,19 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
 
     private final String hostName;
     private final ClientFactory<In, Out, Reader, Writer> clientFactory;
-    private final ServerSocketChannel channel;
+    private final SocketChannel clientChannel;
     private final Selector selector;
     private final ExecutorService clientRequestExecutor;
     private final Timer clientAcceptMetric;
 
     public NewClientAcceptTask(String hostName,
                                ClientFactory<In, Out, Reader, Writer> clientFactory,
-                               ServerSocketChannel channel,
+                               SocketChannel clientChannel,
                                Selector selector,
                                ExecutorService clientRequestExecutor) {
         this.hostName = hostName;
         this.clientFactory = clientFactory;
-        this.channel = channel;
+        this.clientChannel = clientChannel;
         this.selector = selector;
         this.clientRequestExecutor = clientRequestExecutor;
         clientAcceptMetric = Metrics.getRegistry().timer(name(NewClientAcceptTask.class, hostName));
@@ -42,10 +45,7 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
     public Client<In, Out, Reader, Writer> call() throws Exception {
         logger.info("[{}] New Client is connecting", hostName);
 
-        SocketChannel clientChannel = null;
         try (Timer.Context ignored = clientAcceptMetric.time()) {
-            clientChannel = channel.accept();
-
             logger.info("[{}] New client has been accepted: {}/{}", hostName, clientChannel.getLocalAddress(), clientChannel.getRemoteAddress());
 
             configure(clientChannel);
