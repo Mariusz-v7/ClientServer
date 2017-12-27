@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -32,8 +33,8 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     private final String clientNamePrefix;
     private final ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory;
     private final List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories;
-    private final Function<OutputStream, ClientWriter<Writer>> clientWriterFactory;
-    private final Function<InputStream, ClientReader<Reader>> clientReaderFactory;
+    private final Function<ByteBuffer, ClientWriter<Writer>> clientWriterFactory;
+    private final Function<ByteBuffer, ClientReader<Reader>> clientReaderFactory;
     private final FilterProcessor inputFilterProcessor;
     private final FilterProcessor outputFilterProcessor;
     private final ClientWatchdog watchdog;
@@ -45,8 +46,8 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
                   String clientNamePrefix,
                   ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory,
                   List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories,
-                  Function<OutputStream, ClientWriter<Writer>> clientWriterFactory,
-                  Function<InputStream, ClientReader<Reader>> clientReaderFactory,
+                  Function<ByteBuffer, ClientWriter<Writer>> clientWriterFactory,
+                  Function<ByteBuffer, ClientReader<Reader>> clientReaderFactory,
                   FilterProcessor inputFilterProcessor,
                   FilterProcessor outputFilterProcessor,
                   ClientWatchdog clientWatchdog
@@ -79,7 +80,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
             Socket socket = channel.socket();
 
             List<Initializer> initializers = createInitializers(clientName, socket);
-            Comm<In, Out, Reader, Writer> comm = createComms(clientName, socket);
+            Comm<In, Out, Reader, Writer> comm = createComms(clientName, channel);
 
             watchdog.register(comm, channel, clientName);
 
@@ -110,16 +111,24 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         return initializers;
     }
 
-    Comm<In, Out, Reader, Writer> createComms(String clientName, Socket socket) throws IOException {
+    Comm<In, Out, Reader, Writer> createComms(String clientName, SocketChannel channel) throws IOException {
         logger.info("[{}] Creating comms for client: {}", factoryName, clientName);
 
-        InputStream inputStream = socket.getInputStream();
-        OutputStream outputStream = socket.getOutputStream();
+        ByteBuffer readBuffer = ByteBuffer.allocate(0);//TODO
+        ByteBuffer writeBuffer = ByteBuffer.allocate(0);//TODO
 
-        ClientWriter<Writer> clientWriter = clientWriterFactory.apply(outputStream);
-        ClientReader<Reader> clientReader = clientReaderFactory.apply(inputStream);
+        ClientWriter<Writer> clientWriter = clientWriterFactory.apply(writeBuffer);
+        ClientReader<Reader> clientReader = clientReaderFactory.apply(readBuffer);
 
-        Comm<In, Out, Reader, Writer> comm = new Comm<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor, clientSendMetric, clientReceiveMetric);
+        Comm<In, Out, Reader, Writer> comm = new Comm<>(clientWriter,
+                clientReader,
+                inputFilterProcessor,
+                outputFilterProcessor,
+                readBuffer,
+                writeBuffer,
+                channel,
+                clientSendMetric,
+                clientReceiveMetric);
         logger.info("[{}] Comms has been created for client: {}", factoryName, clientName);
 
         return comm;

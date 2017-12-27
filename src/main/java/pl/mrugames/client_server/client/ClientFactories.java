@@ -5,10 +5,6 @@ import pl.mrugames.client_server.client.filters.StringToWebSocketFrameFilter;
 import pl.mrugames.client_server.client.filters.WebSocketFrameToStringFilter;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
 import pl.mrugames.client_server.client.initializers.WebSocketInitializer;
-import pl.mrugames.client_server.client.io.ObjectReader;
-import pl.mrugames.client_server.client.io.ObjectWriter;
-import pl.mrugames.client_server.client.io.WebSocketReader;
-import pl.mrugames.client_server.client.io.WebSocketWriter;
 import pl.mrugames.client_server.websocket.WebSocketHandshakeParser;
 
 import java.io.Serializable;
@@ -27,8 +23,10 @@ public class ClientFactories {
                 name + "-client",
                 clientWorkerFactory,
                 Collections.singletonList(WebSocketInitializer.create(WebSocketHandshakeParser.getInstance())),
-                WebSocketWriter::new,
-                WebSocketReader::new,
+                null,
+                null,
+// WebSocketWriter::new, // TODO
+//                WebSocketReader::new,
                 new FilterProcessor(Collections.singletonList(WebSocketFrameToStringFilter.getInstance())),
                 new FilterProcessor(Collections.singletonList(StringToWebSocketFrameFilter.getInstance())),
                 clientWatchdog
@@ -42,9 +40,10 @@ public class ClientFactories {
             ExecutorService executorService
     ) {
 
-        return new ClientFactoryBuilder<>(ObjectWriter::new, ObjectReader::new, clientWorkerFactory, executorService)
-                .setName(name)
-                .setTimeout(timeoutSeconds)
-                .build();
+        return null; //TODO
+//        return new ClientFactoryBuilder<>(ObjectWriter::new, ObjectReader::new, clientWorkerFactory, executorService)
+//                .setName(name)
+//                .setTimeout(timeoutSeconds)
+//                .build();
     }
 }

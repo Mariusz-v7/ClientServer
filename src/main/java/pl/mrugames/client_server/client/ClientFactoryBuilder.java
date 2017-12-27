@@ -9,6 +9,7 @@ import pl.mrugames.client_server.client.io.ClientWriter;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -16,8 +17,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer extends Serializable> {
-    private final Function<OutputStream, ClientWriter<Writer>> clientWriterFactory;
-    private final Function<InputStream, ClientReader<Reader>> clientReaderFactory;
+    private final Function<ByteBuffer, ClientWriter<Writer>> clientWriterFactory;
+    private final Function<ByteBuffer, ClientReader<Reader>> clientReaderFactory;
     private final ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory;
     private final ExecutorService executorService;
 
@@ -27,8 +28,8 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
     private List<Filter<?, ?>> inputFilters = Collections.emptyList();
     private List<Filter<?, ?>> outputFilters = Collections.emptyList();
 
-    public ClientFactoryBuilder(Function<OutputStream, ClientWriter<Writer>> clientWriterFactory,
-                                Function<InputStream, ClientReader<Reader>> clientReaderFactory,
+    public ClientFactoryBuilder(Function<ByteBuffer, ClientWriter<Writer>> clientWriterFactory,
+                                Function<ByteBuffer, ClientReader<Reader>> clientReaderFactory,
                                 ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory,
                                 ExecutorService executorService) {
         this.clientWriterFactory = clientWriterFactory;
@@ -71,8 +72,9 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
                 name + "-client",
                 clientWorkerFactory,
                 initializerFactories,
-                clientWriterFactory,
-                clientReaderFactory,
+                null, null,//todo
+//                clientWriterFactory,
+//                clientReaderFactory,
                 new FilterProcessor(inputFilters),
                 new FilterProcessor(outputFilters),
                 clientWatchdog

@@ -9,6 +9,8 @@ import pl.mrugames.client_server.client.io.ClientWriter;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -21,6 +23,9 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
     private final FilterProcessor outputFilterProcessor;
     private final Timer sendMetric;
     private final Timer receiveMetric;
+    private final ByteBuffer readBuffer;
+    private final ByteBuffer writeBuffer;
+    private final SocketChannel socketChannel;
 
     private volatile Instant lastDataSent;
     private volatile Instant lastDataReceived;
@@ -29,12 +34,19 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
          ClientReader<Reader> clientReader,
          FilterProcessor inputFilterProcessor,
          FilterProcessor outputFilterProcessor,
+         ByteBuffer readBuffer,
+         ByteBuffer writeBuffer,
+         SocketChannel socketChannel,
          Timer sendMetric,
          Timer receiveMetric) {
         this.clientWriter = clientWriter;
         this.clientReader = clientReader;
         this.inputFilterProcessor = inputFilterProcessor;
         this.outputFilterProcessor = outputFilterProcessor;
+        this.readBuffer = readBuffer;
+        this.writeBuffer = writeBuffer;
+        this.socketChannel = socketChannel;
+
         this.sendMetric = sendMetric;
         this.receiveMetric = receiveMetric;
 
@@ -68,6 +80,19 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
     @Nullable
     public synchronized In receive() throws Exception {
         try (Timer.Context ignored = receiveMetric.time()) {
+
+            readBuffer.compact();
+            try {
+                socketChannel.read(readBuffer);
+            } finally {
+                readBuffer.flip();
+            }
+
+            if (!clientReader.isReady()) {
+                logger.debug("[RECEIVE] Reader is not ready!");
+                return null;
+            }
+
             In frame;
 
             Reader rawFrame = clientReader.read();

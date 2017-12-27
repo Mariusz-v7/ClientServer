@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,8 +55,8 @@ class ClientFactorySpec {
         clientWriter = mock(ClientWriter.class);
         clientReader = mock(ClientReader.class);
 
-        Function<OutputStream, ClientWriter<String>> clientWriterFactory = i -> clientWriter;
-        Function<InputStream, ClientReader<String>> clientReaderFactory = o -> clientReader;
+        Function<ByteBuffer, ClientWriter<String>> clientWriterFactory = i -> clientWriter;
+        Function<ByteBuffer, ClientReader<String>> clientReaderFactory = o -> clientReader;
 
         clientWorkerFactory = mock(ClientWorkerFactory.class);
 
@@ -127,7 +128,7 @@ class ClientFactorySpec {
 
     @Test
     void whenCreateComm_thenSetProperComponents() throws IOException {
-        Comm<String, String, String, String> comm = clientFactory.createComms("test", mock(Socket.class));
+        Comm<String, String, String, String> comm = clientFactory.createComms("test", mock(SocketChannel.class));
 
         assertThat(comm.getClientReader()).isSameAs(clientReader);
         assertThat(comm.getClientWriter()).isSameAs(clientWriter);
