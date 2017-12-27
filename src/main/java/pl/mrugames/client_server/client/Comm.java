@@ -69,6 +69,14 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
                 Writer rawFrame = result.get();
                 logger.debug("[SEND] Frame after transformation: '{}'", rawFrame);
                 clientWriter.write(rawFrame);
+
+                writeBuffer.flip();
+                try {
+                    socketChannel.write(writeBuffer);
+                } finally {
+                    writeBuffer.compact();
+                }
+
             } else {
                 logger.debug("[SEND] Frame '{}' filtered out!", frame);
             }

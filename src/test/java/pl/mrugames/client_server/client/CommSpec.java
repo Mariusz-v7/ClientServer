@@ -8,6 +8,7 @@ import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.io.ClientReader;
 import pl.mrugames.client_server.client.io.ClientWriter;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.time.Instant;
@@ -124,8 +125,8 @@ class CommSpec {
 
     @Test
     void whenRead_thenPrepareBuffer() throws Exception {
-        comm.receive();
         InOrder inOrder = inOrder(readBuffer, channel, clientReader);
+        comm.receive();
 
         inOrder.verify(readBuffer).compact();
         inOrder.verify(channel).read(readBuffer);
@@ -142,5 +143,25 @@ class CommSpec {
         verify(readBuffer).flip();
     }
 
+    @Test
+    void whenSend_thenPrepareBufferAndSend() throws Exception {
+        InOrder inOrder = inOrder(writeBuffer, channel, clientWriter);
+
+        comm.send("anything");
+
+        inOrder.verify(clientWriter).write(anyString());
+        inOrder.verify(writeBuffer).flip();
+        inOrder.verify(channel).write(writeBuffer);
+        inOrder.verify(writeBuffer).compact();
+    }
+
+    @Test
+    void givenWriteThrowsException_whenWrite_thenCallBufferCompactInFinallyBlock() throws IOException {
+        doThrow(RuntimeException.class).when(channel).write(writeBuffer);
+
+        assertThrows(RuntimeException.class, () -> comm.send("anything"));
+
+        verify(writeBuffer).compact();
+    }
 
 }
