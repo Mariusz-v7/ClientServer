@@ -3,18 +3,24 @@ package pl.mrugames.client_server.host;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.host.tasks.ClientRequestTask;
 import pl.mrugames.client_server.host.tasks.NewClientAcceptTask;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,10 +28,45 @@ import static org.mockito.Mockito.*;
 
 class HostManagerSpec {
     private HostManager hostManager;
+    private Host host;
+    private ServerSocketChannel serverSocketChannel;
+    private SocketChannel socketChannel;
+    private ExecutorService clientExecutor;
+    private Future<Client> acceptResult;
+    private Client client;
+    private ByteBuffer readBuffer;
 
     @BeforeEach
-    void before() throws IOException, InterruptedException {
+    @SuppressWarnings("unchecked")
+    void before() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         hostManager = spy(new HostManager());
+
+        host = mock(Host.class);
+        serverSocketChannel = mock(ServerSocketChannel.class);
+        doReturn(serverSocketChannel).when(host).getServerSocketChannel();
+
+        socketChannel = mock(SocketChannel.class);
+        doReturn(socketChannel).when(serverSocketChannel).accept();
+
+        clientExecutor = mock(ExecutorService.class);
+        doReturn(clientExecutor).when(host).getClientExecutor();
+
+        acceptResult = mock(Future.class);
+        doReturn(acceptResult).when(clientExecutor).submit(any(NewClientAcceptTask.class));
+
+        doNothing().when(hostManager).configure(socketChannel);
+        doNothing().when(hostManager).register(socketChannel, acceptResult);
+        doNothing().when(hostManager).closeClientChannel(socketChannel);
+
+        client = mock(Client.class);
+        doReturn(client).when(acceptResult).get();
+        doReturn(true).when(acceptResult).isDone();
+        doReturn(clientExecutor).when(client).getRequestExecutor();
+        doReturn(socketChannel).when(client).getChannel();
+
+        readBuffer = mock(ByteBuffer.class);
+        doReturn(readBuffer).when(client).getReadBuffer();
+
     }
 
     @AfterEach
@@ -124,24 +165,90 @@ class HostManagerSpec {
     @Test
     @SuppressWarnings("unchecked")
     void whenAccept_thenSubmitNewTask() {
-        ServerSocketChannel serverSocketChannel = mock(ServerSocketChannel.class);
-        Host host = mock(Host.class);
-        ExecutorService executorService = mock(ExecutorService.class);
-        doReturn(executorService).when(host).getClientExecutor();
-
         hostManager.accept(serverSocketChannel, host);
-
-        verify(executorService).submit(any(NewClientAcceptTask.class));
+        verify(clientExecutor).submit(any(NewClientAcceptTask.class));
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void whenRead_thenSubmitNewTask() {
-        Client client = mock(Client.class);
-        ExecutorService executorService = mock(ExecutorService.class);
-        doReturn(executorService).when(client).getRequestExecutor();
-
-        hostManager.read(client);
-        verify(executorService).submit(any(ClientRequestTask.class));
+    void whenRead_thenSubmitNewTask() throws ExecutionException, InterruptedException {
+        hostManager.read(acceptResult);
+        verify(clientExecutor).submit(any(ClientRequestTask.class));
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void whenAccept_thenConfigureSocketAndRegisterSelector() throws IOException {
+        InOrder inOrder = inOrder(hostManager, clientExecutor);
+
+        hostManager.accept(serverSocketChannel, host);
+
+        inOrder.verify(hostManager).configure(socketChannel);
+        inOrder.verify(clientExecutor).submit(any(NewClientAcceptTask.class));
+        inOrder.verify(hostManager).register(socketChannel, acceptResult);
+    }
+
+    @Test
+    void givenConfigureThrowsException_whenAccept_thenCloseSocket() throws IOException {
+        doThrow(RuntimeException.class).when(hostManager).configure(socketChannel);
+        hostManager.accept(serverSocketChannel, host);
+        verify(hostManager).closeClientChannel(socketChannel);
+    }
+
+    @Test
+    void givenRegisterThrowsException_whenAccept_thenCloseSocket() throws IOException {
+        doThrow(RuntimeException.class).when(hostManager).register(socketChannel, acceptResult);
+        hostManager.accept(serverSocketChannel, host);
+        verify(hostManager).closeClientChannel(socketChannel);
+    }
+
+    @Test
+    void givenAcceptThrowsException_whenAccept_thenDoNotCallClose() throws IOException {
+        doThrow(RuntimeException.class).when(serverSocketChannel).accept();
+        hostManager.accept(serverSocketChannel, host);
+        verify(hostManager, never()).closeClientChannel(any());
+    }
+
+    @Test
+    void givenClientFutureIsNotCompleted_whenRead_thenDoNotCallGet() throws ExecutionException, InterruptedException {
+        doReturn(false).when(acceptResult).isDone();
+        hostManager.read(acceptResult);
+        verify(acceptResult, never()).get();
+    }
+
+    @Test
+    void givenClientFutureThrowsException_whenRead_thenCatchIt() throws ExecutionException, InterruptedException {
+        doThrow(RuntimeException.class).when(acceptResult).get();
+        hostManager.read(acceptResult); // no exception
+    }
+
+    @Test
+    void whenRead_thenPrepareBuffer() throws Exception {
+        ByteBuffer readBuffer = mock(ByteBuffer.class);
+
+        InOrder inOrder = inOrder(readBuffer, socketChannel);
+        hostManager.readToBuffer(readBuffer, socketChannel);
+
+        inOrder.verify(readBuffer).compact();
+        inOrder.verify(socketChannel).read(readBuffer);
+        inOrder.verify(readBuffer).flip();
+    }
+
+    @Test
+    void givenChannelThrowsException_whenReceive_thenCallFlipInFinallyBlock() throws Exception {
+        ByteBuffer readBuffer = mock(ByteBuffer.class);
+
+        doThrow(RuntimeException.class).when(socketChannel).read(readBuffer);
+
+        assertThrows(RuntimeException.class, () -> hostManager.readToBuffer(readBuffer, socketChannel));
+
+        verify(readBuffer).flip();
+    }
+
+    @Test
+    void whenRead_thenCallReadToBuffer() throws IOException {
+        hostManager.read(acceptResult);
+        verify(hostManager).readToBuffer(readBuffer, socketChannel);
+    }
+
 }

@@ -5,9 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
+import pl.mrugames.client_server.client.ClientWorker;
+import pl.mrugames.client_server.client.Comm;
 
-import java.io.IOException;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 
@@ -18,51 +18,41 @@ import static org.mockito.Mockito.*;
 class NewClientAcceptTaskSpec {
     private NewClientAcceptTask task;
     private ClientFactory clientFactory;
-    private Selector selector;
     private SocketChannel clientChannel;
     private Client client;
     private ExecutorService clientExecutor;
+    private ClientWorker clientWorker;
+    private Comm comm;
 
     @SuppressWarnings("unchecked")
     @BeforeEach
     void before() throws Exception {
         clientFactory = mock(ClientFactory.class);
-        selector = mock(Selector.class);
-        clientChannel = mock(SocketChannel.class);
         client = mock(Client.class);
+        clientWorker = mock(ClientWorker.class);
+        comm = mock(Comm.class);
+        clientChannel = mock(SocketChannel.class);
+
+        doReturn(clientWorker).when(client).getClientWorker();
+        doReturn(comm).when(client).getComm();
 
         clientExecutor = mock(ExecutorService.class);
 
         doReturn(client).when(clientFactory).create(clientChannel, clientExecutor);
 
-        task = spy(new NewClientAcceptTask("Test host", clientFactory, clientChannel, selector, clientExecutor));
-        doNothing().when(task).configure(clientChannel);
+        task = spy(new NewClientAcceptTask("Test host", clientFactory, clientChannel, clientExecutor));
         doNothing().when(task).close(clientChannel);
-        doNothing().when(task).register(clientChannel, client);
     }
 
     @Test
-    void whenAccept_thenConfigure_andCallFactory_andRegisterSelector_andReturnClient() throws Exception {
+    void whenAccept_thenCallFactory_andReturnClient() throws Exception {
         InOrder inOrder = inOrder(task, clientFactory);
 
         Client result = task.call();
 
-        inOrder.verify(task).configure(clientChannel);
         inOrder.verify(clientFactory).create(clientChannel, clientExecutor);
-        inOrder.verify(task).register(clientChannel, client);
 
         assertThat(result).isSameAs(client);
-    }
-
-    @Test
-    void givenConfigureThrowsException_whenCall_thenCloseSocketAndRethrow() throws IOException {
-        RuntimeException e = new RuntimeException();
-        doThrow(e).when(task).configure(clientChannel);
-
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> task.call());
-
-        assertThat(thrown).isSameAs(e);
-        verify(task).close(clientChannel);
     }
 
     @Test
@@ -77,15 +67,22 @@ class NewClientAcceptTaskSpec {
     }
 
     @Test
-    void givenRegisterThrowsException_whenCall_thenCloseSocketAndRethrow() throws Exception {
-        RuntimeException e = new RuntimeException();
-        doThrow(e).when(task).register(clientChannel, client);
-
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> task.call());
-
-        assertThat(thrown).isSameAs(e);
-        verify(task).close(clientChannel);
+    void whenAcceptNewClient_thenCallOnInit() throws Exception {
+        task.call();
+        verify(clientWorker).onInit();
     }
 
+    @Test
+    void givenOnInitReturnsString_whenCall_thenSendIt() throws Exception {
+        doReturn("hello").when(clientWorker).onInit();
+        task.call();
+        verify(comm).send("hello");
+    }
 
+    @Test
+    void givenOnInitReturnsNull_whenCall_thenDoNotSendIt() throws Exception {
+        doReturn(null).when(clientWorker).onInit();
+        task.call();
+        verify(comm, never()).send(any());
+    }
 }

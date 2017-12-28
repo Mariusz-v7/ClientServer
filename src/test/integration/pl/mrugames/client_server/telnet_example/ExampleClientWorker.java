@@ -60,6 +60,12 @@ public class ExampleClientWorker implements ClientWorker {
     }
 
     @Override
+    public Object onInit() {
+        logger.info("Client initialized");
+        return "Hello! Possible commands: exit, shutdown\n";
+    }
+
+    @Override
     public Object onRequest(Object request) {
         //TODO
         return null;

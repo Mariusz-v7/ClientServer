@@ -6,6 +6,7 @@ import pl.mrugames.client_server.client.initializers.Initializer;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -52,7 +53,7 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
         return initializers;
     }
 
-    public ClientWorker getClientWorker() {
+    public ClientWorker<In, Out> getClientWorker() {
         return clientWorker;
     }
 
@@ -62,5 +63,13 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
         } catch (IOException e) {
             logger.error("Failed to close channel", e);
         }
+    }
+
+    public ByteBuffer getReadBuffer() {
+        return null;
+    }
+
+    public SocketChannel getChannel() {
+        return channel;
     }
 }

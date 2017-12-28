@@ -9,9 +9,6 @@ import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -24,19 +21,16 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
     private final String hostName;
     private final ClientFactory<In, Out, Reader, Writer> clientFactory;
     private final SocketChannel clientChannel;
-    private final Selector selector;
     private final ExecutorService clientRequestExecutor;
     private final Timer clientAcceptMetric;
 
     public NewClientAcceptTask(String hostName,
                                ClientFactory<In, Out, Reader, Writer> clientFactory,
                                SocketChannel clientChannel,
-                               Selector selector,
                                ExecutorService clientRequestExecutor) {
         this.hostName = hostName;
         this.clientFactory = clientFactory;
         this.clientChannel = clientChannel;
-        this.selector = selector;
         this.clientRequestExecutor = clientRequestExecutor;
         clientAcceptMetric = Metrics.getRegistry().timer(name(NewClientAcceptTask.class, hostName));
     }
@@ -48,11 +42,12 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
         try (Timer.Context ignored = clientAcceptMetric.time()) {
             logger.info("[{}] New client has been accepted: {}/{}", hostName, clientChannel.getLocalAddress(), clientChannel.getRemoteAddress());
 
-            configure(clientChannel);
-
             Client<In, Out, Reader, Writer> client = clientFactory.create(clientChannel, clientRequestExecutor);
 
-            register(clientChannel, client);
+            Out onInitResult = client.getClientWorker().onInit();
+            if (onInitResult != null) {
+                client.getComm().send(onInitResult);
+            }
 
             return client;
         } catch (Exception e) {
@@ -71,21 +66,6 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
 
             throw e;
         }
-    }
-
-    /**
-     * Mocking purposes
-     */
-    void register(SocketChannel clientChannel, Client<In, Out, Reader, Writer> client) throws ClosedChannelException {
-        clientChannel.register(selector, SelectionKey.OP_READ, client);
-    }
-
-    /**
-     * Configure client socket.
-     * Method for mocking purposes (final methods);
-     */
-    void configure(SocketChannel clientChannel) throws IOException {
-        clientChannel.configureBlocking(false);
     }
 
     /**

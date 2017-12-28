@@ -119,6 +119,8 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         logger.info("[{}] Creating comms for client: {}", factoryName, clientName);
 
         ByteBuffer readBuffer = ByteBuffer.allocate(bufferSize);
+        readBuffer.flip();
+
         ByteBuffer writeBuffer = ByteBuffer.allocate(bufferSize);
 
         ClientWriter<Writer> clientWriter = clientWriterFactory.apply(writeBuffer);
@@ -128,7 +130,6 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
                 clientReader,
                 inputFilterProcessor,
                 outputFilterProcessor,
-                readBuffer,
                 writeBuffer,
                 channel,
                 clientSendMetric,

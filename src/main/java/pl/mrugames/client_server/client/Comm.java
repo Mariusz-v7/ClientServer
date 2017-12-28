@@ -23,7 +23,6 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
     private final FilterProcessor outputFilterProcessor;
     private final Timer sendMetric;
     private final Timer receiveMetric;
-    private final ByteBuffer readBuffer;
     private final ByteBuffer writeBuffer;
     private final SocketChannel socketChannel;
 
@@ -34,7 +33,6 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
          ClientReader<Reader> clientReader,
          FilterProcessor inputFilterProcessor,
          FilterProcessor outputFilterProcessor,
-         ByteBuffer readBuffer,
          ByteBuffer writeBuffer,
          SocketChannel socketChannel,
          Timer sendMetric,
@@ -43,7 +41,6 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
         this.clientReader = clientReader;
         this.inputFilterProcessor = inputFilterProcessor;
         this.outputFilterProcessor = outputFilterProcessor;
-        this.readBuffer = readBuffer;
         this.writeBuffer = writeBuffer;
         this.socketChannel = socketChannel;
 
@@ -88,13 +85,6 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
     @Nullable
     public synchronized In receive() throws Exception {
         try (Timer.Context ignored = receiveMetric.time()) {
-
-            readBuffer.compact();
-            try {
-                socketChannel.read(readBuffer);
-            } finally {
-                readBuffer.flip();
-            }
 
             if (!clientReader.isReady()) {
                 logger.debug("[RECEIVE] Reader is not ready!");
@@ -144,5 +134,9 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
 
     FilterProcessor getOutputFilterProcessor() {
         return outputFilterProcessor;
+    }
+
+    ByteBuffer getWriteBuffer() {
+        return writeBuffer;
     }
 }

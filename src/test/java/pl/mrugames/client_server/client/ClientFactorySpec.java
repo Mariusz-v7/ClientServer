@@ -2,6 +2,7 @@ package pl.mrugames.client_server.client;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.initializers.Initializer;
 import pl.mrugames.client_server.client.io.ClientReader;
@@ -38,6 +39,7 @@ class ClientFactorySpec {
     private ClientWatchdog clientWatchdog;
     private SocketChannel mockSocketChannel;
     private Socket mockSocket;
+    private Function<ByteBuffer, ClientReader<String>> clientReaderFactory;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -56,7 +58,8 @@ class ClientFactorySpec {
         clientReader = mock(ClientReader.class);
 
         Function<ByteBuffer, ClientWriter<String>> clientWriterFactory = i -> clientWriter;
-        Function<ByteBuffer, ClientReader<String>> clientReaderFactory = o -> clientReader;
+        clientReaderFactory = mock(Function.class);
+        doReturn(clientReader).when(clientReaderFactory).apply(any());
 
         clientWorkerFactory = mock(ClientWorkerFactory.class);
 
@@ -153,6 +156,17 @@ class ClientFactorySpec {
 
         IllegalStateException illegalStateException = assertThrows(IllegalStateException.class, () -> clientFactory.create(mock(SocketChannel.class), executorService));
         assertThat(illegalStateException.getMessage()).isEqualTo("Client Watchdog is dead! Cannot accept new connection.");
+    }
+
+    @Test
+    void whenCreateComm_thenReadBufferIsInReadMode() throws IOException {
+        ArgumentCaptor<ByteBuffer> argumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
+
+        clientFactory.createComms("", mockSocketChannel);
+
+        verify(clientReaderFactory).apply(argumentCaptor.capture());
+
+        assertThat(argumentCaptor.getValue().limit()).isEqualTo(argumentCaptor.getValue().position());
     }
 
 }

@@ -9,6 +9,12 @@ public class SimpleClientWorker implements ClientWorker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
+    public Object onInit() {
+        //TODO
+        return null;
+    }
+
+    @Override
     public Object onRequest(Object request) {
         // TODO
         return null;

@@ -27,7 +27,6 @@ class CommSpec {
     private FilterProcessor inputFilterProcessor;
     private FilterProcessor outputFilterProcessor;
     private Instant commCreation;
-    private ByteBuffer readBuffer;
     private ByteBuffer writeBuffer;
     private SocketChannel channel;
 
@@ -38,7 +37,6 @@ class CommSpec {
         clientReader = mock(ClientReader.class);
         inputFilterProcessor = mock(FilterProcessor.class);
         outputFilterProcessor = mock(FilterProcessor.class);
-        readBuffer = mock(ByteBuffer.class);
         writeBuffer = mock(ByteBuffer.class);
         channel = mock(SocketChannel.class);
 
@@ -48,7 +46,7 @@ class CommSpec {
         doReturn(true).when(clientReader).isReady();
 
         commCreation = Instant.now();
-        comm = new Comm<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor, readBuffer, writeBuffer, channel, mock(Timer.class), mock(Timer.class));
+        comm = new Comm<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor, writeBuffer, channel, mock(Timer.class), mock(Timer.class));
     }
 
     @Test
@@ -121,26 +119,6 @@ class CommSpec {
         assertThat(comm.receive()).isNull();
 
         verify(clientReader, never()).read();
-    }
-
-    @Test
-    void whenRead_thenPrepareBuffer() throws Exception {
-        InOrder inOrder = inOrder(readBuffer, channel, clientReader);
-        comm.receive();
-
-        inOrder.verify(readBuffer).compact();
-        inOrder.verify(channel).read(readBuffer);
-        inOrder.verify(readBuffer).flip();
-        inOrder.verify(clientReader).read();
-    }
-
-    @Test
-    void givenChannelThrowsException_whenReceive_thenCallFlipInFinallyBlock() throws Exception {
-        doThrow(RuntimeException.class).when(channel).read(readBuffer);
-
-        assertThrows(RuntimeException.class, comm::receive);
-
-        verify(readBuffer).flip();
     }
 
     @Test

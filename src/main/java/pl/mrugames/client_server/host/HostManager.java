@@ -9,10 +9,8 @@ import pl.mrugames.client_server.host.tasks.NewClientAcceptTask;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
+import java.nio.ByteBuffer;
+import java.nio.channels.*;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -74,6 +72,7 @@ public class HostManager implements Runnable {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void progressKey(SelectionKey selectionKey) {
         try {
             SelectableChannel channel = selectionKey.channel();
@@ -82,7 +81,7 @@ public class HostManager implements Runnable {
                 Host host = (Host) selectionKey.attachment();
                 accept((ServerSocketChannel) channel, host);
             } else if (selectionKey.isReadable()) {
-                Client client = (Client) selectionKey.attachment();
+                Future<Client> client = (Future<Client>) selectionKey.attachment();
                 read(client);
             }
         } catch (Exception e) {
@@ -91,23 +90,58 @@ public class HostManager implements Runnable {
     }
 
     @SuppressWarnings("unchecked")
-    void read(Client client) {
-        ClientRequestTask clientRequestTask = new ClientRequestTask(client.getName(), client.getComm(), client.getClientWorker());
+    void read(Future<Client> clientFuture) {
+        Client client;
 
-        Future<Void> result = client.getRequestExecutor().submit(clientRequestTask);
-        // TODO: log exceptions
-        // TODO: set timeout
+        try {
+            if (!clientFuture.isDone()) {
+                logger.warn("Client creation is in progress still...");
+                return;
+            }
+
+            client = clientFuture.get();
+        } catch (Exception e) {
+            logger.error("Client's future ended with exception!", e);
+            return;
+        }
+
+        try {
+            readToBuffer(client.getReadBuffer(), client.getChannel());
+
+            ClientRequestTask clientRequestTask = new ClientRequestTask(client.getName(), client.getComm(), client.getClientWorker());
+
+            Future<Void> result = client.getRequestExecutor().submit(clientRequestTask);
+            // TODO: log exceptions from future
+            // TODO: set timeout
+        } catch (Exception e) { // todo: test. Close channel? (client.closeChannel)
+            logger.error("[{}] Failed to read from client", client.getName(), e);
+        }
     }
 
     @SuppressWarnings("unchecked")
     void accept(ServerSocketChannel channel, Host host) {
+        SocketChannel socketChannel = null;
         try {
-            NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), channel.accept(), selector, host.getClientExecutor());
-            Future result = host.getClientExecutor().submit(acceptTask);
-            //TODO: log exceptions
+            socketChannel = channel.accept();
+
+            configure(socketChannel);
+
+            NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), socketChannel, host.getClientExecutor());
+            Future<Client> result = host.getClientExecutor().submit(acceptTask);
+
+            register(socketChannel, result);
+
+            //TODO: log exceptions from future
             //TODO: timeout result
         } catch (Exception e) {
-            logger.error("[{}] Failed to accept connection", host.getName());
+            if (socketChannel != null) {
+                try {
+                    closeClientChannel(socketChannel);
+                } catch (IOException e1) {
+                    logger.error("[{}] Failed to close channel", host.getName(), e1);
+                }
+            }
+            logger.error("[{}] Failed to accept connection", host.getName(), e);
         }
     }
 
@@ -175,4 +209,33 @@ public class HostManager implements Runnable {
         key.channel().close();
     }
 
+    void readToBuffer(ByteBuffer readBuffer, SocketChannel socketChannel) throws IOException {
+        readBuffer.compact();
+        try {
+            socketChannel.read(readBuffer);
+        } finally {
+            readBuffer.flip();
+        }
+    }
+
+    /**
+     * Mocking purposes
+     */
+    void configure(SocketChannel socketChannel) throws IOException {
+        socketChannel.configureBlocking(false);
+    }
+
+    /**
+     * Mocking purposes
+     */
+    void register(SocketChannel socketChannel, Future<Client> clientFuture) throws ClosedChannelException {
+        socketChannel.register(selector, SelectionKey.OP_READ, clientFuture);
+    }
+
+    /**
+     * Mocking purposes
+     */
+    void closeClientChannel(SocketChannel channel) throws IOException {
+        channel.close();
+    }
 }
