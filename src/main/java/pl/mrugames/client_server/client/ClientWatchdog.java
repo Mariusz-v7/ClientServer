@@ -8,8 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.Metrics;
 
-import java.io.IOException;
-import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -20,23 +18,11 @@ import java.util.concurrent.TimeUnit;
 class ClientWatchdog implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientWatchdog.class);
 
-    private static class Container {
-        private final Comm comm;
-        private final SocketChannel channel;
-        private final String clientName;
-
-        Container(Comm comm, SocketChannel channel, String clientName) {
-            this.comm = comm;
-            this.channel = channel;
-            this.clientName = clientName;
-        }
-    }
-
     private final Timer cleanupMetric;
     private final String name;
     private final long timeoutSeconds;
     private final CountDownLatch startSignal;
-    final CopyOnWriteArraySet<Container> comms;
+    final CopyOnWriteArraySet<Client> clients;
     final Semaphore semaphore;
     private volatile boolean running;
 
@@ -44,11 +30,11 @@ class ClientWatchdog implements Runnable {
         this.name = name;
         this.timeoutSeconds = timeoutSeconds;
         this.startSignal = new CountDownLatch(1);
-        comms = new CopyOnWriteArraySet<>();
+        clients = new CopyOnWriteArraySet<>();
         semaphore = new Semaphore(0);
 
         cleanupMetric = Metrics.getRegistry().timer(MetricRegistry.name(ClientWatchdog.class, name, "cleanup"));
-        Metrics.getRegistry().register(MetricRegistry.name(ClientWatchdog.class, "clients", "registered"), (Gauge<Integer>) comms::size);
+        Metrics.getRegistry().register(MetricRegistry.name(ClientWatchdog.class, "clients", "registered"), (Gauge<Integer>) clients::size);
         Metrics.getHealthCheckRegistry().register(MetricRegistry.name(ClientWatchdog.class, "running"), new HealthCheck() {
             @Override
             protected Result check() throws Exception {
@@ -73,7 +59,7 @@ class ClientWatchdog implements Runnable {
                         semaphore.acquire();
                         semaphore.release();
                     } else {
-                        int connections = comms.size();
+                        int connections = clients.size();
                         logger.info("[{}] There are {} connections registered. Next possible timeout in: {} s.", name, connections, nextPossibleTimeout);
 
                         if (semaphore.tryAcquire(connections + 1, nextPossibleTimeout, TimeUnit.SECONDS)) {
@@ -84,9 +70,9 @@ class ClientWatchdog implements Runnable {
                         }
                     }
 
-                    logger.info("[{}] There are {} connections registered. Starting clean up.", name, comms.size());
+                    logger.info("[{}] There are {} connections registered. Starting clean up.", name, clients.size());
                     nextPossibleTimeout = check();
-                    logger.info("[{}] Clean up finished. There are {} connections registered.", name, comms.size());
+                    logger.info("[{}] Clean up finished. There are {} connections registered.", name, clients.size());
 
                 } catch (InterruptedException e) {
                     break;
@@ -103,24 +89,24 @@ class ClientWatchdog implements Runnable {
 
             long nextPossibleTimeout = -1;
 
-            for (Container container : comms) {
+            for (Client client : clients) {
                 semaphore.acquire();
 
-                if (isTimeout(container.comm, container.clientName)) {
-                    logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, container.clientName);
+                if (isTimeout(client.getComm(), client.getName())) {
+                    logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, client.getName());
 
                     try {
-                        closeChannel(container.channel);
-                        logger.info("[{}] Connection closed. Client: {}", name, container.clientName);
+                        client.closeChannel();
+                        logger.info("[{}] Connection closed. Client: {}", name, client.getName());
                     } catch (Exception e) {
-                        logger.error("[{}] Error during channel close. Client: {}", name, container.clientName, e);
+                        logger.error("[{}] Error during channel close. Client: {}", name, client.getName(), e);
                     } finally {
-                        comms.remove(container);
+                        clients.remove(client);
                     }
 
-                    logger.info("[{}] Connection removed. Client: {}", name, container.clientName);
+                    logger.info("[{}] Connection removed. Client: {}", name, client.getName());
                 } else {
-                    long nextTimeout = calculateSecondsToTimeout(container.comm);
+                    long nextTimeout = calculateSecondsToTimeout(client.getComm());
                     if (nextPossibleTimeout == -1 || nextPossibleTimeout > nextTimeout) {
                         nextPossibleTimeout = nextTimeout;
                     }
@@ -160,10 +146,10 @@ class ClientWatchdog implements Runnable {
         return (long) Math.ceil(result);
     }
 
-    synchronized void register(Comm comm, SocketChannel channel, String clientName) {
-        comms.add(new Container(comm, channel, clientName));
+    synchronized void register(Client client) {
+        clients.add(client);
         semaphore.release();
-        logger.info("[{}] New connection has been registered. Client: {}", name, clientName);
+        logger.info("[{}] New connection has been registered. Client: {}", name, client.getName());
     }
 
     public boolean isRunning() {
@@ -172,9 +158,5 @@ class ClientWatchdog implements Runnable {
 
     boolean awaitStart(long timeout, TimeUnit timeUnit) throws InterruptedException {
         return startSignal.await(timeout, timeUnit);
-    }
-
-    void closeChannel(SocketChannel channel) throws IOException {
-        channel.close();
     }
 }

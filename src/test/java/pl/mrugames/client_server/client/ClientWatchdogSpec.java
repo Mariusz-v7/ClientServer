@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.Metrics;
 
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
 import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,13 +19,14 @@ import static org.mockito.Mockito.*;
 class ClientWatchdogSpec {
     private ClientWatchdog watchdog;
     private ExecutorService executorService;
+    private Client client;
 
     @BeforeEach
     void before() throws InterruptedException, IOException {
+        client = mock(Client.class);
+
         executorService = Executors.newSingleThreadExecutor();
         watchdog = spy(new ClientWatchdog("Test", 30));
-
-        doNothing().when(watchdog).closeChannel(any());
 
         executorService.execute(watchdog);
         if (!watchdog.awaitStart(30, TimeUnit.SECONDS)) {
@@ -56,7 +56,7 @@ class ClientWatchdogSpec {
     void whenRegister_thenIncreaseSemaphore() throws InterruptedException {
         stop(); // stop it to prevent decreasing permit
 
-        watchdog.register(mock(Comm.class), mock(SocketChannel.class), "client");
+        watchdog.register(client);
         assertThat(watchdog.semaphore.availablePermits()).isEqualTo(1);
     }
 
@@ -133,7 +133,7 @@ class ClientWatchdogSpec {
     void givenConnectionRegistered_whenWatchdogIsRun_thenCallCheck() throws InterruptedException {
         Thread.sleep(100);
         doReturn(true).when(watchdog).isTimeout(any(), any());
-        watchdog.register(mock(Comm.class), mock(SocketChannel.class), "");
+        watchdog.register(client);
 
         Thread.sleep(100);
         verify(watchdog, times(1)).check();
@@ -144,14 +144,13 @@ class ClientWatchdogSpec {
         stop();
 
         doReturn(true).when(watchdog).isTimeout(any(), any());
-        SocketChannel socket = mock(SocketChannel.class);
 
-        watchdog.register(mock(Comm.class), socket, "");
+        watchdog.register(client);
 
         watchdog.check();
 
-        verify(watchdog).closeChannel(socket);
-        assertThat(watchdog.comms).isEmpty();
+        verify(client).closeChannel();
+        assertThat(watchdog.clients).isEmpty();
     }
 
     @Test
@@ -159,15 +158,14 @@ class ClientWatchdogSpec {
         stop();
 
         doReturn(true).when(watchdog).isTimeout(any(), any());
-        SocketChannel socket = mock(SocketChannel.class);
-        doThrow(IOException.class).when(watchdog).closeChannel(any());
+        doThrow(RuntimeException.class).when(client).closeChannel();
 
-        watchdog.register(mock(Comm.class), socket, "");
+        watchdog.register(client);
 
         watchdog.check();
 
-        verify(watchdog).closeChannel(socket);
-        assertThat(watchdog.comms).isEmpty();
+        verify(client).closeChannel();
+        assertThat(watchdog.clients).isEmpty();
     }
 
     @Test
@@ -176,8 +174,8 @@ class ClientWatchdogSpec {
 
         doReturn(true).when(watchdog).isTimeout(any(), any());
 
-        watchdog.register(mock(Comm.class), mock(SocketChannel.class), "");
-        watchdog.register(mock(Comm.class), mock(SocketChannel.class), "");
+        watchdog.register(mock(Client.class));
+        watchdog.register(mock(Client.class));
 
         assertThat(watchdog.check()).isEqualTo(-1);
     }
@@ -188,13 +186,21 @@ class ClientWatchdogSpec {
 
         doReturn(true, false, false).when(watchdog).isTimeout(any(), any());
 
+        Client client1 = mock(Client.class);
+        Client client2 = mock(Client.class);
+        Client client3 = mock(Client.class);
+
         Comm comm1 = mock(Comm.class);
         Comm comm2 = mock(Comm.class);
         Comm comm3 = mock(Comm.class);
 
-        watchdog.register(comm1, mock(SocketChannel.class), "");
-        watchdog.register(comm2, mock(SocketChannel.class), "");
-        watchdog.register(comm3, mock(SocketChannel.class), "");
+        doReturn(comm1).when(client1).getComm();
+        doReturn(comm2).when(client2).getComm();
+        doReturn(comm3).when(client3).getComm();
+
+        watchdog.register(client1);
+        watchdog.register(client2);
+        watchdog.register(client3);
 
         doReturn(30L).when(watchdog).calculateSecondsToTimeout(comm2);
         doReturn(20L).when(watchdog).calculateSecondsToTimeout(comm3);
@@ -207,7 +213,7 @@ class ClientWatchdogSpec {
         doReturn(false).when(watchdog).isTimeout(any(), any());
         doReturn(1L).when(watchdog).calculateSecondsToTimeout(any());
 
-        watchdog.register(mock(Comm.class), mock(SocketChannel.class), "");
+        watchdog.register(client);
 
         Thread.sleep(550);
         verify(watchdog, times(1)).check();
@@ -221,12 +227,12 @@ class ClientWatchdogSpec {
         doReturn(false).when(watchdog).isTimeout(any(), any());
         doReturn(10L).when(watchdog).calculateSecondsToTimeout(any());
 
-        watchdog.register(mock(Comm.class), mock(SocketChannel.class), "");
+        watchdog.register(mock(Client.class));
 
         Thread.sleep(550);
         verify(watchdog, times(1)).check();
 
-        watchdog.register(mock(Comm.class), mock(SocketChannel.class), "");
+        watchdog.register(mock(Client.class));
 
         Thread.sleep(550);
         verify(watchdog, times(2)).check();

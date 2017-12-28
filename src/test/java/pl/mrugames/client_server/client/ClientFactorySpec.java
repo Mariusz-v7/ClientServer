@@ -152,12 +152,9 @@ class ClientFactorySpec {
 
     @Test
     void whenCreateClient_thenRegisterToWatchdog() throws Exception {
-        Comm comm = mock(Comm.class);
-        doReturn(comm).when(clientFactory).createComms(anyString(), any(), any(), any());
+        Client client = clientFactory.create(mockSocketChannel, executorService);
 
-        clientFactory.create(mockSocketChannel, executorService);
-
-        verify(clientWatchdog).register(comm, mockSocketChannel, client.getName());
+        verify(clientWatchdog).register(client);
     }
 
     @Test

@@ -92,11 +92,11 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
             Comm<In, Out, Reader, Writer> comm = createComms(clientName, channel, readBuffer, writeBuffer);
 
-            watchdog.register(comm, channel, clientName);
-
             ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo);
 
             Client<In, Out, Reader, Writer> client = createClient(clientName, clientRequestExecutor, initializers, comm, clientWorker, channel, readBuffer);
+
+            watchdog.register(client);
 
             logger.info("[{}] New client has been created: {}!", factoryName, client.getName());
             return client;
