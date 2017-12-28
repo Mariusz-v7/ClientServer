@@ -20,19 +20,22 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
     private final SocketChannel channel;
     private final Comm<In, Out, Reader, Writer> comm;
     private final ExecutorService requestExecutor;
+    private final ByteBuffer readBuffer;
 
     Client(String name,
            ExecutorService requestExecutor,
            List<Initializer> initializers,
            Comm<In, Out, Reader, Writer> comm,
            ClientWorker<In, Out> clientWorker,
-           SocketChannel channel) {
+           SocketChannel channel,
+           ByteBuffer readBuffer) {
         this.name = name;
         this.requestExecutor = requestExecutor;
         this.initializers = initializers;
         this.clientWorker = clientWorker;
         this.channel = channel;
         this.comm = comm;
+        this.readBuffer = readBuffer;
 
         logger.info("[{}] New client has been created", name);
     }
@@ -66,7 +69,7 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
     }
 
     public ByteBuffer getReadBuffer() {
-        return null;
+        return readBuffer;
     }
 
     public SocketChannel getChannel() {

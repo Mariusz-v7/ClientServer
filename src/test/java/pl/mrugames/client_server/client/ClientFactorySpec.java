@@ -86,7 +86,7 @@ class ClientFactorySpec {
             client = spy(client);
 
             return client;
-        }).when(clientFactory).createClient(anyString(), any(), anyList(), any(), any(), any());
+        }).when(clientFactory).createClient(anyString(), any(), anyList(), any(), any(), any(), any());
     }
 
     @Test
@@ -132,18 +132,28 @@ class ClientFactorySpec {
 
     @Test
     void whenCreateComm_thenSetProperComponents() throws IOException {
-        Comm<String, String, String, String> comm = clientFactory.createComms("test", mock(SocketChannel.class));
+        ByteBuffer readBuffer = mock(ByteBuffer.class);
+        ByteBuffer writeBuffer = mock(ByteBuffer.class);
+
+        Comm<String, String, String, String> comm = clientFactory.createComms("test", mock(SocketChannel.class), readBuffer, writeBuffer);
 
         assertThat(comm.getClientReader()).isSameAs(clientReader);
         assertThat(comm.getClientWriter()).isSameAs(clientWriter);
         assertThat(comm.getInputFilterProcessor()).isSameAs(inputFilterProcessor);
         assertThat(comm.getOutputFilterProcessor()).isSameAs(outputFilterProcessor);
+        assertThat(comm.getWriteBuffer()).isSameAs(writeBuffer);
+
+        ArgumentCaptor<ByteBuffer> argumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
+
+        verify(clientReaderFactory).apply(argumentCaptor.capture());
+
+        assertThat(argumentCaptor.getValue()).isSameAs(readBuffer);
     }
 
     @Test
     void whenCreateClient_thenRegisterToWatchdog() throws Exception {
         Comm comm = mock(Comm.class);
-        doReturn(comm).when(clientFactory).createComms(anyString(), any());
+        doReturn(comm).when(clientFactory).createComms(anyString(), any(), any(), any());
 
         clientFactory.create(mockSocketChannel, executorService);
 
@@ -159,14 +169,12 @@ class ClientFactorySpec {
     }
 
     @Test
-    void whenCreateComm_thenReadBufferIsInReadMode() throws IOException {
-        ArgumentCaptor<ByteBuffer> argumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
+    void whenCreateClient_thenReadBufferIsInReadMode() throws Exception {
 
-        clientFactory.createComms("", mockSocketChannel);
+        Client<String, String, String, String> client = clientFactory.create(mockSocketChannel, executorService);
 
-        verify(clientReaderFactory).apply(argumentCaptor.capture());
 
-        assertThat(argumentCaptor.getValue().limit()).isEqualTo(argumentCaptor.getValue().position());
+        assertThat(client.getReadBuffer().limit()).isEqualTo(client.getReadBuffer().position());
     }
 
 }

@@ -84,13 +84,19 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
             Socket socket = channel.socket();
 
             List<Initializer> initializers = createInitializers(clientName, socket);
-            Comm<In, Out, Reader, Writer> comm = createComms(clientName, channel);
+
+            ByteBuffer readBuffer = ByteBuffer.allocate(bufferSize);
+            readBuffer.flip();
+
+            ByteBuffer writeBuffer = ByteBuffer.allocate(bufferSize);
+
+            Comm<In, Out, Reader, Writer> comm = createComms(clientName, channel, readBuffer, writeBuffer);
 
             watchdog.register(comm, channel, clientName);
 
             ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo);
 
-            Client<In, Out, Reader, Writer> client = createClient(clientName, clientRequestExecutor, initializers, comm, clientWorker, channel);
+            Client<In, Out, Reader, Writer> client = createClient(clientName, clientRequestExecutor, initializers, comm, clientWorker, channel, readBuffer);
 
             logger.info("[{}] New client has been created: {}!", factoryName, client.getName());
             return client;
@@ -115,13 +121,8 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         return initializers;
     }
 
-    Comm<In, Out, Reader, Writer> createComms(String clientName, SocketChannel channel) throws IOException {
+    Comm<In, Out, Reader, Writer> createComms(String clientName, SocketChannel channel, ByteBuffer readBuffer, ByteBuffer writeBuffer) throws IOException {
         logger.info("[{}] Creating comms for client: {}", factoryName, clientName);
-
-        ByteBuffer readBuffer = ByteBuffer.allocate(bufferSize);
-        readBuffer.flip();
-
-        ByteBuffer writeBuffer = ByteBuffer.allocate(bufferSize);
 
         ClientWriter<Writer> clientWriter = clientWriterFactory.apply(writeBuffer);
         ClientReader<Reader> clientReader = clientReaderFactory.apply(readBuffer);
@@ -154,9 +155,10 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
                                                  List<Initializer> initializers,
                                                  Comm<In, Out, Reader, Writer> comm,
                                                  ClientWorker<In, Out> clientWorker,
-                                                 SocketChannel channel
+                                                 SocketChannel channel,
+                                                 ByteBuffer readBuffer
     ) {
-        return new Client<>(clientName, clientsRequestExecutor, initializers, comm, clientWorker, channel);
+        return new Client<>(clientName, clientsRequestExecutor, initializers, comm, clientWorker, channel, readBuffer);
     }
 
     void closeChannel(SocketChannel channel) {
