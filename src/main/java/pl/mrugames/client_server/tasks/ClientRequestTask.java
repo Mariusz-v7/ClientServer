@@ -1,4 +1,4 @@
-package pl.mrugames.client_server.host.tasks;
+package pl.mrugames.client_server.tasks;
 
 import com.codahale.metrics.Timer;
 import pl.mrugames.client_server.Metrics;

@@ -6,6 +6,8 @@ import pl.mrugames.client_server.client.ClientInfo;
 import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
 
+import javax.annotation.Nullable;
+
 public class ExampleClientWorker implements ClientWorker {
     private final static Logger logger = LoggerFactory.getLogger(ExampleClientWorker.class);
 
@@ -68,6 +70,13 @@ public class ExampleClientWorker implements ClientWorker {
     @Override
     public Object onRequest(Object request) {
         //TODO
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Object onShutdown() {
+        //todo
         return null;
     }
 }

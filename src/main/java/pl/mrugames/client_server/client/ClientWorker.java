@@ -8,4 +8,8 @@ public interface ClientWorker<In, Out> {
 
     @Nullable
     Out onRequest(In request);
+
+    @Nullable
+    Out onShutdown();
+
 }

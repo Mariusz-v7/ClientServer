@@ -3,6 +3,7 @@ package pl.mrugames.client_server.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.concurrent.CountDownLatch;
 
 public class SimpleClientWorker implements ClientWorker {
@@ -17,6 +18,13 @@ public class SimpleClientWorker implements ClientWorker {
     @Override
     public Object onRequest(Object request) {
         // TODO
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Object onShutdown() {
+        //todo
         return null;
     }
 

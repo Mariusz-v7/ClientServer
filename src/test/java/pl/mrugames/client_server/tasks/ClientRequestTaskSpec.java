@@ -1,4 +1,4 @@
-package pl.mrugames.client_server.host.tasks;
+package pl.mrugames.client_server.tasks;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

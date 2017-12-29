@@ -5,6 +5,8 @@ import pl.mrugames.client_server.client.Comm;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
 import pl.mrugames.client_server.websocket.WebsocketConstants;
 
+import javax.annotation.Nullable;
+
 public class Worker implements ClientWorker {
     private final Comm<String, String, WebSocketFrame, WebSocketFrame> comm;
     private final Runnable onClientShutDown;
@@ -52,6 +54,13 @@ public class Worker implements ClientWorker {
 
     @Override
     public Object onRequest(Object request) {
+        //TODO
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Object onShutdown() {
         //TODO
         return null;
     }

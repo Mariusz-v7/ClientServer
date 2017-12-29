@@ -60,6 +60,7 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
         return clientWorker;
     }
 
+    @Deprecated
     public void closeChannel() {
         try {
             channel.close();

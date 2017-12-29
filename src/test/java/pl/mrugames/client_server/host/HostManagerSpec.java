@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
-import pl.mrugames.client_server.host.tasks.ClientRequestTask;
-import pl.mrugames.client_server.host.tasks.NewClientAcceptTask;
+import pl.mrugames.client_server.tasks.ClientRequestTask;
+import pl.mrugames.client_server.tasks.NewClientAcceptTask;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

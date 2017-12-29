@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
 
+import javax.annotation.Nullable;
+
 class Worker implements ClientWorker {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Comm<Frame, Frame, Frame, Frame> comm;
@@ -41,6 +43,13 @@ class Worker implements ClientWorker {
     @Override
     public Object onRequest(Object request) {
         //TODO
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Object onShutdown() {
+        //todo
         return null;
     }
 }

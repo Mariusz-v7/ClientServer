@@ -4,8 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
-import pl.mrugames.client_server.host.tasks.ClientRequestTask;
-import pl.mrugames.client_server.host.tasks.NewClientAcceptTask;
+import pl.mrugames.client_server.tasks.ClientRequestTask;
+import pl.mrugames.client_server.tasks.NewClientAcceptTask;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -113,7 +113,7 @@ public class HostManager implements Runnable {
             Future<Void> result = client.getRequestExecutor().submit(clientRequestTask);
             // TODO: log exceptions from future
             // TODO: set timeout
-        } catch (Exception e) { // todo: test. Close channel? (client.closeChannel)
+        } catch (Exception e) { // todo: test. Close channel? (client.closeChannel) (but in separate thread!)
             logger.error("[{}] Failed to read from client", client.getName(), e);
         }
     }
