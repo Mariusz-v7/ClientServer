@@ -37,6 +37,8 @@ class ClientRequestTaskSpec {
         doReturn(taskExecutor).when(client).getTaskExecutor();
 
         task = new ClientRequestTask(client);
+
+        doReturn("anything").when(worker).onRequest(any());
     }
 
     @Test
@@ -94,4 +96,12 @@ class ClientRequestTaskSpec {
         assertThrows(RuntimeException.class, task::call);
         verify(taskExecutor).submit(any(ClientShutdownTask.class));
     }
+
+    @Test
+    void givenResponseIsNull_whenCall_thenDoNotSendIt() throws Exception {
+        doReturn(null).when(worker).onRequest(any());
+        task.call();
+        verify(comm, never()).send(any());
+    }
+
 }

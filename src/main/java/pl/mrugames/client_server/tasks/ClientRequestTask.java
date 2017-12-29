@@ -38,7 +38,9 @@ public class ClientRequestTask implements Callable<Void> {
                 }
 
                 Object response = client.getClientWorker().onRequest(request);
-                client.getComm().send(response);
+                if (response != null) {
+                    client.getComm().send(response);
+                }
             }
         } catch (Exception e) {
             logger.error("[{}] Failed to process request", client.getName(), e);
