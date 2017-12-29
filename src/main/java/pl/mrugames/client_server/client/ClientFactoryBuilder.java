@@ -44,6 +44,9 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
         return this;
     }
 
+    /**
+     * @param timeout [s]
+     */
     public ClientFactoryBuilder<In, Out, Reader, Writer> setTimeout(int timeout) {
         this.timeout = timeout;
         return this;
