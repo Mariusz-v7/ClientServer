@@ -110,10 +110,8 @@ public class HostManager implements Runnable {
 
             ClientRequestTask clientRequestTask = new ClientRequestTask(client.getName(), client.getComm(), client.getClientWorker());
 
-            Future<Void> result = client.getRequestExecutor().submit(clientRequestTask);
-            // TODO: log exceptions from future
-            // TODO: set timeout
-        } catch (Exception e) { // todo: test. Close channel? (client.closeChannel) (but in separate thread!)
+            client.getTaskExecutor().submit(clientRequestTask);
+        } catch (Exception e) { // todo: test. add shutdown task
             logger.error("[{}] Failed to read from client", client.getName(), e);
         }
     }
@@ -126,13 +124,10 @@ public class HostManager implements Runnable {
 
             configure(socketChannel);
 
-            NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), socketChannel, host.getClientExecutor());
-            Future<Client> result = host.getClientExecutor().submit(acceptTask);
+            NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), socketChannel, host.getTaskExecutor());
+            Future<Client> result = host.getTaskExecutor().submit(acceptTask);
 
             register(socketChannel, result);
-
-            //TODO: log exceptions from future
-            //TODO: timeout result
         } catch (Exception e) {
             if (socketChannel != null) {
                 try {

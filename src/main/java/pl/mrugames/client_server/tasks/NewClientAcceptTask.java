@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -21,17 +20,17 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
     private final String hostName;
     private final ClientFactory<In, Out, Reader, Writer> clientFactory;
     private final SocketChannel clientChannel;
-    private final ExecutorService clientRequestExecutor;
+    private final TaskExecutor taskExecutor;
     private final Timer clientAcceptMetric;
 
     public NewClientAcceptTask(String hostName,
                                ClientFactory<In, Out, Reader, Writer> clientFactory,
                                SocketChannel clientChannel,
-                               ExecutorService clientRequestExecutor) {
+                               TaskExecutor taskExecutor) {
         this.hostName = hostName;
         this.clientFactory = clientFactory;
         this.clientChannel = clientChannel;
-        this.clientRequestExecutor = clientRequestExecutor;
+        this.taskExecutor = taskExecutor;
         clientAcceptMetric = Metrics.getRegistry().timer(name(NewClientAcceptTask.class, hostName));
     }
 
@@ -42,7 +41,7 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
         try (Timer.Context ignored = clientAcceptMetric.time()) {
             logger.info("[{}] New client has been accepted: {}/{}", hostName, clientChannel.getLocalAddress(), clientChannel.getRemoteAddress());
 
-            Client<In, Out, Reader, Writer> client = clientFactory.create(clientChannel, clientRequestExecutor);
+            Client<In, Out, Reader, Writer> client = clientFactory.create(clientChannel, taskExecutor);
 
             Out onInitResult = client.getClientWorker().onInit();
             if (onInitResult != null) {

@@ -3,6 +3,7 @@ package pl.mrugames.client_server.host;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientFactory;
+import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.ExecutorService;
@@ -13,14 +14,14 @@ class Host {
     private final String name;
     private final int port;
     private final ClientFactory clientFactory;
-    private final ExecutorService clientExecutor;
+    private final TaskExecutor taskExecutor;
     private volatile ServerSocketChannel serverSocketChannel;
 
-    Host(String name, int port, ClientFactory clientFactory, ExecutorService clientExecutor) {
+    Host(String name, int port, ClientFactory clientFactory, ExecutorService taskExecutor) {
         this.name = name;
         this.port = port;
         this.clientFactory = clientFactory;
-        this.clientExecutor = clientExecutor;
+        this.taskExecutor = new TaskExecutor(taskExecutor);
     }
 
     String getName() {
@@ -39,8 +40,8 @@ class Host {
         return serverSocketChannel;
     }
 
-    ExecutorService getClientExecutor() {
-        return clientExecutor;
+    TaskExecutor getTaskExecutor() {
+        return taskExecutor;
     }
 
     void setServerSocketChannel(ServerSocketChannel serverSocketChannel) {

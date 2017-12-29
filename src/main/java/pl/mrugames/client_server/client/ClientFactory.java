@@ -8,6 +8,7 @@ import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.initializers.Initializer;
 import pl.mrugames.client_server.client.io.ClientReader;
 import pl.mrugames.client_server.client.io.ClientWriter;
+import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,7 +18,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -70,7 +70,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
     }
 
-    public Client<In, Out, Reader, Writer> create(SocketChannel channel, ExecutorService clientRequestExecutor) throws Exception {
+    public Client<In, Out, Reader, Writer> create(SocketChannel channel, TaskExecutor taskExecutor) throws Exception {
         if (!watchdog.isRunning()) {
             throw new IllegalStateException("Client Watchdog is dead! Cannot accept new connection.");
         }
@@ -94,7 +94,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
             ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo);
 
-            Client<In, Out, Reader, Writer> client = createClient(clientName, clientRequestExecutor, initializers, comm, clientWorker, channel, readBuffer);
+            Client<In, Out, Reader, Writer> client = createClient(clientName, taskExecutor, initializers, comm, clientWorker, channel, readBuffer);
 
             watchdog.register(client);
 
@@ -151,14 +151,14 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     }
 
     Client<In, Out, Reader, Writer> createClient(String clientName,
-                                                 ExecutorService clientsRequestExecutor,
+                                                 TaskExecutor taskExecutor,
                                                  List<Initializer> initializers,
                                                  Comm<In, Out, Reader, Writer> comm,
                                                  ClientWorker<In, Out> clientWorker,
                                                  SocketChannel channel,
                                                  ByteBuffer readBuffer
     ) {
-        return new Client<>(clientName, clientsRequestExecutor, initializers, comm, clientWorker, channel, readBuffer);
+        return new Client<>(clientName, taskExecutor, initializers, comm, clientWorker, channel, readBuffer);
     }
 
     void closeChannel(SocketChannel channel) {

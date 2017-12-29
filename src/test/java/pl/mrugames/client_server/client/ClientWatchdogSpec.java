@@ -5,6 +5,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.mrugames.client_server.Metrics;
+import pl.mrugames.client_server.tasks.ClientShutdownTask;
+import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -20,10 +22,14 @@ class ClientWatchdogSpec {
     private ClientWatchdog watchdog;
     private ExecutorService executorService;
     private Client client;
+    private TaskExecutor taskExecutor;
 
     @BeforeEach
     void before() throws InterruptedException, IOException {
         client = mock(Client.class);
+
+        taskExecutor = mock(TaskExecutor.class);
+        doReturn(taskExecutor).when(client).getTaskExecutor();
 
         executorService = Executors.newSingleThreadExecutor();
         watchdog = spy(new ClientWatchdog("Test", 30));
@@ -149,22 +155,7 @@ class ClientWatchdogSpec {
 
         watchdog.check();
 
-        verify(client).closeChannel();
-        assertThat(watchdog.clients).isEmpty();
-    }
-
-    @Test
-    void givenSocketThrowsException_whenCheck_thenCatchIt() throws InterruptedException, IOException {
-        stop();
-
-        doReturn(true).when(watchdog).isTimeout(any(), any());
-        doThrow(RuntimeException.class).when(client).closeChannel();
-
-        watchdog.register(client);
-
-        watchdog.check();
-
-        verify(client).closeChannel();
+        verify(taskExecutor).submit(any(ClientShutdownTask.class));
         assertThat(watchdog.clients).isEmpty();
     }
 

@@ -7,6 +7,7 @@ import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.initializers.Initializer;
 import pl.mrugames.client_server.client.io.ClientReader;
 import pl.mrugames.client_server.client.io.ClientWriter;
+import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -33,7 +33,7 @@ class ClientFactorySpec {
     private ClientReader<String> clientReader;
     private FilterProcessor inputFilterProcessor;
     private FilterProcessor outputFilterProcessor;
-    private ExecutorService executorService;
+    private TaskExecutor executorService;
     private Client client;
     private boolean shouldTimeoutClientCreation;
     private ClientWatchdog clientWatchdog;
@@ -63,7 +63,7 @@ class ClientFactorySpec {
 
         clientWorkerFactory = mock(ClientWorkerFactory.class);
 
-        executorService = mock(ExecutorService.class);
+        executorService = mock(TaskExecutor.class);
 
         clientWatchdog = mock(ClientWatchdog.class);
         doReturn(true).when(clientWatchdog).isRunning();

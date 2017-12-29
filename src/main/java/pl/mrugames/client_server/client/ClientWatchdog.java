@@ -7,6 +7,7 @@ import com.codahale.metrics.health.HealthCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.Metrics;
+import pl.mrugames.client_server.tasks.ClientShutdownTask;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -96,7 +97,7 @@ class ClientWatchdog implements Runnable {
                     logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, client.getName());
 
                     try {
-                        client.closeChannel();
+                        client.getTaskExecutor().submit(new ClientShutdownTask(client));
                         logger.info("[{}] Connection closed. Client: {}", name, client.getName());
                     } catch (Exception e) {
                         logger.error("[{}] Error during channel close. Client: {}", name, client.getName(), e);

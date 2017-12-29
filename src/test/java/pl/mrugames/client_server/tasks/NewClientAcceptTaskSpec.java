@@ -9,7 +9,6 @@ import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
 
 import java.nio.channels.SocketChannel;
-import java.util.concurrent.ExecutorService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -20,7 +19,7 @@ class NewClientAcceptTaskSpec {
     private ClientFactory clientFactory;
     private SocketChannel clientChannel;
     private Client client;
-    private ExecutorService clientExecutor;
+    private TaskExecutor clientExecutor;
     private ClientWorker clientWorker;
     private Comm comm;
 
@@ -36,7 +35,7 @@ class NewClientAcceptTaskSpec {
         doReturn(clientWorker).when(client).getClientWorker();
         doReturn(comm).when(client).getComm();
 
-        clientExecutor = mock(ExecutorService.class);
+        clientExecutor = mock(TaskExecutor.class);
 
         doReturn(client).when(clientFactory).create(clientChannel, clientExecutor);
 

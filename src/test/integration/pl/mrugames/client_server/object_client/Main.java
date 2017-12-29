@@ -2,7 +2,6 @@ package pl.mrugames.client_server.object_client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactories;
 import pl.mrugames.client_server.client.ClientFactory;
 
@@ -31,7 +30,7 @@ public class Main {
 
         try {
             SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(address, port));
-            Client client = clientFactory.create(socketChannel, executorService);
+//            Client client = clientFactory.create(socketChannel, executorService);
 
 //            client.awaitStop(1, TimeUnit.DAYS);
         } finally {

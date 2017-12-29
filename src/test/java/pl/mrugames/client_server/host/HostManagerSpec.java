@@ -8,6 +8,7 @@ import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.tasks.ClientRequestTask;
 import pl.mrugames.client_server.tasks.NewClientAcceptTask;
+import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,7 +32,7 @@ class HostManagerSpec {
     private Host host;
     private ServerSocketChannel serverSocketChannel;
     private SocketChannel socketChannel;
-    private ExecutorService clientExecutor;
+    private TaskExecutor clientExecutor;
     private Future<Client> acceptResult;
     private Client client;
     private ByteBuffer readBuffer;
@@ -48,8 +49,8 @@ class HostManagerSpec {
         socketChannel = mock(SocketChannel.class);
         doReturn(socketChannel).when(serverSocketChannel).accept();
 
-        clientExecutor = mock(ExecutorService.class);
-        doReturn(clientExecutor).when(host).getClientExecutor();
+        clientExecutor = mock(TaskExecutor.class);
+        doReturn(clientExecutor).when(host).getTaskExecutor();
 
         acceptResult = mock(Future.class);
         doReturn(acceptResult).when(clientExecutor).submit(any(NewClientAcceptTask.class));
@@ -61,7 +62,7 @@ class HostManagerSpec {
         client = mock(Client.class);
         doReturn(client).when(acceptResult).get();
         doReturn(true).when(acceptResult).isDone();
-        doReturn(clientExecutor).when(client).getRequestExecutor();
+        doReturn(clientExecutor).when(client).getTaskExecutor();
         doReturn(socketChannel).when(client).getChannel();
 
         readBuffer = mock(ByteBuffer.class);

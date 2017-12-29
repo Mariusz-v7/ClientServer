@@ -3,13 +3,12 @@ package pl.mrugames.client_server.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.initializers.Initializer;
+import pl.mrugames.client_server.tasks.TaskExecutor;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Client<In, Out, Reader extends Serializable, Writer extends Serializable> {
@@ -20,19 +19,19 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
     private final ClientWorker<In, Out> clientWorker;
     private final SocketChannel channel;
     private final Comm<In, Out, Reader, Writer> comm;
-    private final ExecutorService requestExecutor;
+    private final TaskExecutor taskExecutor;
     private final ByteBuffer readBuffer;
     private final AtomicBoolean shutdown = new AtomicBoolean();
 
     Client(String name,
-           ExecutorService requestExecutor,
+           TaskExecutor taskExecutor,
            List<Initializer> initializers,
            Comm<In, Out, Reader, Writer> comm,
            ClientWorker<In, Out> clientWorker,
            SocketChannel channel,
            ByteBuffer readBuffer) {
         this.name = name;
-        this.requestExecutor = requestExecutor;
+        this.taskExecutor = taskExecutor;
         this.initializers = initializers;
         this.clientWorker = clientWorker;
         this.channel = channel;
@@ -46,8 +45,8 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
         return comm;
     }
 
-    public ExecutorService getRequestExecutor() {
-        return requestExecutor;
+    public TaskExecutor getTaskExecutor() {
+        return taskExecutor;
     }
 
     public String getName() {
@@ -60,15 +59,6 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
 
     public ClientWorker<In, Out> getClientWorker() {
         return clientWorker;
-    }
-
-    @Deprecated
-    public void closeChannel() {
-        try {
-            channel.close();
-        } catch (IOException e) {
-            logger.error("Failed to close channel", e);
-        }
     }
 
     public ByteBuffer getReadBuffer() {
