@@ -82,7 +82,7 @@ class TimeoutSpec {
 
             clientConnected.countDown();
             return clientWorker;
-        }).when(workerFactory).create(any(), any());
+        }).when(workerFactory).create(any(), any(), any());
 
         hostManager.newHost("Timeout tests", port, clientFactory, clientExecutor);
 

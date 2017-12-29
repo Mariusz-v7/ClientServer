@@ -1,9 +1,6 @@
 package pl.mrugames.client_server.websocket_server;
 
-import pl.mrugames.client_server.client.ClientInfo;
-import pl.mrugames.client_server.client.ClientWorker;
-import pl.mrugames.client_server.client.ClientWorkerFactory;
-import pl.mrugames.client_server.client.Comm;
+import pl.mrugames.client_server.client.*;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
 
 public class WebSocketWorkerFactory implements ClientWorkerFactory<String, String, WebSocketFrame, WebSocketFrame> {
@@ -14,7 +11,7 @@ public class WebSocketWorkerFactory implements ClientWorkerFactory<String, Strin
     }
 
     @Override
-    public ClientWorker create(Comm<String, String, WebSocketFrame, WebSocketFrame> comm, ClientInfo clientInfo) {
+    public ClientWorker create(Comm<String, String, WebSocketFrame, WebSocketFrame> comm, ClientInfo clientInfo, KillMe killme) {
         return new Worker(comm, onShutdownCommand);
     }
 }

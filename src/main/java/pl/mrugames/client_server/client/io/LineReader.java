@@ -7,8 +7,9 @@ import java.nio.charset.StandardCharsets;
 public class LineReader implements ClientReader<String> {
     private final ByteBuffer byteBuffer;
     private final Charset charset = StandardCharsets.UTF_8;
+    private final String lineEnding = "\r\n";
 
-    LineReader(ByteBuffer byteBuffer) {
+    public LineReader(ByteBuffer byteBuffer) {
         this.byteBuffer = byteBuffer;
     }
 
@@ -23,7 +24,7 @@ public class LineReader implements ClientReader<String> {
 
         byteBuffer.reset();
 
-        return str.contains("\n");
+        return str.contains(lineEnding);
     }
 
     @Override
@@ -34,17 +35,21 @@ public class LineReader implements ClientReader<String> {
         byte[] bytes = new byte[available];
         byteBuffer.get(bytes);
         String str = new String(bytes, charset);
-        int firstNl = str.indexOf("\n");
+        int firstNl = str.indexOf(lineEnding);
 
-        str = str.substring(0, firstNl + 1);
+        str = str.substring(0, firstNl);
 
         byteBuffer.reset();
 
-        byteBuffer.position(byteBuffer.position() + str.getBytes(charset).length);
+        byteBuffer.position(byteBuffer.position() + str.getBytes(charset).length + lineEnding.getBytes(charset).length);
 
-        str = str.substring(0, str.length() - 1); // remove nL
+        str = str.substring(0, str.length());
 
         return str;
+    }
+
+    public String getLineEnding() {
+        return lineEnding;
     }
 
     @Override

@@ -4,79 +4,49 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientInfo;
 import pl.mrugames.client_server.client.ClientWorker;
-import pl.mrugames.client_server.client.Comm;
+import pl.mrugames.client_server.client.KillMe;
 
 import javax.annotation.Nullable;
 
-public class ExampleClientWorker implements ClientWorker {
+public class ExampleClientWorker implements ClientWorker<String, String> {
     private final static Logger logger = LoggerFactory.getLogger(ExampleClientWorker.class);
 
     private final String name;
-    private final Comm<String, String, String, String> comm;
-    private final Runnable onShutdownCommand;
+    private final Runnable shutdownServer;
+    private final KillMe killme;
 
-    private volatile Thread thisThread;
-
-    public ExampleClientWorker(Comm<String, String, String, String> comm, Runnable onShutdownCommand, ClientInfo clientInfo) {
-        this.comm = comm;
-        this.onShutdownCommand = onShutdownCommand;
+    ExampleClientWorker(Runnable shutdownServer, ClientInfo clientInfo, KillMe killme) {
+        this.shutdownServer = shutdownServer;
         this.name = clientInfo.getName();
+        this.killme = killme;
     }
 
-    @Deprecated
-    public void run() {
-        try {
+    @Override
+    public String onInit() {
+        logger.info("[{]] Client initialized", name);
+        return "Hello! Possible commands: exit, shutdown";
+    }
 
-            logger.info("[{}] Client worker has started", name);
+    @Override
+    public String onRequest(String request) {
+        logger.info("[{}] Received message: {}", name, request);
 
-            comm.send("Hello! Possible commands: exit, shutdown\n");
-
-            while (!Thread.currentThread().isInterrupted()) {
-                String received;
-                try {
-                    received = comm.receive();
-                } catch (InterruptedException e) {
-                    logger.info("[{}] Client worker has been interrupted", name);
-                    break;
-                }
-
-                if (received != null) {
-                    logger.info("[{}] Received message: {}", name, received);
-                    comm.send("Thank you! Your message was: " + received + "\n");
-
-                    if (received.equals("exit")) {
-                        comm.send("Good Bye!\n");
-                        break;
-                    } else if (received.equals("shutdown")) {
-                        comm.send("Shutdown procedure initiated!\n");
-                        onShutdownCommand.run();
-                        break;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.warn("Exception in client: ", e);
+        if (request.equals("exit")) {
+            killme.pleaseDoIt();
+            return "Bye, bye!";
+        } else if (request.equals("shutdown")) {
+            shutdownServer.run();
+            return "Shutdown procedure initiated!";
         }
 
-        logger.info("Client worker has been terminated");
-    }
-
-    @Override
-    public Object onInit() {
-        logger.info("Client initialized");
-        return "Hello! Possible commands: exit, shutdown\n";
-    }
-
-    @Override
-    public Object onRequest(Object request) {
-        //TODO
-        return null;
+        return "Your message was: " + request;
     }
 
     @Nullable
     @Override
-    public Object onShutdown() {
-        //todo
-        return null;
+    public String onShutdown() {
+        logger.info("[{}] Client terminated", name);
+
+        return "You've been terminated!";
     }
 }

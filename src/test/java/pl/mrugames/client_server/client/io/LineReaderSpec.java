@@ -48,7 +48,7 @@ class LineReaderSpec {
 
     @Test
     void givenNlEnding_whenIsReady_thenTrue() throws Exception {
-        socketHelper.write("with nl\n".getBytes());
+        socketHelper.write(("with nl" + lineWriter.getLineEnding()).getBytes());
         assertThat(lineReader.isReady()).isTrue();
     }
 
@@ -72,12 +72,12 @@ class LineReaderSpec {
 
     @Test
     void givenLineAndAHalfIsSent_whenRead_thenReturnOnlyFirstLine() throws Exception {
-        socketHelper.write("first\nand a...".getBytes());
+        socketHelper.write(("first" + lineWriter.getLineEnding() + "and a...").getBytes());
 
         assertThat(lineReader.read()).isEqualTo("first");
         assertThat(lineReader.isReady()).isFalse();
 
-        socketHelper.write("\n".getBytes());
+        socketHelper.write(lineWriter.getLineEnding().getBytes());
 
         assertThat(lineReader.isReady()).isTrue();
         assertThat(lineReader.read()).isEqualTo("and a...");

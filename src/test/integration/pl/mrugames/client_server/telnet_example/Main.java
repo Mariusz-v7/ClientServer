@@ -4,8 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.client.ClientFactoryBuilder;
-import pl.mrugames.client_server.client.io.TextReader;
-import pl.mrugames.client_server.client.io.TextWriter;
+import pl.mrugames.client_server.client.io.LineReader;
+import pl.mrugames.client_server.client.io.LineWriter;
 import pl.mrugames.client_server.host.HostManager;
 
 import java.io.IOException;
@@ -30,7 +30,7 @@ public class Main {
 
         logger.info("Main started...");
 
-        ClientFactory clientFactory = new ClientFactoryBuilder<>(TextWriter::new, TextReader::new, new ExampleClientWorkerFactory(Main::shutdown), executorService)
+        ClientFactory clientFactory = new ClientFactoryBuilder<>(LineWriter::new, LineReader::new, new ExampleClientWorkerFactory(Main::shutdown), executorService)
                 .setName("Text Server")
                 .build();
 

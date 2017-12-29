@@ -30,7 +30,7 @@ public class SimpleClientWorker implements ClientWorker {
 
     public static class Factory implements ClientWorkerFactory<String, String, String, String> {
         @Override
-        public ClientWorker create(Comm<String, String, String, String> comm, ClientInfo clientInfo) {
+        public ClientWorker create(Comm<String, String, String, String> comm, ClientInfo clientInfo, KillMe killme) {
             return new SimpleClientWorker(comm);
         }
     }

@@ -114,7 +114,7 @@ class ClientFactorySpec {
     @Test
     void givenClientCreated_setProperClientWorker() throws Exception {
         ClientWorker worker = mock(ClientWorker.class);
-        doReturn(worker).when(clientWorkerFactory).create(any(), any());
+        doReturn(worker).when(clientWorkerFactory).create(any(), any(), any());
 
         Client client = clientFactory.create(mockSocketChannel, executorService);
 
@@ -123,7 +123,7 @@ class ClientFactorySpec {
 
     @Test
     void givenFactoryThrowsException_whenCreate_thenException() throws IOException {
-        doThrow(RuntimeException.class).when(clientWorkerFactory).create(any(), any());
+        doThrow(RuntimeException.class).when(clientWorkerFactory).create(any(), any(), any());
 
         assertThrows(RuntimeException.class, () -> clientFactory.create(mockSocketChannel, executorService));
 

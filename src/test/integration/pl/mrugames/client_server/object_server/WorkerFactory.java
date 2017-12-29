@@ -1,9 +1,6 @@
 package pl.mrugames.client_server.object_server;
 
-import pl.mrugames.client_server.client.ClientInfo;
-import pl.mrugames.client_server.client.ClientWorker;
-import pl.mrugames.client_server.client.ClientWorkerFactory;
-import pl.mrugames.client_server.client.Comm;
+import pl.mrugames.client_server.client.*;
 
 class WorkerFactory implements ClientWorkerFactory<Frame, Frame, Frame, Frame> {
     private final Runnable onShutDown;
@@ -13,7 +10,7 @@ class WorkerFactory implements ClientWorkerFactory<Frame, Frame, Frame, Frame> {
     }
 
     @Override
-    public ClientWorker create(Comm<Frame, Frame, Frame, Frame> comm, ClientInfo clientInfo) {
+    public ClientWorker create(Comm<Frame, Frame, Frame, Frame> comm, ClientInfo clientInfo, KillMe killme) {
         return new Worker(comm, onShutDown);
     }
 }
