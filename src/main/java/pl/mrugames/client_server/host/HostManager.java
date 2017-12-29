@@ -116,7 +116,7 @@ public class HostManager implements Runnable {
         try {
             readToBuffer(client.getReadBuffer(), client.getChannel());
 
-            ClientRequestTask clientRequestTask = new ClientRequestTask(client.getName(), client.getComm(), client.getClientWorker());
+            ClientRequestTask clientRequestTask = new ClientRequestTask(client);
 
             client.getTaskExecutor().submit(clientRequestTask);
         } catch (Exception e) {

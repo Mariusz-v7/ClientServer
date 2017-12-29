@@ -1,41 +1,50 @@
 package pl.mrugames.client_server.tasks;
 
 import com.codahale.metrics.Timer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.Metrics;
-import pl.mrugames.client_server.client.ClientWorker;
-import pl.mrugames.client_server.client.Comm;
+import pl.mrugames.client_server.client.Client;
 
-import java.io.Serializable;
 import java.util.concurrent.Callable;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
 public class ClientRequestTask implements Callable<Void> {
+    private final static Logger logger = LoggerFactory.getLogger(ClientRequestTask.class);
+
     //    private final List<Initializer> initializers; // TODO: initializers
-    private final Comm<Object, Object, Serializable, Serializable> comm;
-    private final ClientWorker<Object, Object> clientWorker;
+    private final Client client;
+
     private final Timer requestProcessingMetric;
 
-    public ClientRequestTask(String name, Comm<Object, Object, Serializable, Serializable> comm, ClientWorker<Object, Object> clientWorker) {
-        this.comm = comm;
-        this.clientWorker = clientWorker;
-        requestProcessingMetric = Metrics.getRegistry().timer(name(ClientRequestTask.class, name));
+    public ClientRequestTask(Client client) {
+        this.client = client;
+        requestProcessingMetric = Metrics.getRegistry().timer(name(ClientRequestTask.class, client.getName()));
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Void call() throws Exception {
-        if (!comm.canRead()) {
-            return null;
-        }
-
-        try (Timer.Context ignored = requestProcessingMetric.time()) {
-            Object request = comm.receive();
-            if (request == null) {
+        try {
+            if (!client.getComm().canRead()) {
                 return null;
             }
 
-            Object response = clientWorker.onRequest(request);
-            comm.send(response);
+            try (Timer.Context ignored = requestProcessingMetric.time()) {
+                Object request = client.getComm().receive();
+                if (request == null) {
+                    return null;
+                }
+
+                Object response = client.getClientWorker().onRequest(request);
+                client.getComm().send(response);
+            }
+        } catch (Exception e) {
+            logger.error("[{}] Failed to process request", client.getName(), e);
+
+            client.getTaskExecutor().submit(new ClientShutdownTask(client));
+            throw e;
         }
 
         return null;
