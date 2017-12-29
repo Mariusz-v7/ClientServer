@@ -36,6 +36,7 @@ class NewClientAcceptTaskSpec {
         doReturn(comm).when(client).getComm();
 
         clientExecutor = mock(TaskExecutor.class);
+        doReturn(clientExecutor).when(client).getTaskExecutor();
 
         doReturn(client).when(clientFactory).create(clientChannel, clientExecutor);
 
@@ -83,5 +84,13 @@ class NewClientAcceptTaskSpec {
         doReturn(null).when(clientWorker).onInit();
         task.call();
         verify(comm, never()).send(any());
+    }
+
+    @Test
+    void givenOnInitThrowsException_whenCall_thenSubmitShutdownTaskWithoutClosingTheChannel() throws Exception {
+        doThrow(RuntimeException.class).when(clientWorker).onInit();
+        assertThrows(RuntimeException.class, task::call);
+        verify(clientExecutor).submit(any(ClientShutdownTask.class));
+        verify(task, never()).close(any());
     }
 }

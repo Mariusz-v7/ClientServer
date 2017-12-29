@@ -38,10 +38,12 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
     public Client<In, Out, Reader, Writer> call() throws Exception {
         logger.info("[{}] New Client is connecting", hostName);
 
+        Client<In, Out, Reader, Writer> client = null;
+
         try (Timer.Context ignored = clientAcceptMetric.time()) {
             logger.info("[{}] New client has been accepted: {}/{}", hostName, clientChannel.getLocalAddress(), clientChannel.getRemoteAddress());
 
-            Client<In, Out, Reader, Writer> client = clientFactory.create(clientChannel, taskExecutor);
+            client = clientFactory.create(clientChannel, taskExecutor);
 
             Out onInitResult = client.getClientWorker().onInit();
             if (onInitResult != null) {
@@ -52,7 +54,9 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
         } catch (Exception e) {
             logger.error("[{}] Error during client creation", hostName, e);
 
-            if (clientChannel != null) {
+            if (client != null) {
+                client.getTaskExecutor().submit(new ClientShutdownTask(client));
+            } else {
                 logger.error("[{}] Closing client's socket", hostName);
 
                 try {
