@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Client<In, Out, Reader extends Serializable, Writer extends Serializable> {
     private final static Logger logger = LoggerFactory.getLogger(Client.class);
@@ -21,6 +22,7 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
     private final Comm<In, Out, Reader, Writer> comm;
     private final ExecutorService requestExecutor;
     private final ByteBuffer readBuffer;
+    private final AtomicBoolean shutdown = new AtomicBoolean();
 
     Client(String name,
            ExecutorService requestExecutor,
@@ -75,5 +77,9 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
 
     public SocketChannel getChannel() {
         return channel;
+    }
+
+    public AtomicBoolean getShutdown() {
+        return shutdown;
     }
 }

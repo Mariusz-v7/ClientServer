@@ -6,6 +6,9 @@ import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -14,6 +17,7 @@ class ClientShutdownTaskSpec {
     private Client client;
     private ClientWorker clientWorker;
     private Comm comm;
+    private AtomicBoolean shutdown;
 
     @BeforeEach
     void before() {
@@ -24,6 +28,9 @@ class ClientShutdownTaskSpec {
 
         comm = mock(Comm.class);
         doReturn(comm).when(client).getComm();
+
+        shutdown = new AtomicBoolean();
+        doReturn(shutdown).when(client).getShutdown();
 
         task = spy(new ClientShutdownTask(client));
         doNothing().when(task).closeChannel();
@@ -60,5 +67,18 @@ class ClientShutdownTaskSpec {
         doReturn("task").when(clientWorker).onShutdown();
         task.call();
         verify(comm).send("task");
+    }
+
+    @Test
+    void whenCall_thenSetShutdown() throws Exception {
+        task.call();
+        assertThat(shutdown.get()).isTrue();
+    }
+
+    @Test
+    void givenClientIsShutdown_whenCall_thenException() {
+        shutdown.set(true);
+        IllegalStateException e = assertThrows(IllegalStateException.class, task::call);
+        assertThat(e.getMessage()).isEqualTo("Client was already shutdown.");
     }
 }

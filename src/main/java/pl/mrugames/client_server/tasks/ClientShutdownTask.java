@@ -19,6 +19,9 @@ public class ClientShutdownTask implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
+        if (client.getShutdown().getAndSet(true)) {
+            throw new IllegalStateException("Client was already shutdown.");
+        }
 
         try {
             Object result = client.getClientWorker().onShutdown();
