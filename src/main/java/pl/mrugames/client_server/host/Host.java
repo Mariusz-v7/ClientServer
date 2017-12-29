@@ -1,7 +1,5 @@
 package pl.mrugames.client_server.host;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.tasks.TaskExecutor;
 
@@ -9,8 +7,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.ExecutorService;
 
 class Host {
-    private final static Logger logger = LoggerFactory.getLogger(Host.class);
-
     private final String name;
     private final int port;
     private final ClientFactory clientFactory;
