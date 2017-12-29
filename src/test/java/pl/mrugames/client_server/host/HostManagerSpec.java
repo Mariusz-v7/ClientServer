@@ -174,7 +174,7 @@ class HostManagerSpec {
     @Test
     @SuppressWarnings("unchecked")
     void whenRead_thenSubmitNewTask() throws ExecutionException, InterruptedException {
-        hostManager.read(acceptResult);
+        hostManager.read(acceptResult, socketChannel);
         verify(clientExecutor).submit(any(ClientRequestTask.class));
     }
 
@@ -214,14 +214,21 @@ class HostManagerSpec {
     @Test
     void givenClientFutureIsNotCompleted_whenRead_thenDoNotCallGet() throws ExecutionException, InterruptedException {
         doReturn(false).when(acceptResult).isDone();
-        hostManager.read(acceptResult);
+        hostManager.read(acceptResult, socketChannel);
         verify(acceptResult, never()).get();
     }
 
     @Test
     void givenClientFutureThrowsException_whenRead_thenCatchIt() throws ExecutionException, InterruptedException {
         doThrow(RuntimeException.class).when(acceptResult).get();
-        hostManager.read(acceptResult); // no exception
+        hostManager.read(acceptResult, socketChannel); // no exception
+    }
+
+    @Test
+    void givenClientFutureThrowsException_whenRead_thenCloseChannel() throws ExecutionException, InterruptedException, IOException {
+        doThrow(RuntimeException.class).when(acceptResult).get();
+        hostManager.read(acceptResult, socketChannel);
+        verify(hostManager).closeClientChannel(socketChannel);
     }
 
     @Test
@@ -249,14 +256,14 @@ class HostManagerSpec {
 
     @Test
     void whenRead_thenCallReadToBuffer() throws IOException {
-        hostManager.read(acceptResult);
+        hostManager.read(acceptResult, socketChannel);
         verify(hostManager).readToBuffer(readBuffer, socketChannel);
     }
 
     @Test
     void givenReadFromBufferThrowsException_whenRead_thenSubmitShutdownTask() throws IOException {
         doThrow(RuntimeException.class).when(hostManager).readToBuffer(readBuffer, socketChannel);
-        hostManager.read(acceptResult);
+        hostManager.read(acceptResult, socketChannel);
         verify(clientExecutor).submit(any(ClientShutdownTask.class));
     }
 

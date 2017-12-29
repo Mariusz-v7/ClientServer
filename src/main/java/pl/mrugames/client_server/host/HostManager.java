@@ -83,7 +83,7 @@ public class HostManager implements Runnable {
                 accept((ServerSocketChannel) channel, host);
             } else if (selectionKey.isReadable()) {
                 Future<Client> client = (Future<Client>) selectionKey.attachment();
-                read(client);
+                read(client, (SocketChannel) channel);
             }
         } catch (Exception e) {
             logger.error("Failed to progress key: {}", selectionKey, e);
@@ -91,7 +91,7 @@ public class HostManager implements Runnable {
     }
 
     @SuppressWarnings("unchecked")
-    void read(Future<Client> clientFuture) {
+    void read(Future<Client> clientFuture, SocketChannel socketChannel) {
         Client client;
 
         try {
@@ -103,6 +103,13 @@ public class HostManager implements Runnable {
             client = clientFuture.get();
         } catch (Exception e) {
             logger.error("Client's future ended with exception!", e);
+
+            try {
+                closeClientChannel(socketChannel);
+            } catch (IOException e1) {
+                logger.error("Failed to close client's channel", e1);
+            }
+
             return;
         }
 
