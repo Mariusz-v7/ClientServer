@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.tasks.ClientRequestTask;
+import pl.mrugames.client_server.tasks.ClientShutdownTask;
 import pl.mrugames.client_server.tasks.NewClientAcceptTask;
 
 import java.io.IOException;
@@ -111,8 +112,9 @@ public class HostManager implements Runnable {
             ClientRequestTask clientRequestTask = new ClientRequestTask(client.getName(), client.getComm(), client.getClientWorker());
 
             client.getTaskExecutor().submit(clientRequestTask);
-        } catch (Exception e) { // todo: test. add shutdown task
+        } catch (Exception e) {
             logger.error("[{}] Failed to read from client", client.getName(), e);
+            client.getTaskExecutor().submit(new ClientShutdownTask(client));
         }
     }
 

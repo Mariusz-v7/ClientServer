@@ -7,6 +7,7 @@ import org.mockito.InOrder;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.tasks.ClientRequestTask;
+import pl.mrugames.client_server.tasks.ClientShutdownTask;
 import pl.mrugames.client_server.tasks.NewClientAcceptTask;
 import pl.mrugames.client_server.tasks.TaskExecutor;
 
@@ -250,6 +251,13 @@ class HostManagerSpec {
     void whenRead_thenCallReadToBuffer() throws IOException {
         hostManager.read(acceptResult);
         verify(hostManager).readToBuffer(readBuffer, socketChannel);
+    }
+
+    @Test
+    void givenReadFromBufferThrowsException_whenRead_thenSubmitShutdownTask() throws IOException {
+        doThrow(RuntimeException.class).when(hostManager).readToBuffer(readBuffer, socketChannel);
+        hostManager.read(acceptResult);
+        verify(clientExecutor).submit(any(ClientShutdownTask.class));
     }
 
 }
