@@ -26,6 +26,8 @@ public class ClientRequestTask implements Callable<Void> {
     @Override
     @SuppressWarnings("unchecked")
     public Void call() throws Exception {
+        RequestExecuteTask task = null;
+
         try {
             boolean canRead = client.getComm().canRead();
             while (canRead) {
@@ -40,7 +42,7 @@ public class ClientRequestTask implements Callable<Void> {
                     if (canRead) {
                         client.getTaskExecutor().submit(new RequestExecuteTask(client, request));
                     } else {
-                        executeLastTask(new RequestExecuteTask(client, request));
+                        task = new RequestExecuteTask(client, request);
                     }
                 }
             }
@@ -49,6 +51,10 @@ public class ClientRequestTask implements Callable<Void> {
 
             client.getTaskExecutor().submit(new ClientShutdownTask(client));
             throw e;
+        }
+
+        if (task != null) {
+            executeLastTask(task);
         }
 
         return null;

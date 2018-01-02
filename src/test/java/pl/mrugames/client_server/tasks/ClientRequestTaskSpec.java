@@ -111,4 +111,11 @@ class ClientRequestTaskSpec {
         verify(requestExecuteTask).call();
     }
 
+    @Test
+    void givenLastTaskThrowsException_whenCall_thenDontSubmitShutdownTaskButRethrowException() throws Exception {
+        doThrow(RuntimeException.class).when(task).executeLastTask(any());
+        assertThrows(RuntimeException.class, task::call);
+        verify(taskExecutor, never()).submit(any(ClientShutdownTask.class));
+    }
+
 }
