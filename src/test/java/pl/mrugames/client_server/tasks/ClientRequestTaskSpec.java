@@ -39,7 +39,7 @@ class ClientRequestTaskSpec {
         taskExecutor = mock(TaskExecutor.class);
         doReturn(taskExecutor).when(client).getTaskExecutor();
 
-        task = new ClientRequestTask(client);
+        task = spy(new ClientRequestTask(client));
 
         doReturn("anything").when(worker).onRequest(any());
     }
@@ -87,15 +87,28 @@ class ClientRequestTaskSpec {
         task.call();
 
         ArgumentCaptor<RequestExecuteTask> argumentCaptor = ArgumentCaptor.forClass(RequestExecuteTask.class);
-        verify(taskExecutor, times(3)).submit(argumentCaptor.capture());
+        verify(taskExecutor, times(2)).submit(argumentCaptor.capture());
 
         List<RequestExecuteTask> allValues = argumentCaptor.getAllValues();
 
-        assertThat(allValues).hasSize(3);
+        assertThat(allValues).hasSize(2);
 
         assertThat(allValues.get(0).getFrame()).isEqualTo("1");
         assertThat(allValues.get(1).getFrame()).isEqualTo("2");
-        assertThat(allValues.get(2).getFrame()).isEqualTo("3");
+
+        // last task in the same thread
+        argumentCaptor = ArgumentCaptor.forClass(RequestExecuteTask.class);
+        verify(task).executeLastTask(argumentCaptor.capture());
+
+        assertThat(argumentCaptor.getValue().getFrame()).isEqualTo("3");
+    }
+
+    @Test
+    void whenExecuteLastTask_thenJustExecuteIt() throws Exception {
+        RequestExecuteTask requestExecuteTask = mock(RequestExecuteTask.class);
+        task.executeLastTask(requestExecuteTask);
+
+        verify(requestExecuteTask).call();
     }
 
 }
