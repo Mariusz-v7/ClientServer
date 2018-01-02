@@ -23,7 +23,7 @@ public class ExampleClientWorker implements ClientWorker<String, String> {
 
     @Override
     public String onInit() {
-        logger.info("[{]] Client initialized", name);
+        logger.info("[{}] Client initialized", name);
         return "Hello! Possible commands: exit, shutdown";
     }
 

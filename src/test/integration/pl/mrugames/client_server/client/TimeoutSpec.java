@@ -147,8 +147,4 @@ class TimeoutSpec {
             assertThat(sum.get()).isCloseTo(20, Offset.offset(2));
         }
     }
-    //TODO: both are sending = no timeout
-
-    //TODO: client side timeouts
-
 }

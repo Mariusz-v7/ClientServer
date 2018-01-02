@@ -2,12 +2,15 @@ package pl.mrugames.client_server.tasks;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
 
 import java.io.Serializable;
+import java.util.List;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -25,7 +28,7 @@ class ClientRequestTaskSpec {
         client = mock(Client.class);
 
         comm = mock(Comm.class);
-        doReturn(true).when(comm).canRead();
+        doReturn(true, false).when(comm).canRead();
         doReturn("request").when(comm).receive();
 
         doReturn(comm).when(client).getComm();
@@ -39,20 +42,6 @@ class ClientRequestTaskSpec {
         task = new ClientRequestTask(client);
 
         doReturn("anything").when(worker).onRequest(any());
-    }
-
-    @Test
-    void givenObjectToReceive_whenCall_thenReadFromComm_andPassToWorker() throws Exception {
-        doReturn("abc").when(comm).receive();
-        task.call();
-        verify(worker).onRequest("abc");
-    }
-
-    @Test
-    void givenWorkerReturnsObject_whenCall_thenSendViaComm() throws Exception {
-        doReturn("def").when(worker).onRequest(any());
-        task.call();
-        verify(comm).send("def");
     }
 
     @Test
@@ -84,24 +73,29 @@ class ClientRequestTaskSpec {
     }
 
     @Test
-    void givenWorkerThrowsException_whenCall_thenSubmitShutdown() throws Exception {
-        doThrow(RuntimeException.class).when(worker).onRequest(any());
-        assertThrows(RuntimeException.class, task::call);
-        verify(taskExecutor).submit(any(ClientShutdownTask.class));
-    }
-
-    @Test
-    void givenCommSendThrowsException_whenCall_thenSubmitShutdown() throws Exception {
-        doThrow(RuntimeException.class).when(comm).send(any());
-        assertThrows(RuntimeException.class, task::call);
-        verify(taskExecutor).submit(any(ClientShutdownTask.class));
-    }
-
-    @Test
     void givenResponseIsNull_whenCall_thenDoNotSendIt() throws Exception {
         doReturn(null).when(worker).onRequest(any());
         task.call();
         verify(comm, never()).send(any());
+    }
+
+    @Test
+    void givenMultipleFramesInABuffer_whenCall_thenDistributeTasksInTheSameOrder() throws Exception {
+        doReturn(true, true, true, false).when(comm).canRead();
+        doReturn("1", "2", "3").when(comm).receive();
+
+        task.call();
+
+        ArgumentCaptor<RequestExecuteTask> argumentCaptor = ArgumentCaptor.forClass(RequestExecuteTask.class);
+        verify(taskExecutor, times(3)).submit(argumentCaptor.capture());
+
+        List<RequestExecuteTask> allValues = argumentCaptor.getAllValues();
+
+        assertThat(allValues).hasSize(3);
+
+        assertThat(allValues.get(0).getFrame()).isEqualTo("1");
+        assertThat(allValues.get(1).getFrame()).isEqualTo("2");
+        assertThat(allValues.get(2).getFrame()).isEqualTo("3");
     }
 
 }

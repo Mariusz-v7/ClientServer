@@ -27,19 +27,14 @@ public class ClientRequestTask implements Callable<Void> {
     @SuppressWarnings("unchecked")
     public Void call() throws Exception {
         try {
-            if (!client.getComm().canRead()) {
-                return null;
-            }
+            while (client.getComm().canRead()) {
+                try (Timer.Context ignored = requestProcessingMetric.time()) {
+                    Object request = client.getComm().receive();
+                    if (request == null) {
+                        return null;
+                    }
 
-            try (Timer.Context ignored = requestProcessingMetric.time()) {
-                Object request = client.getComm().receive();
-                if (request == null) {
-                    return null;
-                }
-
-                Object response = client.getClientWorker().onRequest(request);
-                if (response != null) {
-                    client.getComm().send(response);
+                    client.getTaskExecutor().submit(new RequestExecuteTask(client, request));
                 }
             }
         } catch (Exception e) {
