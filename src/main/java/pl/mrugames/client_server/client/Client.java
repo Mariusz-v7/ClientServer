@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Client<In, Out, Reader extends Serializable, Writer extends Serializable> {
@@ -32,7 +33,7 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
            ByteBuffer readBuffer) {
         this.name = name;
         this.taskExecutor = taskExecutor;
-        this.initializers = initializers;
+        this.initializers = new CopyOnWriteArrayList<>(initializers);
         this.clientWorker = clientWorker;
         this.channel = channel;
         this.comm = comm;

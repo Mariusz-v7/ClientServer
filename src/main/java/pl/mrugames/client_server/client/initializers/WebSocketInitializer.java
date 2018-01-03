@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-public class WebSocketInitializer implements Initializer {
+public class WebSocketInitializer /*implements Initializer */ {
     private final static Logger logger = LoggerFactory.getLogger(WebSocketInitializer.class);
 
     private final BufferedReader reader;
@@ -19,16 +19,18 @@ public class WebSocketInitializer implements Initializer {
     private final WebSocketHandshakeParser parser;
 
     public static BiFunction<InputStream, OutputStream, Initializer> create(WebSocketHandshakeParser parser) {
-        return ((inputStream, outputStream) -> new WebSocketInitializer(inputStream, outputStream, parser));
+//        return ((inputStream, outputStream) -> new WebSocketInitializer(inputStream, outputStream, parser));
+        return null;//TODO
     }
 
+    //TODO: use the same  buffers as normal comms
     private WebSocketInitializer(InputStream reader, OutputStream writer, WebSocketHandshakeParser parser) {
         this.reader = new BufferedReader(new InputStreamReader(reader));
         this.writer = new BufferedWriter(new OutputStreamWriter(writer));
         this.parser = parser;
     }
 
-    @Override
+    @Deprecated
     public void run() {  // TODO: nonblocking
         logger.info("Initializing WebSocket handshake procedure.");
         List<String> requestLines = new LinkedList<>();
