@@ -2,8 +2,6 @@ package pl.mrugames.client_server.object_client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.client.ClientFactories;
-import pl.mrugames.client_server.client.ClientFactory;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
@@ -26,7 +24,7 @@ public class Main {
 
         ExecutorService executorService = Executors.newCachedThreadPool();
 
-        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Local Client", 60, new WorkerFactory(), executorService);
+//        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Local Client", 60, new WorkerFactory(), executorService);
 
         try {
             SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(address, port));

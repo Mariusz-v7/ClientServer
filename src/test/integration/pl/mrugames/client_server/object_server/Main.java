@@ -27,7 +27,7 @@ public class Main {
 
         logger.info("Main started...");
 
-        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Java server", 60, new WorkerFactory(Main::shutdown), executorService);
+        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Java server", 60, new WorkerFactory(Main::shutdown), executorService, 1024);
 
         hostManager = new HostManager();
         hostManager.newHost("Main Host", port, clientFactory, executorService);

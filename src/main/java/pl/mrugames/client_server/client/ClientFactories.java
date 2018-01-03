@@ -5,6 +5,8 @@ import pl.mrugames.client_server.client.filters.StringToWebSocketFrameFilter;
 import pl.mrugames.client_server.client.filters.WebSocketFrameToStringFilter;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
 import pl.mrugames.client_server.client.initializers.WebSocketInitializer;
+import pl.mrugames.client_server.client.io.ObjectReader;
+import pl.mrugames.client_server.client.io.ObjectWriter;
 import pl.mrugames.client_server.websocket.WebSocketHandshakeParser;
 
 import java.io.Serializable;
@@ -42,13 +44,24 @@ public class ClientFactories {
             String name,
             int timeoutSeconds,
             ClientWorkerFactory<?, ?, ? extends Serializable, ? extends Serializable> clientWorkerFactory,
-            ExecutorService executorService
+            ExecutorService executorService,
+            int bufferSize
     ) {
 
-        return null; //TODO
-//        return new ClientFactoryBuilder<>(ObjectWriter::new, ObjectReader::new, clientWorkerFactory, executorService)
-//                .setName(name)
-//                .setTimeout(timeoutSeconds)
-//                .build();
+        ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeoutSeconds);
+        executorService.execute(clientWatchdog);
+
+        return new ClientFactory<>(
+                name,
+                name + "-client",
+                clientWorkerFactory,
+                Collections.emptyList(),
+                ObjectWriter::new,
+                ObjectReader::new,
+                new FilterProcessor(Collections.emptyList()),
+                new FilterProcessor(Collections.emptyList()),
+                clientWatchdog,
+                bufferSize
+        );
     }
 }

@@ -4,17 +4,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
+import pl.mrugames.client_server.client.KillMe;
 
 import javax.annotation.Nullable;
 
-class Worker implements ClientWorker {
+class Worker implements ClientWorker<Frame, Frame> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Comm<Frame, Frame, Frame, Frame> comm;
-    private final Runnable onShutDown;
+    private final Runnable shutdownServer;
+    private final KillMe killMe;
 
-    Worker(Comm<Frame, Frame, Frame, Frame> comm, Runnable onShutDown) {
+    Worker(Comm<Frame, Frame, Frame, Frame> comm, Runnable shutdownServer, KillMe killMe) {
         this.comm = comm;
-        this.onShutDown = onShutDown;
+        this.shutdownServer = shutdownServer;
+        this.killMe = killMe;
     }
 
     @Deprecated
@@ -30,26 +33,31 @@ class Worker implements ClientWorker {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            onShutDown.run();
+            shutdownServer.run();
         }
     }
 
     @Override
-    public Object onInit() {
-        //TODO
+    public Frame onInit() {
+        logger.info("Client initialized");
         return null;
     }
 
     @Override
-    public Object onRequest(Object request) {
-        //TODO
-        return null;
+    public Frame onRequest(Frame request) {
+        logger.info("Frame received: {}", request);
+
+        if (request.getMessage().equals("shutdown")) {
+            logger.info("Initiating shutdown");
+            shutdownServer.run();
+        }
+
+        return new Frame("your message was: " + request.getMessage());
     }
 
     @Nullable
     @Override
-    public Object onShutdown() {
-        //todo
+    public Frame onShutdown() {
         return null;
     }
 }
