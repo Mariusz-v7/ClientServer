@@ -20,23 +20,6 @@ class Worker implements ClientWorker<Frame, Frame> {
         this.killMe = killMe;
     }
 
-    @Deprecated
-    public void run() {
-        Frame frame;
-
-        try {
-            do {
-                frame = comm.receive();
-                logger.info("Frame received: {}", frame);
-                comm.send(new Frame("your message was: " + frame.getMessage()));
-            } while (!Thread.currentThread().isInterrupted() && !frame.getMessage().equals("shutdown"));
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            shutdownServer.run();
-        }
-    }
-
     @Override
     public Frame onInit() {
         logger.info("Client initialized");
@@ -58,6 +41,7 @@ class Worker implements ClientWorker<Frame, Frame> {
     @Nullable
     @Override
     public Frame onShutdown() {
+        logger.info("Client shutdown");
         return null;
     }
 }
