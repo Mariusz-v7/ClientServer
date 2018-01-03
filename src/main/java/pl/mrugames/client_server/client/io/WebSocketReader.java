@@ -4,29 +4,71 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 public class WebSocketReader implements ClientReader<WebSocketFrame> {
     private final static Logger logger = LoggerFactory.getLogger(WebSocketReader.class);
     private final static int MAX_PAYLOAD_SIZE = 1_000_000;
-    private final DataInputStream stream;
+    private final ByteBuffer byteBuffer;
 
-    public WebSocketReader(InputStream inputStream) {
-        stream = new DataInputStream(new BufferedInputStream(inputStream));
+    private final int maskSize = 4;
+
+    public WebSocketReader(ByteBuffer byteBuffer) {
+        this.byteBuffer = byteBuffer;
     }
 
     @Override
     public boolean isReady() throws Exception {
-        return false; // TODO
+        if (amountAvailable() < 2) {  // frame type + length byte
+            return false;
+        }
+
+        try {
+            byteBuffer.mark();
+
+            byteBuffer.get(); // frame type - just move position
+
+            byte lengthByte = byteBuffer.get();
+            if (!isAvailableToComputeLength(lengthByte)) {
+                return false;
+            }
+
+            long length = computePayloadLength(lengthByte);
+
+            if (amountAvailable() < maskSize + length) {
+                return false;
+            }
+
+            return true;
+        } finally {
+            byteBuffer.reset();
+        }
     }
 
     @Override
     public WebSocketFrame read() throws Exception {
+        WebSocketFrame.FrameType frameType = getFrameType();
 
-        byte first = (byte) stream.read();
+        byte lengthByte = byteBuffer.get();
+        long payloadLength = computePayloadLength(lengthByte);
+
+        if (payloadLength < 0) {
+            throw new IllegalStateException("Failed to read payload length");
+        }
+
+        if (payloadLength > MAX_PAYLOAD_SIZE) {
+            throw new IllegalArgumentException(String.format("Payload length exceeds maximum allowed size. Payload length: %d", payloadLength));
+        }
+
+        byte[] mask = getMaskingKey(lengthByte);
+        byte[] decoded = decode(mask, (int) payloadLength);
+
+        return new WebSocketFrame(frameType, decoded);
+    }
+
+    private WebSocketFrame.FrameType getFrameType() {
+        byte first = byteBuffer.get();
         boolean fin = (first & 0x80) != 0;
         if (!fin) {
             throw new UnsupportedOperationException("Message fragmentation not supported");
@@ -60,35 +102,39 @@ public class WebSocketReader implements ClientReader<WebSocketFrame> {
                 throw new IllegalStateException("Unsupported opcode received");
         }
 
-        byte lengthByte = (byte) stream.read();
-        long payloadLength = computePayloadLength(lengthByte);
-
-        if (payloadLength < 0) {
-            throw new IllegalStateException("Failed to read payload length");
-        }
-
-        if (payloadLength > MAX_PAYLOAD_SIZE) {
-            throw new IllegalArgumentException(String.format("Payload length exceeds maximum allowed size. Payload length: %d", payloadLength));
-        }
-
-        byte[] mask = getMaskingKey(lengthByte);
-        byte[] decoded = decode(mask, (int) payloadLength);
-
-        return new WebSocketFrame(frameType, decoded);
+        return frameType;
     }
 
     private long computePayloadLength(byte lengthByte) throws IOException {
         int lenByte = (lengthByte & 0x7F);
 
-        if (lenByte <= 0x7D)
+        if (lenByte <= 0x7D) {
             return lenByte;
-        else if (lenByte == 0x7E) {
-            return Short.toUnsignedLong(stream.readShort());
+        } else if (lenByte == 0x7E) {
+            return Short.toUnsignedLong(byteBuffer.getShort());
         } else if (lenByte == 0x7F) {
-            return stream.readLong();
+            return byteBuffer.getLong();
         }
 
-        return -1;
+        throw new IllegalStateException("Unknown length, " + lenByte);
+    }
+
+    private boolean isAvailableToComputeLength(byte lengthByte) {
+        int lenByte = (lengthByte & 0x7F);
+
+        if (lenByte <= 0x7D) {
+            return true;
+        } else if (lenByte == 0x7E) {
+            return amountAvailable() >= 2;  // short
+        } else if (lenByte == 0x7F) {
+            return amountAvailable() >= 4; // long
+        }
+
+        throw new IllegalStateException("Unknown length, " + lenByte);
+    }
+
+    private int amountAvailable() {
+        return byteBuffer.limit() - byteBuffer.position();
     }
 
     private byte[] decode(byte[] mask, int payloadLength) throws IOException {
@@ -96,11 +142,11 @@ public class WebSocketReader implements ClientReader<WebSocketFrame> {
 
         if (mask != null) {
             for (int i = 0; i < payloadLength; ++i) {
-                buffer[i] = (byte) (stream.read() ^ mask[i % 4]);
+                buffer[i] = (byte) (byteBuffer.get() ^ mask[i % 4]);
             }
         } else {
             for (int i = 0; i < payloadLength; ++i) {
-                buffer[i] = (byte) stream.read();
+                buffer[i] = byteBuffer.get();
             }
         }
 
@@ -113,11 +159,11 @@ public class WebSocketReader implements ClientReader<WebSocketFrame> {
             return null;
         }
 
-        int maskSize = 4;
         byte[] mask = new byte[maskSize];
         for (int i = 0; i < maskSize; ++i) {
-            mask[i] = (byte) stream.read();
+            mask[i] = byteBuffer.get();
         }
+
         return mask;
     }
 
