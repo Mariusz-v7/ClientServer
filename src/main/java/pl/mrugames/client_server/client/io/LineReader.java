@@ -51,9 +51,4 @@ public class LineReader implements ClientReader<String> {
     public String getLineEnding() {
         return lineEnding;
     }
-
-    @Override
-    public void close() throws Exception {
-
-    }
 }

@@ -27,9 +27,4 @@ public class TextReader implements ClientReader<String> {
         byteBuffer.get(bytes);
         return new String(bytes, charset);
     }
-
-    @Override
-    @Deprecated
-    public void close() throws Exception {
-    }
 }

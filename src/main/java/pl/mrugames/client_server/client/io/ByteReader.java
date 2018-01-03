@@ -40,8 +40,4 @@ public class ByteReader implements ClientReader<byte[]> {
         return bytes;
     }
 
-    @Override
-    @Deprecated
-    public void close() throws Exception {
-    }
 }

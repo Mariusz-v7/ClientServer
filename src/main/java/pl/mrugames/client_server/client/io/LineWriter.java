@@ -22,9 +22,4 @@ public class LineWriter implements ClientWriter<String> {
     public String getLineEnding() {
         return lineEnding;
     }
-
-    @Override
-    public void close() throws Exception {
-
-    }
 }

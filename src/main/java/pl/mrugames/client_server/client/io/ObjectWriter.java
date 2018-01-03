@@ -1,32 +1,25 @@
 package pl.mrugames.client_server.client.io;
 
-import pl.mrugames.client_server.client.IOExceptionWrapper;
-
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 public class ObjectWriter<FrameType extends Serializable> implements ClientWriter<FrameType> {
-    private final ObjectOutputStream stream;
+    private final ByteWriter byteWriter;
 
-    public ObjectWriter(OutputStream stream) {
-        try {
-            this.stream = new ObjectOutputStream(stream);
-        } catch (IOException e) {
-            throw new IOExceptionWrapper(e);
-        }
+    public ObjectWriter(ByteBuffer byteBuffer) {
+        this.byteWriter = new ByteWriter(byteBuffer);
     }
 
     @Override
     public void write(FrameType frameToSend) throws Exception {
-        stream.writeUnshared(frameToSend);
-        stream.flush();
-        stream.reset();
-    }
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+             ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)) {
+            objectOutputStream.writeObject(frameToSend);
 
-    @Override
-    public void close() throws Exception {
-        stream.close();
+            byte[] bytes = byteArrayOutputStream.toByteArray();
+            byteWriter.write(bytes);
+        }
     }
 }

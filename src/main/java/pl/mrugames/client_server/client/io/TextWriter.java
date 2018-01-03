@@ -16,9 +16,4 @@ public class TextWriter implements ClientWriter<String> {
     public void write(String frameToSend) throws Exception {
         byteBuffer.put(frameToSend.getBytes(charset));
     }
-
-    @Override
-    @Deprecated
-    public void close() throws Exception {
-    }
 }

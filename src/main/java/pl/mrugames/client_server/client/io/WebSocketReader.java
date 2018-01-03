@@ -121,8 +121,4 @@ public class WebSocketReader implements ClientReader<WebSocketFrame> {
         return mask;
     }
 
-    @Override
-    public void close() throws Exception {
-        stream.close();
-    }
 }

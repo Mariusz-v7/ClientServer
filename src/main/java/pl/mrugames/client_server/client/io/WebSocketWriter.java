@@ -42,9 +42,4 @@ public class WebSocketWriter implements ClientWriter<WebSocketFrame> {
 
         stream.flush();
     }
-
-    @Override
-    public void close() throws Exception {
-        stream.close();
-    }
 }
