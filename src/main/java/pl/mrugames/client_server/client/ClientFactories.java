@@ -4,10 +4,8 @@ import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.filters.StringToWebSocketFrameFilter;
 import pl.mrugames.client_server.client.filters.WebSocketFrameToStringFilter;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
-import pl.mrugames.client_server.client.initializers.WebSocketInitializer;
 import pl.mrugames.client_server.client.io.ObjectReader;
 import pl.mrugames.client_server.client.io.ObjectWriter;
-import pl.mrugames.client_server.websocket.WebSocketHandshakeParser;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -28,7 +26,7 @@ public class ClientFactories {
                 name,
                 name + "-client",
                 clientWorkerFactory,
-                Collections.singletonList(WebSocketInitializer.create(WebSocketHandshakeParser.getInstance())),
+//                Collections.singletonList(WebSocketInitializer.create(WebSocketHandshakeParser.getInstance())),
                 null,
                 null,
 // WebSocketWriter::new, // TODO
@@ -55,7 +53,6 @@ public class ClientFactories {
                 name,
                 name + "-client",
                 clientWorkerFactory,
-                Collections.emptyList(),
                 ObjectWriter::new,
                 ObjectReader::new,
                 new FilterProcessor(Collections.emptyList()),

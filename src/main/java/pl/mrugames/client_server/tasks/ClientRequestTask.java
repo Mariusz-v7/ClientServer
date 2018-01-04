@@ -3,9 +3,7 @@ package pl.mrugames.client_server.tasks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.Client;
-import pl.mrugames.client_server.client.initializers.Initializer;
 
-import java.util.List;
 import java.util.concurrent.Callable;
 
 public class ClientRequestTask implements Callable<Void> {
@@ -23,12 +21,6 @@ public class ClientRequestTask implements Callable<Void> {
 
         RequestExecuteTask task;
         try {
-
-            boolean result = runInitializers();
-            if (!result) {
-                return null;
-            }
-
             task = executeTask();
 
         } catch (Exception e) {
@@ -71,39 +63,5 @@ public class ClientRequestTask implements Callable<Void> {
 
     void executeLastTask(RequestExecuteTask task) throws Exception {
         task.call();
-    }
-
-    @SuppressWarnings("unchecked")
-    boolean runInitializers() throws Exception {
-        List<Initializer> initializers = client.getInitializers();
-        for (Initializer initializer : initializers) {
-            //TODO: whole initializer should be locked
-            if (initializer.isCompleted()) {
-                continue;
-            }
-
-            if (!initializer.getComm().canRead()) {
-                return false;
-            }
-
-            Object frame = initializer.getComm().receive();
-            if (frame == null) {
-                return false;
-            }
-
-            Object result = initializer.proceed(frame);
-            if (result != null) {
-                initializer.getComm().send(result);
-            }
-
-            if (!initializer.isCompleted()) {
-                return false;
-            }
-        }
-
-        logger.info("[{}] All initializers are done!", client.getName());
-        initializers.clear();
-
-        return true;
     }
 }

@@ -5,23 +5,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.client.filters.FilterProcessor;
-import pl.mrugames.client_server.client.initializers.Initializer;
 import pl.mrugames.client_server.client.io.ClientReader;
 import pl.mrugames.client_server.client.io.ClientWriter;
 import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -32,7 +26,6 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     private final String factoryName;
     private final String clientNamePrefix;
     private final ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory;
-    private final List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories;
     private final Function<ByteBuffer, ClientWriter<Writer>> clientWriterFactory;
     private final Function<ByteBuffer, ClientReader<Reader>> clientReaderFactory;
     private final FilterProcessor inputFilterProcessor;
@@ -46,7 +39,6 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     ClientFactory(String factoryName,
                   String clientNamePrefix,
                   ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory,
-                  List<BiFunction<InputStream, OutputStream, Initializer>> initializerFactories,
                   Function<ByteBuffer, ClientWriter<Writer>> clientWriterFactory,
                   Function<ByteBuffer, ClientReader<Reader>> clientReaderFactory,
                   FilterProcessor inputFilterProcessor,
@@ -58,7 +50,6 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         this.factoryName = factoryName;
         this.clientNamePrefix = clientNamePrefix;
         this.clientWorkerFactory = clientWorkerFactory;
-        this.initializerFactories = initializerFactories;
         this.clientWriterFactory = clientWriterFactory;
         this.clientReaderFactory = clientReaderFactory;
         this.inputFilterProcessor = inputFilterProcessor;
@@ -83,8 +74,6 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
             Socket socket = channel.socket();
 
-            List<Initializer> initializers = createInitializers(clientName, socket);
-
             ByteBuffer readBuffer = ByteBuffer.allocate(bufferSize);
             readBuffer.flip();
 
@@ -95,7 +84,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
             KillMe killMe = new KillMe();
             ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo, killMe);
 
-            Client<In, Out, Reader, Writer> client = createClient(clientName, taskExecutor, initializers, comm, clientWorker, channel, readBuffer);
+            Client<In, Out, Reader, Writer> client = createClient(clientName, taskExecutor, comm, clientWorker, channel, readBuffer);
             killMe.setClient(client);
 
             watchdog.register(client);
@@ -106,21 +95,6 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
             closeChannel(channel);
             throw e;
         }
-    }
-
-    List<Initializer> createInitializers(String clientName, Socket socket) throws IOException {
-        logger.info("[{}] Creating initializers for client: {}", factoryName, clientName);
-
-        InputStream inputStream = socket.getInputStream();
-        OutputStream outputStream = socket.getOutputStream();
-
-        List<Initializer> initializers = initializerFactories.stream()
-                .map(factory -> factory.apply(inputStream, outputStream))
-                .collect(Collectors.toList());
-
-        logger.info("[{}] {} initializers created for client: {}", factoryName, initializers.size(), clientName);
-
-        return initializers;
     }
 
     Comm<In, Out, Reader, Writer> createComms(String clientName, SocketChannel channel, ByteBuffer readBuffer, ByteBuffer writeBuffer) throws IOException {
@@ -154,13 +128,12 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
     Client<In, Out, Reader, Writer> createClient(String clientName,
                                                  TaskExecutor taskExecutor,
-                                                 List<Initializer> initializers,
                                                  Comm<In, Out, Reader, Writer> comm,
                                                  ClientWorker<In, Out> clientWorker,
                                                  SocketChannel channel,
                                                  ByteBuffer readBuffer
     ) {
-        return new Client<>(clientName, taskExecutor, initializers, comm, clientWorker, channel, readBuffer);
+        return new Client<>(clientName, taskExecutor, comm, clientWorker, channel, readBuffer);
     }
 
     void closeChannel(SocketChannel channel) {

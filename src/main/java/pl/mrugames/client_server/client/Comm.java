@@ -84,12 +84,12 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
 
     @Nullable
     public synchronized In receive() throws Exception {
-        try (Timer.Context ignored = receiveMetric.time()) {
+        if (!clientReader.isReady()) {
+            logger.debug("[RECEIVE] Reader is not ready!");
+            return null;
+        }
 
-            if (!clientReader.isReady()) {
-                logger.debug("[RECEIVE] Reader is not ready!");
-                return null;
-            }
+        try (Timer.Context ignored = receiveMetric.time()) {
 
             In frame;
 

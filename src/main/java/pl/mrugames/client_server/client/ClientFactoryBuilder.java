@@ -80,7 +80,6 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
                 name,
                 name + "-client",
                 clientWorkerFactory,
-                initializerFactories,
                 clientWriterFactory,
                 clientReaderFactory,
                 new FilterProcessor(inputFilters),

@@ -2,21 +2,17 @@ package pl.mrugames.client_server.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.client.initializers.Initializer;
 import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Client<In, Out, Reader extends Serializable, Writer extends Serializable> {
     private final static Logger logger = LoggerFactory.getLogger(Client.class);
 
     private final String name;
-    private final List<Initializer> initializers;
     private final ClientWorker<In, Out> clientWorker;
     private final SocketChannel channel;
     private final Comm<In, Out, Reader, Writer> comm;
@@ -26,14 +22,12 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
 
     Client(String name,
            TaskExecutor taskExecutor,
-           List<Initializer> initializers,
            Comm<In, Out, Reader, Writer> comm,
            ClientWorker<In, Out> clientWorker,
            SocketChannel channel,
            ByteBuffer readBuffer) {
         this.name = name;
         this.taskExecutor = taskExecutor;
-        this.initializers = new CopyOnWriteArrayList<>(initializers);
         this.clientWorker = clientWorker;
         this.channel = channel;
         this.comm = comm;
@@ -52,10 +46,6 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
 
     public String getName() {
         return name;
-    }
-
-    public List<Initializer> getInitializers() {
-        return initializers;
     }
 
     public ClientWorker<In, Out> getClientWorker() {
