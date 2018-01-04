@@ -110,16 +110,24 @@ class ClientRequestTaskSpec {
     }
 
     @Test
-    void givenCanReadThrowsException_whenCall_thenSubmitShutdown() throws Exception {
+    void givenCanReadThrowsException_whenExecuteTask_thenRethrowIt() throws Exception {
         doThrow(RuntimeException.class).when(comm).canRead();
         assertThrows(RuntimeException.class, task::executeTask);
+    }
+
+    @Test
+    void givenExecuteTaskThrowsException_whenCall_thenSubmitShutdownAndRethrow() throws Exception {
+        initializers.clear();
+
+        doThrow(RuntimeException.class).when(task).executeTask();
+        assertThrows(RuntimeException.class, task::call);
         verify(taskExecutor).submit(any(ClientShutdownTask.class));
     }
 
     @Test
-    void givenCommThrowsException_whenCall_thenSubmitShutdown() throws Exception {
-        doThrow(RuntimeException.class).when(comm).receive();
-        assertThrows(RuntimeException.class, task::executeTask);
+    void givenRunInitializersThrowsException_whenCall_thenSubmitShutdownAndRethrow() throws Exception {
+        doThrow(RuntimeException.class).when(task).runInitializers();
+        assertThrows(RuntimeException.class, task::call);
         verify(taskExecutor).submit(any(ClientShutdownTask.class));
     }
 

@@ -21,12 +21,22 @@ public class ClientRequestTask implements Callable<Void> {
     @SuppressWarnings("unchecked")
     public Void call() throws Exception {
 
-        boolean result = runInitializers();
-        if (!result) {
-            return null;
-        }
+        RequestExecuteTask task;
+        try {
 
-        RequestExecuteTask task = executeTask();
+            boolean result = runInitializers();
+            if (!result) {
+                return null;
+            }
+
+            task = executeTask();
+
+        } catch (Exception e) {
+            logger.error("[{}] Failed to process request", client.getName(), e);
+
+            client.getTaskExecutor().submit(new ClientShutdownTask(client));
+            throw e;
+        }
 
         if (task != null) {
             executeLastTask(task);
@@ -40,27 +50,20 @@ public class ClientRequestTask implements Callable<Void> {
 
         RequestExecuteTask task = null;
 
-        try {
-            boolean canRead = client.getComm().canRead();
-            while (canRead) {
-                Object request = client.getComm().receive();
-                if (request == null) {
-                    return null;
-                }
-
-                canRead = client.getComm().canRead();
-
-                if (canRead) {
-                    client.getTaskExecutor().submit(new RequestExecuteTask(client, request));
-                } else {
-                    task = new RequestExecuteTask(client, request);
-                }
+        boolean canRead = client.getComm().canRead();
+        while (canRead) {
+            Object request = client.getComm().receive();
+            if (request == null) {
+                return null;
             }
-        } catch (Exception e) {
-            logger.error("[{}] Failed to process request", client.getName(), e);
 
-            client.getTaskExecutor().submit(new ClientShutdownTask(client));
-            throw e;
+            canRead = client.getComm().canRead();
+
+            if (canRead) {
+                client.getTaskExecutor().submit(new RequestExecuteTask(client, request));
+            } else {
+                task = new RequestExecuteTask(client, request);
+            }
         }
 
         return task;
@@ -70,11 +73,11 @@ public class ClientRequestTask implements Callable<Void> {
         task.call();
     }
 
+    @SuppressWarnings("unchecked")
     boolean runInitializers() throws Exception {
         List<Initializer> initializers = client.getInitializers();
         for (Initializer initializer : initializers) {
             //TODO: whole initializer should be locked
-            // TODO: when exception then shutdown client
             if (initializer.isCompleted()) {
                 continue;
             }
