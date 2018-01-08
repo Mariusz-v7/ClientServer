@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.Client;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 public class ClientRequestTask implements Callable<Void> {
@@ -38,27 +40,25 @@ public class ClientRequestTask implements Callable<Void> {
     }
 
     RequestExecuteTask executeTask() throws Exception {
-        //todo: several race conditions on comm#canRead -> comm#read. Whole comm (or even client) should be locked during read.
+        List<Object> requests = new LinkedList<>();
 
-        RequestExecuteTask task = null;
-
-        boolean canRead = client.getComm().canRead();
-        while (canRead) {
-            Object request = client.getComm().receive();
-            if (request == null) {
-                return null;
-            }
-
-            canRead = client.getComm().canRead();
-
-            if (canRead) {
-                client.getTaskExecutor().submit(new RequestExecuteTask(client, request));
-            } else {
-                task = new RequestExecuteTask(client, request);
+        Object request;
+        while (client.getComm().canRead()) {
+            request = client.getComm().receive();
+            if (request != null) {
+                requests.add(request);
             }
         }
 
-        return task;
+        for (int i = 0; i < requests.size(); ++i) {
+            if (i < requests.size() - 1) {
+                client.getTaskExecutor().submit(new RequestExecuteTask(client, requests.get(i)));
+            } else {
+                return new RequestExecuteTask(client, requests.get(i));
+            }
+        }
+
+        return null;
     }
 
     void executeLastTask(RequestExecuteTask task) throws Exception {

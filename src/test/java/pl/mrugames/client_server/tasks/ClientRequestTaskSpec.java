@@ -73,8 +73,8 @@ class ClientRequestTaskSpec {
 
     @Test
     void givenMultipleFramesInABuffer_whenCall_thenDistributeTasksInTheSameOrder() throws Exception {
-        doReturn(true, true, true, false).when(comm).canRead();
-        doReturn("1", "2", "3").when(comm).receive();
+        doReturn(true, true, true, true, true, true, false).when(comm).canRead();
+        doReturn("1", null, "2", null, "3", null).when(comm).receive();
 
         RequestExecuteTask lastTask = task.executeTask();
 
