@@ -78,8 +78,6 @@ public class Comm {
 
     @SuppressWarnings("unchecked")
     public synchronized void send(Object frame) throws Exception {
-        // todo: if frame incompatible
-
         try (Timer.Context ignored = sendMetric.time()) {
             logger.debug("[SEND] Transforming to raw frame: '{}'", frame);
 
