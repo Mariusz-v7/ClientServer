@@ -100,6 +100,10 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
                 defaultProtocol = protocol.getName();
             }
 
+            if (protocols.containsKey(protocol.getName())) {
+                throw new IllegalArgumentException("Duplicate protocol name: '" + protocol.getName() + "'");
+            }
+
             protocols.put(protocol.getName(), protocol);
         }
 

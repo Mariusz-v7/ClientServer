@@ -35,6 +35,7 @@ class ClientFactorySpec {
     private SocketChannel mockSocketChannel;
     private Socket mockSocket;
     private Function<ByteBuffer, ClientReader<String>> clientReaderFactory;
+    Function<ByteBuffer, ClientWriter<String>> clientWriterFactory;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -50,7 +51,7 @@ class ClientFactorySpec {
         clientWriter = mock(ClientWriter.class);
         clientReader = mock(ClientReader.class);
 
-        Function<ByteBuffer, ClientWriter<String>> clientWriterFactory = i -> clientWriter;
+        clientWriterFactory = i -> clientWriter;
         clientReaderFactory = mock(Function.class);
         doReturn(clientReader).when(clientReaderFactory).apply(any());
 
@@ -159,6 +160,29 @@ class ClientFactorySpec {
         client.getComm().getProtocols().forEach((key, protocol) ->
                 assertThat(key).isEqualTo(protocol.getName())
         );
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void givenDuplicateProtocolName_whenCreate_thenException() {
+        List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories = new LinkedList<>();
+        protocolFactories.add(new ProtocolFactory<>(clientWriterFactory, clientReaderFactory, inputFilterProcessor, outputFilterProcessor, "default"));
+        protocolFactories.add(new ProtocolFactory<>(mock(Function.class), mock(Function.class), mock(FilterProcessor.class), mock(FilterProcessor.class), "mock1"));
+        protocolFactories.add(new ProtocolFactory<>(mock(Function.class), mock(Function.class), mock(FilterProcessor.class), mock(FilterProcessor.class), "mock1"));
+
+        clientFactory = new ClientFactory<>("factory",
+                "client",
+                clientWorkerFactory,
+                protocolFactories,
+                clientWatchdog,
+                1024);
+
+        ByteBuffer readBuffer = mock(ByteBuffer.class);
+        ByteBuffer writeBuffer = mock(ByteBuffer.class);
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> clientFactory.createComms("", mockSocketChannel, readBuffer, writeBuffer));
+
+        assertThat(e.getMessage()).isEqualTo("Duplicate protocol name: 'mock1'");
     }
 
 }
