@@ -51,8 +51,8 @@ class CommSpec {
         doReturn(true).when(clientReader).isReady();
 
         protocols = new HashMap<>();
-        protocols.put("default", new Protocol<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor));
-        protocols.put("secondary", new Protocol<>(mock(ClientWriter.class), mock(ClientReader.class), mock(FilterProcessor.class), mock(FilterProcessor.class)));
+        protocols.put("default", new Protocol<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor, "default"));
+        protocols.put("secondary", new Protocol<>(mock(ClientWriter.class), mock(ClientReader.class), mock(FilterProcessor.class), mock(FilterProcessor.class), "secondary"));
 
         commCreation = Instant.now();
         comm = new Comm(protocols, writeBuffer, channel, mock(Timer.class), mock(Timer.class), "default");

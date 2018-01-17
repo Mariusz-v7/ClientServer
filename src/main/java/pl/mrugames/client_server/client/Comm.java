@@ -159,4 +159,8 @@ public class Comm {
     ByteBuffer getWriteBuffer() {
         return writeBuffer;
     }
+
+    Map<String, Protocol<? extends Serializable, ? extends Serializable>> getProtocols() {
+        return protocols;
+    }
 }

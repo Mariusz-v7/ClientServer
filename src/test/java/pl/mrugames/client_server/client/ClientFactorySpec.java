@@ -9,9 +9,12 @@ import pl.mrugames.client_server.client.io.ClientWriter;
 import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Function;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -28,7 +31,6 @@ class ClientFactorySpec {
     private FilterProcessor outputFilterProcessor;
     private TaskExecutor executorService;
     private Client client;
-    private boolean shouldTimeoutClientCreation;
     private ClientWatchdog clientWatchdog;
     private SocketChannel mockSocketChannel;
     private Socket mockSocket;
@@ -59,13 +61,15 @@ class ClientFactorySpec {
         clientWatchdog = mock(ClientWatchdog.class);
         doReturn(true).when(clientWatchdog).isRunning();
 
+        List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories = new LinkedList<>();
+        protocolFactories.add(new ProtocolFactory<>(clientWriterFactory, clientReaderFactory, inputFilterProcessor, outputFilterProcessor, "default"));
+        protocolFactories.add(new ProtocolFactory<>(mock(Function.class), mock(Function.class), mock(FilterProcessor.class), mock(FilterProcessor.class), "mock1"));
+        protocolFactories.add(new ProtocolFactory<>(mock(Function.class), mock(Function.class), mock(FilterProcessor.class), mock(FilterProcessor.class), "mock2"));
+
         clientFactory = spy(new ClientFactory<>("factory",
                 "client",
                 clientWorkerFactory,
-                clientWriterFactory,
-                clientReaderFactory,
-                inputFilterProcessor,
-                outputFilterProcessor,
+                protocolFactories,
                 clientWatchdog,
                 1024));
 
@@ -144,11 +148,17 @@ class ClientFactorySpec {
 
     @Test
     void whenCreateClient_thenReadBufferIsInReadMode() throws Exception {
-
         Client<String, String, String, String> client = clientFactory.create(mockSocketChannel, executorService);
 
-
         assertThat(client.getReadBuffer().limit()).isEqualTo(client.getReadBuffer().position());
+    }
+
+    @Test
+    void protocolKeysShouldBeSameAsProtocolNames() throws Exception {
+        Client<String, String, String, String> client = clientFactory.create(mockSocketChannel, executorService);
+        client.getComm().getProtocols().forEach((key, protocol) ->
+                assertThat(key).isEqualTo(protocol.getName())
+        );
     }
 
 }

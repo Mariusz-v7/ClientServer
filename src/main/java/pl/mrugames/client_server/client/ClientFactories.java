@@ -1,14 +1,8 @@
 package pl.mrugames.client_server.client;
 
-import pl.mrugames.client_server.client.filters.FilterProcessor;
-import pl.mrugames.client_server.client.filters.StringToWebSocketFrameFilter;
-import pl.mrugames.client_server.client.filters.WebSocketFrameToStringFilter;
 import pl.mrugames.client_server.client.frames.WebSocketFrame;
-import pl.mrugames.client_server.client.io.ObjectReader;
-import pl.mrugames.client_server.client.io.ObjectWriter;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 
 public class ClientFactories {
@@ -22,20 +16,21 @@ public class ClientFactories {
         ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeoutSeconds);
         executorService.execute(clientWatchdog);
 
-        return new ClientFactory<>(
-                name,
-                name + "-client",
-                clientWorkerFactory,
-//                Collections.singletonList(WebSocketInitializer.create(WebSocketHandshakeParser.getInstance())),
-                null,
-                null,
-// WebSocketWriter::new, // TODO
-//                WebSocketReader::new,
-                new FilterProcessor(Collections.singletonList(WebSocketFrameToStringFilter.getInstance())),
-                new FilterProcessor(Collections.singletonList(StringToWebSocketFrameFilter.getInstance())),
-                clientWatchdog,
-                bufferSize
-        );
+        return null;//todo
+//        return new ClientFactory<>(
+//                name,
+//                name + "-client",
+//                clientWorkerFactory,
+////                Collections.singletonList(WebSocketInitializer.create(WebSocketHandshakeParser.getInstance())),
+//                null,
+//                null,
+//// WebSocketWriter::new, // TODO
+////                WebSocketReader::new,
+//                new FilterProcessor(Collections.singletonList(WebSocketFrameToStringFilter.getInstance())),
+//                new FilterProcessor(Collections.singletonList(StringToWebSocketFrameFilter.getInstance())),
+//                clientWatchdog,
+//                bufferSize
+//        );
     }
 
     public static ClientFactory<?, ?, ? extends Serializable, ? extends Serializable> createClientFactoryForJavaServer(
@@ -49,16 +44,14 @@ public class ClientFactories {
         ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeoutSeconds);
         executorService.execute(clientWatchdog);
 
-        return new ClientFactory<>(
-                name,
-                name + "-client",
-                clientWorkerFactory,
-                ObjectWriter::new,
-                ObjectReader::new,
-                new FilterProcessor(Collections.emptyList()),
-                new FilterProcessor(Collections.emptyList()),
-                clientWatchdog,
-                bufferSize
-        );
+        return null; // todo
+//        return new ClientFactory<>(
+//                name,
+//                name + "-client",
+//                clientWorkerFactory,
+//                new ProtocolFactory<>(ObjectWriter::new, ObjectReader::new, new FilterProcessor(Collections.emptyList()), new FilterProcessor(Collections.emptyList())),
+//                clientWatchdog,
+//                bufferSize
+//        );
     }
 }

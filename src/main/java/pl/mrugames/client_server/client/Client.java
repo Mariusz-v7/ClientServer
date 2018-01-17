@@ -63,4 +63,5 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
     public AtomicBoolean getShutdown() {
         return shutdown;
     }
+
 }

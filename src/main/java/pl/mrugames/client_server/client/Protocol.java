@@ -11,15 +11,18 @@ public class Protocol<Reader extends Serializable, Writer extends Serializable> 
     private final ClientReader<Reader> clientReader;
     private final FilterProcessor inputFilterProcessor;
     private final FilterProcessor outputFilterProcessor;
+    private final String name;
 
     public Protocol(ClientWriter<Writer> clientWriter,
                     ClientReader<Reader> clientReader,
                     FilterProcessor inputFilterProcessor,
-                    FilterProcessor outputFilterProcessor) {
+                    FilterProcessor outputFilterProcessor,
+                    String name) {
         this.clientWriter = clientWriter;
         this.clientReader = clientReader;
         this.inputFilterProcessor = inputFilterProcessor;
         this.outputFilterProcessor = outputFilterProcessor;
+        this.name = name;
     }
 
     public ClientWriter<Writer> getClientWriter() {
@@ -36,5 +39,9 @@ public class Protocol<Reader extends Serializable, Writer extends Serializable> 
 
     public FilterProcessor getOutputFilterProcessor() {
         return outputFilterProcessor;
+    }
+
+    public String getName() {
+        return name;
     }
 }

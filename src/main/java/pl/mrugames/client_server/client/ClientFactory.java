@@ -4,9 +4,6 @@ import com.codahale.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.Metrics;
-import pl.mrugames.client_server.client.filters.FilterProcessor;
-import pl.mrugames.client_server.client.io.ClientReader;
-import pl.mrugames.client_server.client.io.ClientWriter;
 import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.IOException;
@@ -15,9 +12,9 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -28,12 +25,9 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     private final String factoryName;
     private final String clientNamePrefix;
     private final ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory;
-    private final Function<ByteBuffer, ClientWriter<Writer>> clientWriterFactory;
-    private final Function<ByteBuffer, ClientReader<Reader>> clientReaderFactory;
-    private final FilterProcessor inputFilterProcessor;
-    private final FilterProcessor outputFilterProcessor;
     private final ClientWatchdog watchdog;
     private final int bufferSize;
+    private final List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories;
 
     private final Timer clientSendMetric;
     private final Timer clientReceiveMetric;
@@ -41,10 +35,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
     ClientFactory(String factoryName,
                   String clientNamePrefix,
                   ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory,
-                  Function<ByteBuffer, ClientWriter<Writer>> clientWriterFactory,
-                  Function<ByteBuffer, ClientReader<Reader>> clientReaderFactory,
-                  FilterProcessor inputFilterProcessor,
-                  FilterProcessor outputFilterProcessor,
+                  List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories,
                   ClientWatchdog clientWatchdog,
                   int bufferSize
     ) {
@@ -52,10 +43,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         this.factoryName = factoryName;
         this.clientNamePrefix = clientNamePrefix;
         this.clientWorkerFactory = clientWorkerFactory;
-        this.clientWriterFactory = clientWriterFactory;
-        this.clientReaderFactory = clientReaderFactory;
-        this.inputFilterProcessor = inputFilterProcessor;
-        this.outputFilterProcessor = outputFilterProcessor;
+        this.protocolFactories = protocolFactories;
         this.watchdog = clientWatchdog;
         this.bufferSize = bufferSize;
 
@@ -99,16 +87,21 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         }
     }
 
+    @SuppressWarnings("unchecked")
     Comm createComms(String clientName, SocketChannel channel, ByteBuffer readBuffer, ByteBuffer writeBuffer) throws IOException {
         logger.info("[{}] Creating comms for client: {}", factoryName, clientName);
 
-        ClientWriter<Writer> clientWriter = clientWriterFactory.apply(writeBuffer);
-        ClientReader<Reader> clientReader = clientReaderFactory.apply(readBuffer);
-
-        String defaultProtocol = "todo"; //todo
-
+        String defaultProtocol = null;
         Map<String, Protocol<? extends Serializable, ? extends Serializable>> protocols = new HashMap<>();
-        protocols.put(defaultProtocol, new Protocol<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor));
+
+        for (ProtocolFactory factory : protocolFactories) {
+            Protocol protocol = factory.create(writeBuffer, readBuffer);
+            if (defaultProtocol == null) {
+                defaultProtocol = protocol.getName();
+            }
+
+            protocols.put(protocol.getName(), protocol);
+        }
 
         Comm comm = new Comm(
                 protocols,
@@ -117,6 +110,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
                 clientSendMetric,
                 clientReceiveMetric,
                 defaultProtocol);
+
         logger.info("[{}] Comms has been created for client: {}", factoryName, clientName);
 
         return comm;

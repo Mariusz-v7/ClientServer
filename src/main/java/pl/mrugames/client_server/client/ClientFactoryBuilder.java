@@ -80,10 +80,7 @@ public class ClientFactoryBuilder<In, Out, Reader extends Serializable, Writer e
                 name,
                 name + "-client",
                 clientWorkerFactory,
-                clientWriterFactory,
-                clientReaderFactory,
-                new FilterProcessor(inputFilters),
-                new FilterProcessor(outputFilters),
+                Collections.singletonList(new ProtocolFactory<>(clientWriterFactory, clientReaderFactory, new FilterProcessor(inputFilters), new FilterProcessor(outputFilters), "")), // TODO: add list, and name
                 clientWatchdog,
                 bufferSize
         );
