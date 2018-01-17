@@ -105,15 +105,18 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         ClientWriter<Writer> clientWriter = clientWriterFactory.apply(writeBuffer);
         ClientReader<Reader> clientReader = clientReaderFactory.apply(readBuffer);
 
+        String defaultProtocol = "todo"; //todo
+
         Map<String, Protocol<? extends Serializable, ? extends Serializable>> protocols = new HashMap<>();
-        protocols.put("todo", new Protocol<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor));
+        protocols.put(defaultProtocol, new Protocol<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor));
 
         Comm comm = new Comm(
                 protocols,
                 writeBuffer,
                 channel,
                 clientSendMetric,
-                clientReceiveMetric);
+                clientReceiveMetric,
+                defaultProtocol);
         logger.info("[{}] Comms has been created for client: {}", factoryName, clientName);
 
         return comm;

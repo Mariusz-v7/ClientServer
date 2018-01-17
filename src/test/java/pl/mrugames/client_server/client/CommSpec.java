@@ -52,9 +52,17 @@ class CommSpec {
 
         protocols = new HashMap<>();
         protocols.put("default", new Protocol<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor));
+        protocols.put("secondary", new Protocol<>(mock(ClientWriter.class), mock(ClientReader.class), mock(FilterProcessor.class), mock(FilterProcessor.class)));
 
         commCreation = Instant.now();
-        comm = new Comm(protocols, writeBuffer, channel, mock(Timer.class), mock(Timer.class));
+        comm = new Comm(protocols, writeBuffer, channel, mock(Timer.class), mock(Timer.class), "default");
+    }
+
+    @Test
+    void givenNoProtocolDefinedForAKey_whenSwitchProtocolToThatKey_thenException() {
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> comm.switchProtocol("does not exist"));
+
+        assertThat(e.getMessage()).isEqualTo("No defined protocol: 'does not exist'");
     }
 
     @Test
@@ -63,6 +71,16 @@ class CommSpec {
         assertThat(comm.getClientWriter()).isSameAs(clientWriter);
         assertThat(comm.getInputFilterProcessor()).isSameAs(inputFilterProcessor);
         assertThat(comm.getOutputFilterProcessor()).isSameAs(outputFilterProcessor);
+    }
+
+    @Test
+    void givenMultipleProtocols_whenSwitchProtocol_thenChangeValues() {
+        comm.switchProtocol("secondary");
+
+        assertThat(comm.getClientReader()).isSameAs(protocols.get("secondary").getClientReader());
+        assertThat(comm.getClientWriter()).isSameAs(protocols.get("secondary").getClientWriter());
+        assertThat(comm.getInputFilterProcessor()).isSameAs(protocols.get("secondary").getInputFilterProcessor());
+        assertThat(comm.getOutputFilterProcessor()).isSameAs(protocols.get("secondary").getOutputFilterProcessor());
     }
 
     @Test

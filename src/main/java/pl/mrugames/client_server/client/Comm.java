@@ -37,7 +37,8 @@ public class Comm {
          ByteBuffer writeBuffer,
          SocketChannel socketChannel,
          Timer sendMetric,
-         Timer receiveMetric) {
+         Timer receiveMetric,
+         String defaulProtocol) {
         this.protocols = protocols;
         this.writeBuffer = writeBuffer;
         this.socketChannel = socketChannel;
@@ -50,7 +51,7 @@ public class Comm {
         this.lastDataReceived = now;
         this.lastDataSent = now;
 
-        switchProtocol(protocols.keySet().iterator().next()); // select first as default
+        switchProtocol(defaulProtocol);
     }
 
     /**
@@ -60,6 +61,10 @@ public class Comm {
      */
     public synchronized void switchProtocol(String protocol) {
         Protocol<? extends Serializable, ? extends Serializable> toSwitch = protocols.get(protocol);
+
+        if (toSwitch == null) {
+            throw new IllegalArgumentException("No defined protocol: '" + protocol + "'");
+        }
 
         this.clientReader = toSwitch.getClientReader();
         this.clientWriter = toSwitch.getClientWriter();
