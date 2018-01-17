@@ -12,10 +12,10 @@ import java.util.stream.Stream;
 
 class Worker implements ClientWorker {
     private final static Logger logger = LoggerFactory.getLogger(Worker.class);
-    private final Comm<Frame, Frame, Frame, Frame> comm;
+    private final Comm comm;
     private final CountDownLatch shutdownSignal = new CountDownLatch(1);
 
-    Worker(Comm<Frame, Frame, Frame, Frame> comm) {
+    Worker(Comm comm) {
         this.comm = comm;
     }
 

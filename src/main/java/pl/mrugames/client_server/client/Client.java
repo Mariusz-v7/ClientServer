@@ -15,14 +15,14 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
     private final String name;
     private final ClientWorker<In, Out> clientWorker;
     private final SocketChannel channel;
-    private final Comm<In, Out, Reader, Writer> comm;
+    private final Comm comm;
     private final TaskExecutor taskExecutor;
     private final ByteBuffer readBuffer;
     private final AtomicBoolean shutdown = new AtomicBoolean();
 
     Client(String name,
            TaskExecutor taskExecutor,
-           Comm<In, Out, Reader, Writer> comm,
+           Comm comm,
            ClientWorker<In, Out> clientWorker,
            SocketChannel channel,
            ByteBuffer readBuffer) {
@@ -36,7 +36,7 @@ public class Client<In, Out, Reader extends Serializable, Writer extends Seriali
         logger.info("[{}] New client has been created", name);
     }
 
-    public Comm<In, Out, Reader, Writer> getComm() {
+    public Comm getComm() {
         return comm;
     }
 

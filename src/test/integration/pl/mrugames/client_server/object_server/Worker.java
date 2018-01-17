@@ -10,11 +10,11 @@ import javax.annotation.Nullable;
 
 class Worker implements ClientWorker<Frame, Frame> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final Comm<Frame, Frame, Frame, Frame> comm;
+    private final Comm comm;
     private final Runnable shutdownServer;
     private final KillMe killMe;
 
-    Worker(Comm<Frame, Frame, Frame, Frame> comm, Runnable shutdownServer, KillMe killMe) {
+    Worker(Comm comm, Runnable shutdownServer, KillMe killMe) {
         this.comm = comm;
         this.shutdownServer = shutdownServer;
         this.killMe = killMe;

@@ -14,6 +14,8 @@ import java.io.Serializable;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -79,7 +81,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
             ByteBuffer writeBuffer = ByteBuffer.allocate(bufferSize);
 
-            Comm<In, Out, Reader, Writer> comm = createComms(clientName, channel, readBuffer, writeBuffer);
+            Comm comm = createComms(clientName, channel, readBuffer, writeBuffer);
 
             KillMe killMe = new KillMe();
             ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo, killMe);
@@ -97,16 +99,17 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         }
     }
 
-    Comm<In, Out, Reader, Writer> createComms(String clientName, SocketChannel channel, ByteBuffer readBuffer, ByteBuffer writeBuffer) throws IOException {
+    Comm createComms(String clientName, SocketChannel channel, ByteBuffer readBuffer, ByteBuffer writeBuffer) throws IOException {
         logger.info("[{}] Creating comms for client: {}", factoryName, clientName);
 
         ClientWriter<Writer> clientWriter = clientWriterFactory.apply(writeBuffer);
         ClientReader<Reader> clientReader = clientReaderFactory.apply(readBuffer);
 
-        Comm<In, Out, Reader, Writer> comm = new Comm<>(clientWriter,
-                clientReader,
-                inputFilterProcessor,
-                outputFilterProcessor,
+        Map<String, Protocol<? extends Serializable, ? extends Serializable>> protocols = new HashMap<>();
+        protocols.put("todo", new Protocol<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor));
+
+        Comm comm = new Comm(
+                protocols,
                 writeBuffer,
                 channel,
                 clientSendMetric,
@@ -116,7 +119,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         return comm;
     }
 
-    ClientWorker<In, Out> createWorker(String clientName, Comm<In, Out, Reader, Writer> comm, ClientInfo clientInfo, KillMe killMe) {
+    ClientWorker<In, Out> createWorker(String clientName, Comm comm, ClientInfo clientInfo, KillMe killMe) {
         logger.info("[{}] Creating client worker for client: {}", factoryName, clientName);
 
         ClientWorker<In, Out> clientWorker = clientWorkerFactory.create(comm, clientInfo, killMe);
@@ -128,7 +131,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
     Client<In, Out, Reader, Writer> createClient(String clientName,
                                                  TaskExecutor taskExecutor,
-                                                 Comm<In, Out, Reader, Writer> comm,
+                                                 Comm comm,
                                                  ClientWorker<In, Out> clientWorker,
                                                  SocketChannel channel,
                                                  ByteBuffer readBuffer

@@ -9,9 +9,12 @@ import pl.mrugames.client_server.client.io.ClientReader;
 import pl.mrugames.client_server.client.io.ClientWriter;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -21,7 +24,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 class CommSpec {
-    private Comm<String, String, String, String> comm;
+    private Comm comm;
     private ClientWriter<String> clientWriter;
     private ClientReader<String> clientReader;
     private FilterProcessor inputFilterProcessor;
@@ -29,9 +32,11 @@ class CommSpec {
     private Instant commCreation;
     private ByteBuffer writeBuffer;
     private SocketChannel channel;
+    private Map<String, Protocol<? extends Serializable, ? extends Serializable>> protocols;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
+
     void before() throws Exception {
         clientWriter = mock(ClientWriter.class);
         clientReader = mock(ClientReader.class);
@@ -45,8 +50,19 @@ class CommSpec {
 
         doReturn(true).when(clientReader).isReady();
 
+        protocols = new HashMap<>();
+        protocols.put("default", new Protocol<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor));
+
         commCreation = Instant.now();
-        comm = new Comm<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor, writeBuffer, channel, mock(Timer.class), mock(Timer.class));
+        comm = new Comm(protocols, writeBuffer, channel, mock(Timer.class), mock(Timer.class));
+    }
+
+    @Test
+    void whenInit_thenFirstProtocolIsSet() {
+        assertThat(comm.getClientReader()).isSameAs(clientReader);
+        assertThat(comm.getClientWriter()).isSameAs(clientWriter);
+        assertThat(comm.getInputFilterProcessor()).isSameAs(inputFilterProcessor);
+        assertThat(comm.getOutputFilterProcessor()).isSameAs(outputFilterProcessor);
     }
 
     @Test
@@ -86,7 +102,7 @@ class CommSpec {
     void whenReceive_thenFilterFrame() throws Exception {
         doReturn("next").when(clientReader).read();
 
-        String result = comm.receive();
+        String result = (String) comm.receive();
 
         verify(inputFilterProcessor).filter("next");
 

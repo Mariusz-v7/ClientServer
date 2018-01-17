@@ -12,15 +12,19 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 
-public class Comm<In, Out, Reader extends Serializable, Writer extends Serializable> {
+public class Comm {
     private final static Logger logger = LoggerFactory.getLogger(Comm.class);
 
-    private final ClientWriter<Writer> clientWriter;
-    private final ClientReader<Reader> clientReader;
-    private final FilterProcessor inputFilterProcessor;
-    private final FilterProcessor outputFilterProcessor;
+    private volatile ClientWriter<? extends Serializable> clientWriter;
+    private volatile ClientReader<? extends Serializable> clientReader;
+    private volatile FilterProcessor inputFilterProcessor;
+    private volatile FilterProcessor outputFilterProcessor;
+
+    private final Map<String, Protocol<? extends Serializable, ? extends Serializable>> protocols;
+
     private final Timer sendMetric;
     private final Timer receiveMetric;
     private final ByteBuffer writeBuffer;
@@ -29,18 +33,12 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
     private volatile Instant lastDataSent;
     private volatile Instant lastDataReceived;
 
-    Comm(ClientWriter<Writer> clientWriter,
-         ClientReader<Reader> clientReader,
-         FilterProcessor inputFilterProcessor,
-         FilterProcessor outputFilterProcessor,
+    Comm(Map<String, Protocol<? extends Serializable, ? extends Serializable>> protocols,
          ByteBuffer writeBuffer,
          SocketChannel socketChannel,
          Timer sendMetric,
          Timer receiveMetric) {
-        this.clientWriter = clientWriter;
-        this.clientReader = clientReader;
-        this.inputFilterProcessor = inputFilterProcessor;
-        this.outputFilterProcessor = outputFilterProcessor;
+        this.protocols = protocols;
         this.writeBuffer = writeBuffer;
         this.socketChannel = socketChannel;
 
@@ -51,21 +49,40 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
 
         this.lastDataReceived = now;
         this.lastDataSent = now;
+
+        switchProtocol(protocols.keySet().iterator().next()); // select first as default
+    }
+
+    /**
+     * The client may request to change protocol.
+     * Before doing so, client <b>should wait until all his requests are finished</b>.
+     * Client should resume sending requests only when he is absolutely sure that switching procedure was completed.
+     */
+    public synchronized void switchProtocol(String protocol) {
+        Protocol<? extends Serializable, ? extends Serializable> toSwitch = protocols.get(protocol);
+
+        this.clientReader = toSwitch.getClientReader();
+        this.clientWriter = toSwitch.getClientWriter();
+        this.inputFilterProcessor = toSwitch.getInputFilterProcessor();
+        this.outputFilterProcessor = toSwitch.getOutputFilterProcessor();
     }
 
     public synchronized boolean canRead() throws Exception {
         return clientReader.isReady();
     }
 
-    public synchronized void send(Out frame) throws Exception {
+    @SuppressWarnings("unchecked")
+    public synchronized void send(Object frame) throws Exception {
+        // todo: if frame incompatible
+
         try (Timer.Context ignored = sendMetric.time()) {
             logger.debug("[SEND] Transforming to raw frame: '{}'", frame);
 
-            Optional<Writer> result = outputFilterProcessor.filter(frame);
+            Optional<? extends Serializable> result = outputFilterProcessor.filter(frame);
             if (result.isPresent()) {
-                Writer rawFrame = result.get();
+                Serializable rawFrame = result.get();
                 logger.debug("[SEND] Frame after transformation: '{}'", rawFrame);
-                clientWriter.write(rawFrame);
+                ((ClientWriter<Serializable>) clientWriter).write(rawFrame);
 
                 writeBuffer.flip();
                 try {
@@ -83,7 +100,7 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
     }
 
     @Nullable
-    public synchronized In receive() throws Exception {
+    public synchronized Object receive() throws Exception {
         if (!clientReader.isReady()) {
             logger.debug("[RECEIVE] Reader is not ready!");
             return null;
@@ -91,13 +108,13 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
 
         try (Timer.Context ignored = receiveMetric.time()) {
 
-            In frame;
+            Object frame;
 
-            Reader rawFrame = clientReader.read();
+            Serializable rawFrame = clientReader.read();
 
             logger.debug("[RECEIVE] Transforming from raw frame: '{}'", rawFrame);
 
-            Optional<In> result = inputFilterProcessor.filter(rawFrame);
+            Optional<? extends Serializable> result = inputFilterProcessor.filter(rawFrame);
             if (result.isPresent()) {
                 frame = result.get();
                 logger.debug("[RECEIVE] Frame after transformation: '{}'", frame);
@@ -120,11 +137,11 @@ public class Comm<In, Out, Reader extends Serializable, Writer extends Serializa
         return lastDataReceived;
     }
 
-    ClientWriter<Writer> getClientWriter() {
+    ClientWriter<? extends Serializable> getClientWriter() {
         return clientWriter;
     }
 
-    ClientReader<Reader> getClientReader() {
+    ClientReader<? extends Serializable> getClientReader() {
         return clientReader;
     }
 

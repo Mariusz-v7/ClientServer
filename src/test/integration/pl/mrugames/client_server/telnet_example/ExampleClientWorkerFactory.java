@@ -10,7 +10,7 @@ public class ExampleClientWorkerFactory implements ClientWorkerFactory<String, S
     }
 
     @Override
-    public ClientWorker create(Comm<String, String, String, String> comm, ClientInfo clientInfo, KillMe killme) {
+    public ClientWorker create(Comm comm, ClientInfo clientInfo, KillMe killme) {
         return new ExampleClientWorker(shutdownServer, clientInfo, killme);
     }
 }

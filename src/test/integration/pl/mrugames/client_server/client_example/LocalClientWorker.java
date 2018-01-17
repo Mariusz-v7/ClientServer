@@ -11,9 +11,9 @@ import java.util.concurrent.CountDownLatch;
 public class LocalClientWorker implements ClientWorker {
     private final static Logger logger = LoggerFactory.getLogger(LocalClientWorker.class);
     private final CountDownLatch shutdownLatch = new CountDownLatch(1);
-    private final Comm<String, String, String, String> comm;
+    private final Comm comm;
 
-    public LocalClientWorker(Comm<String, String, String, String> comm) {
+    public LocalClientWorker(Comm comm) {
         this.comm = comm;
     }
 

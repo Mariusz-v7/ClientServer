@@ -2,16 +2,15 @@ package pl.mrugames.client_server.websocket_server;
 
 import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
-import pl.mrugames.client_server.client.frames.WebSocketFrame;
 import pl.mrugames.client_server.websocket.WebsocketConstants;
 
 import javax.annotation.Nullable;
 
 public class Worker implements ClientWorker {
-    private final Comm<String, String, WebSocketFrame, WebSocketFrame> comm;
+    private final Comm comm;
     private final Runnable onClientShutDown;
 
-    public Worker(Comm<String, String, WebSocketFrame, WebSocketFrame> comm, Runnable onClientShutDown) {
+    public Worker(Comm comm, Runnable onClientShutDown) {
         this.comm = comm;
         this.onClientShutDown = onClientShutDown;
     }
@@ -21,7 +20,7 @@ public class Worker implements ClientWorker {
         try {
             String message;
             do {
-                message = comm.receive();
+                message = (String) comm.receive();
 
                 if (message.equals(WebsocketConstants.WEBSOCKET_CLOSE_FRAME)) {
                     comm.send(WebsocketConstants.WEBSOCKET_CLOSE_FRAME);

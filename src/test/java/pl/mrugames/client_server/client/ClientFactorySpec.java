@@ -112,7 +112,7 @@ class ClientFactorySpec {
         ByteBuffer readBuffer = mock(ByteBuffer.class);
         ByteBuffer writeBuffer = mock(ByteBuffer.class);
 
-        Comm<String, String, String, String> comm = clientFactory.createComms("test", mock(SocketChannel.class), readBuffer, writeBuffer);
+        Comm comm = clientFactory.createComms("test", mock(SocketChannel.class), readBuffer, writeBuffer);
 
         assertThat(comm.getClientReader()).isSameAs(clientReader);
         assertThat(comm.getClientWriter()).isSameAs(clientWriter);

@@ -7,7 +7,6 @@ import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
 
-import java.io.Serializable;
 import java.util.List;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -18,7 +17,7 @@ import static org.mockito.Mockito.*;
 class ClientRequestTaskSpec {
     private ClientRequestTask task;
     private Client client;
-    private Comm<Object, Object, Serializable, Serializable> comm;
+    private Comm comm;
     private ClientWorker<Object, Object> worker;
     private TaskExecutor taskExecutor;
 
