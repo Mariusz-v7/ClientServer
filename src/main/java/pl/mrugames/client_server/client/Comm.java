@@ -38,7 +38,7 @@ public class Comm {
          SocketChannel socketChannel,
          Timer sendMetric,
          Timer receiveMetric,
-         String defaulProtocol) {
+         String defaultProtocol) {
         this.protocols = protocols;
         this.writeBuffer = writeBuffer;
         this.socketChannel = socketChannel;
@@ -51,7 +51,7 @@ public class Comm {
         this.lastDataReceived = now;
         this.lastDataSent = now;
 
-        switchProtocol(defaulProtocol);
+        switchProtocol(defaultProtocol);
     }
 
     /**
