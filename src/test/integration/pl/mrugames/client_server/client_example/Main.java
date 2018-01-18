@@ -28,7 +28,7 @@ public class Main {
 
         ExecutorService executorService = Executors.newCachedThreadPool();
 
-        ClientFactory<String, String, String, String> clientFactory =
+        ClientFactory<String, String> clientFactory =
                 new ClientFactoryBuilder<>(TextWriter::new, TextReader::new, new LocalClientWorkerFactory(), executorService)
                         .setName("Local Client")
                         .build();

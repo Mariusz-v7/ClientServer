@@ -2,7 +2,7 @@ package pl.mrugames.client_server.telnet_example;
 
 import pl.mrugames.client_server.client.*;
 
-public class ExampleClientWorkerFactory implements ClientWorkerFactory<String, String, String, String> {
+public class ExampleClientWorkerFactory implements ClientWorkerFactory<String, String> {
     private final Runnable shutdownServer;
 
     public ExampleClientWorkerFactory(Runnable shutdownServer) {

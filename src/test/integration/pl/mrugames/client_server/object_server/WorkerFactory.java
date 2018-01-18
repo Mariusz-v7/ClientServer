@@ -2,7 +2,7 @@ package pl.mrugames.client_server.object_server;
 
 import pl.mrugames.client_server.client.*;
 
-class WorkerFactory implements ClientWorkerFactory<Frame, Frame, Frame, Frame> {
+class WorkerFactory implements ClientWorkerFactory<Frame, Frame> {
     private final Runnable onShutDown;
 
     WorkerFactory(Runnable onShutDown) {

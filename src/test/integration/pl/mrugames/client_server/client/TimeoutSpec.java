@@ -47,7 +47,7 @@ class TimeoutSpec {
             return lineWriter;
         },
                 LineReader::new,
-                (ClientWorkerFactory<String, String, String, String>) (comm, clientInfo, killme) -> {
+                (comm, clientInfo, killme) -> {
                     this.comm = comm;
                     return clientWorker;
                 },

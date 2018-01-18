@@ -15,8 +15,7 @@ public class ProtocolFactory<Reader extends Serializable, Writer extends Seriali
     private final FilterProcessor outputFilterProcessor;
     private final String key;
 
-    public ProtocolFactory(Function<ByteBuffer,
-            ClientWriter<Writer>> clientWriterFactory,
+    public ProtocolFactory(Function<ByteBuffer, ClientWriter<Writer>> clientWriterFactory,
                            Function<ByteBuffer, ClientReader<Reader>> clientReaderFactory,
                            FilterProcessor inputFilterProcessor,
                            FilterProcessor outputFilterProcessor,

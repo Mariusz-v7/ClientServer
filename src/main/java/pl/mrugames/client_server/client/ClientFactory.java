@@ -8,7 +8,6 @@ import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
@@ -18,13 +17,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-public class ClientFactory<In, Out, Reader extends Serializable, Writer extends Serializable> {
+public class ClientFactory<In, Out> {
     private static final Logger logger = LoggerFactory.getLogger(ClientFactory.class);
 
     private final AtomicLong clientId;
     private final String factoryName;
     private final String clientNamePrefix;
-    private final ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory;
+    private final ClientWorkerFactory<In, Out> clientWorkerFactory;
     private final ClientWatchdog watchdog;
     private final int bufferSize;
     private final List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories;
@@ -34,7 +33,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
     ClientFactory(String factoryName,
                   String clientNamePrefix,
-                  ClientWorkerFactory<In, Out, Reader, Writer> clientWorkerFactory,
+                  ClientWorkerFactory<In, Out> clientWorkerFactory,
                   List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories,
                   ClientWatchdog clientWatchdog,
                   int bufferSize
@@ -51,7 +50,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
     }
 
-    public Client<In, Out, Reader, Writer> create(SocketChannel channel, TaskExecutor taskExecutor) throws Exception {
+    public Client<In, Out> create(SocketChannel channel, TaskExecutor taskExecutor) throws Exception {
         if (!watchdog.isRunning()) {
             throw new IllegalStateException("Client Watchdog is dead! Cannot accept new connection.");
         }
@@ -61,8 +60,6 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
             String clientName = clientNamePrefix + "-" + clientId.incrementAndGet();
             ClientInfo clientInfo = new ClientInfo(clientName, channel.socket());
-
-            Socket socket = channel.socket();
 
             ByteBuffer readBuffer = ByteBuffer.allocate(bufferSize);
             readBuffer.flip();
@@ -74,7 +71,7 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
             ClientController clientController = new ClientController();
             ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo, clientController);
 
-            Client<In, Out, Reader, Writer> client = createClient(clientName, taskExecutor, comm, clientWorker, channel, readBuffer);
+            Client<In, Out> client = createClient(clientName, taskExecutor, comm, clientWorker, channel, readBuffer);
             clientController.setClient(client);
 
             watchdog.register(client);
@@ -130,12 +127,12 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         return clientWorker;
     }
 
-    Client<In, Out, Reader, Writer> createClient(String clientName,
-                                                 TaskExecutor taskExecutor,
-                                                 Comm comm,
-                                                 ClientWorker<In, Out> clientWorker,
-                                                 SocketChannel channel,
-                                                 ByteBuffer readBuffer
+    Client<In, Out> createClient(String clientName,
+                                 TaskExecutor taskExecutor,
+                                 Comm comm,
+                                 ClientWorker<In, Out> clientWorker,
+                                 SocketChannel channel,
+                                 ByteBuffer readBuffer
     ) {
         return new Client<>(clientName, taskExecutor, comm, clientWorker, channel, readBuffer);
     }

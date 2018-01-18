@@ -8,23 +8,22 @@ import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Callable;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer extends Serializable> implements Callable<Client<In, Out, Reader, Writer>> {
+public class NewClientAcceptTask<In, Out> implements Callable<Client<In, Out>> {
     private final static Logger logger = LoggerFactory.getLogger(NewClientAcceptTask.class);
 
     private final String hostName;
-    private final ClientFactory<In, Out, Reader, Writer> clientFactory;
+    private final ClientFactory<In, Out> clientFactory;
     private final SocketChannel clientChannel;
     private final TaskExecutor taskExecutor;
     private final Timer clientAcceptMetric;
 
     public NewClientAcceptTask(String hostName,
-                               ClientFactory<In, Out, Reader, Writer> clientFactory,
+                               ClientFactory<In, Out> clientFactory,
                                SocketChannel clientChannel,
                                TaskExecutor taskExecutor) {
         this.hostName = hostName;
@@ -35,10 +34,10 @@ public class NewClientAcceptTask<In, Out, Reader extends Serializable, Writer ex
     }
 
     @Override
-    public Client<In, Out, Reader, Writer> call() throws Exception {
+    public Client<In, Out> call() throws Exception {
         logger.info("[{}] New Client is connecting", hostName);
 
-        Client<In, Out, Reader, Writer> client = null;
+        Client<In, Out> client = null;
 
         try (Timer.Context ignored = clientAcceptMetric.time()) {
             logger.info("[{}] New client has been accepted: {}/{}", hostName, clientChannel.getLocalAddress(), clientChannel.getRemoteAddress());

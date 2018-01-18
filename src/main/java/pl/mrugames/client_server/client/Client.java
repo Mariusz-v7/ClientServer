@@ -4,12 +4,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.tasks.TaskExecutor;
 
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Client<In, Out, Reader extends Serializable, Writer extends Serializable> {
+public class Client<In, Out> {
     private final static Logger logger = LoggerFactory.getLogger(Client.class);
 
     private final String name;

@@ -23,8 +23,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class ClientFactorySpec {
-    private ClientFactory<String, String, String, String> clientFactory;
-    private ClientWorkerFactory<String, String, String, String> clientWorkerFactory;
+    private ClientFactory<String, String> clientFactory;
+    private ClientWorkerFactory<String, String> clientWorkerFactory;
     private ClientWriter<String> clientWriter;
     private ClientReader<String> clientReader;
     private FilterProcessor inputFilterProcessor;
@@ -149,14 +149,14 @@ class ClientFactorySpec {
 
     @Test
     void whenCreateClient_thenReadBufferIsInReadMode() throws Exception {
-        Client<String, String, String, String> client = clientFactory.create(mockSocketChannel, executorService);
+        Client<String, String> client = clientFactory.create(mockSocketChannel, executorService);
 
         assertThat(client.getReadBuffer().limit()).isEqualTo(client.getReadBuffer().position());
     }
 
     @Test
     void protocolKeysShouldBeSameAsProtocolNames() throws Exception {
-        Client<String, String, String, String> client = clientFactory.create(mockSocketChannel, executorService);
+        Client<String, String> client = clientFactory.create(mockSocketChannel, executorService);
         client.getComm().getProtocols().forEach((key, protocol) ->
                 assertThat(key).isEqualTo(protocol.getName())
         );

@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientFactories;
 import pl.mrugames.client_server.client.ClientFactory;
-import pl.mrugames.client_server.client.frames.WebSocketFrame;
 import pl.mrugames.client_server.host.HostManager;
 
 import java.io.IOException;
@@ -30,7 +29,7 @@ public class Main {
 
         logger.info("Main started...");
 
-        ClientFactory<String, String, WebSocketFrame, WebSocketFrame> clientFactory = ClientFactories.createClientFactoryForWSServer(
+        ClientFactory<String, String> clientFactory = ClientFactories.createClientFactoryForWSServer(
                 "WebSocket Host",
                 60,
                 new WebSocketWorkerFactory(Main::shutdown),
