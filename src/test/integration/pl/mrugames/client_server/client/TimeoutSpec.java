@@ -106,7 +106,7 @@ class TimeoutSpec {
             assertTimeout(ofSeconds(timeout + 1), () -> clientWorker.shutdownLatch.await());
             long after = System.nanoTime();
 
-            assertThat(TimeUnit.NANOSECONDS.toSeconds(after - before)).isGreaterThanOrEqualTo(timeout);
+            assertThat(TimeUnit.MILLISECONDS.toSeconds(after - before)).isGreaterThanOrEqualTo(timeout * 1000);
             assertThat(sum.get()).isCloseTo(clientWorker.amountReceived, Offset.offset(2));
         }
     }

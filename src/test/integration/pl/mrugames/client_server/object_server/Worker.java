@@ -2,9 +2,9 @@ package pl.mrugames.client_server.object_server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.client_server.client.ClientController;
 import pl.mrugames.client_server.client.ClientWorker;
 import pl.mrugames.client_server.client.Comm;
-import pl.mrugames.client_server.client.KillMe;
 
 import javax.annotation.Nullable;
 
@@ -12,12 +12,12 @@ class Worker implements ClientWorker<Frame, Frame> {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Comm comm;
     private final Runnable shutdownServer;
-    private final KillMe killMe;
+    private final ClientController clientController;
 
-    Worker(Comm comm, Runnable shutdownServer, KillMe killMe) {
+    Worker(Comm comm, Runnable shutdownServer, ClientController clientController) {
         this.comm = comm;
         this.shutdownServer = shutdownServer;
-        this.killMe = killMe;
+        this.clientController = clientController;
     }
 
     @Override

@@ -71,11 +71,11 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
 
             Comm comm = createComms(clientName, channel, readBuffer, writeBuffer);
 
-            KillMe killMe = new KillMe();
-            ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo, killMe);
+            ClientController clientController = new ClientController();
+            ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo, clientController);
 
             Client<In, Out, Reader, Writer> client = createClient(clientName, taskExecutor, comm, clientWorker, channel, readBuffer);
-            killMe.setClient(client);
+            clientController.setClient(client);
 
             watchdog.register(client);
 
@@ -120,10 +120,10 @@ public class ClientFactory<In, Out, Reader extends Serializable, Writer extends 
         return comm;
     }
 
-    ClientWorker<In, Out> createWorker(String clientName, Comm comm, ClientInfo clientInfo, KillMe killMe) {
+    ClientWorker<In, Out> createWorker(String clientName, Comm comm, ClientInfo clientInfo, ClientController clientController) {
         logger.info("[{}] Creating client worker for client: {}", factoryName, clientName);
 
-        ClientWorker<In, Out> clientWorker = clientWorkerFactory.create(comm, clientInfo, killMe);
+        ClientWorker<In, Out> clientWorker = clientWorkerFactory.create(comm, clientInfo, clientController);
 
         logger.info("[{}] Client worker has been created for client: {}", factoryName, clientName);
 

@@ -11,7 +11,7 @@ public class WebSocketWorkerFactory implements ClientWorkerFactory<String, Strin
     }
 
     @Override
-    public ClientWorker create(Comm comm, ClientInfo clientInfo, KillMe killme) {
+    public ClientWorker create(Comm comm, ClientInfo clientInfo, ClientController killme) {
         return new Worker(comm, onShutdownCommand);
     }
 }
