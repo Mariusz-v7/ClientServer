@@ -54,7 +54,7 @@ public class Worker implements ClientWorker {
     @Override
     public Object onRequest(Object request) {
         //TODO
-        return null;
+        return request;
     }
 
     @Nullable

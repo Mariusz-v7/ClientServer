@@ -6,18 +6,18 @@ public class ClientController {
     private volatile Client client;
 
     /**
-     * Schedules a task to kill the client... ;)
+     * Schedules a task to kill the client.
      */
     public void shutdown() {
         client.getTaskExecutor().submit(new ClientShutdownTask(client));
     }
 
-    public void switchProtocol(Protocol protocol) {
-        client.getComm().switchProtocol(protocol.getName());
+    public void switchProtocol(Protocol protocol, SwitchProtocolStrategy switchProtocolStrategy) {
+        client.scheduleProtocolSwitch(new ProtocolSwitch(protocol.getName(), switchProtocolStrategy));
     }
 
-    public void switchProtocol(String name) {
-        client.getComm().switchProtocol(name);
+    public void switchProtocol(String name, SwitchProtocolStrategy switchProtocolStrategy) {
+        client.scheduleProtocolSwitch(new ProtocolSwitch(name, switchProtocolStrategy));
     }
 
     void setClient(Client client) {

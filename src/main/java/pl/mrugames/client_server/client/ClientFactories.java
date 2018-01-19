@@ -4,7 +4,7 @@ import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.filters.StringToWebSocketFrameFilter;
 import pl.mrugames.client_server.client.filters.WebSocketFrameToStringFilter;
 import pl.mrugames.client_server.client.initializers.WebSocketInitializerFactory;
-import pl.mrugames.client_server.client.io.LineReader;
+import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
 import pl.mrugames.client_server.client.io.WebSocketReader;
 import pl.mrugames.client_server.client.io.WebSocketWriter;
@@ -29,7 +29,7 @@ public class ClientFactories {
 
         List<ProtocolFactory<?, ?>> protocolFactories = new LinkedList<>();
         protocolFactories.add(
-                new ProtocolFactory<>(TextWriter::new, LineReader::new, FilterProcessor.EMPTY_FILTER_PROCESSOR, FilterProcessor.EMPTY_FILTER_PROCESSOR, httpProtocolName)
+                new ProtocolFactory<>(TextWriter::new, TextReader::new, FilterProcessor.EMPTY_FILTER_PROCESSOR, FilterProcessor.EMPTY_FILTER_PROCESSOR, httpProtocolName)
         );
 
         protocolFactories.add(

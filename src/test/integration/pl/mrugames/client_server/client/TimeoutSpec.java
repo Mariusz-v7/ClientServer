@@ -140,7 +140,7 @@ class TimeoutSpec {
             assertTimeout(ofSeconds(timeout + 1), () -> clientWorker.shutdownLatch.await());
             long after = System.nanoTime();
 
-            assertThat(TimeUnit.NANOSECONDS.toSeconds(after - before)).isGreaterThanOrEqualTo(timeout);
+            assertThat(TimeUnit.MILLISECONDS.toSeconds(after - before)).isGreaterThanOrEqualTo(timeout * 1000);
 
             // 1000 / 250 = 4; 4 * 5 s = 20
 

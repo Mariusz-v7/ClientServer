@@ -2,10 +2,7 @@ package pl.mrugames.client_server.client.initializers;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.client.ClientController;
-import pl.mrugames.client_server.client.ClientInfo;
-import pl.mrugames.client_server.client.ClientWorker;
-import pl.mrugames.client_server.client.ClientWorkerFactory;
+import pl.mrugames.client_server.client.*;
 import pl.mrugames.client_server.websocket.WebSocketHandshakeParser;
 
 import javax.annotation.Nullable;
@@ -54,7 +51,7 @@ public class WebSocketInitializer implements ClientWorker<String, String> {
                 logger.info("[{}] WebSocket handshake procedure finished.", clientInfo.getName());
 
                 isInitialized.set(true);
-                clientController.switchProtocol(webSocketProtocolName);  // this should be done after send
+                clientController.switchProtocol(webSocketProtocolName, SwitchProtocolStrategy.AFTER_RESPONSE_SENT);
                 return parser.parse(stringBuffer.toString());
             }
 

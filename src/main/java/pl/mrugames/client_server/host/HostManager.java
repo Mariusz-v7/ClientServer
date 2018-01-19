@@ -96,7 +96,7 @@ public class HostManager implements Runnable {
 
         try {
             if (!clientFuture.isDone()) {
-                logger.warn("Client creation is in progress still...");
+                logger.debug("Client creation is in progress still...");
                 return;
             }
 

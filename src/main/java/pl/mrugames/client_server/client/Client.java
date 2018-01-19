@@ -19,6 +19,8 @@ public class Client<In, Out> {
     private final ByteBuffer readBuffer;
     private final AtomicBoolean shutdown = new AtomicBoolean();
 
+    private volatile ProtocolSwitch protocolSwitch;
+
     Client(String name,
            TaskExecutor taskExecutor,
            Comm comm,
@@ -63,4 +65,11 @@ public class Client<In, Out> {
         return shutdown;
     }
 
+    public void scheduleProtocolSwitch(ProtocolSwitch protocolSwitch) {
+        this.protocolSwitch = protocolSwitch;
+    }
+
+    public ProtocolSwitch getProtocolSwitch() {
+        return protocolSwitch;
+    }
 }

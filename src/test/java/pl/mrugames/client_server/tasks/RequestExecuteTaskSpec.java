@@ -2,9 +2,8 @@ package pl.mrugames.client_server.tasks;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import pl.mrugames.client_server.client.Client;
-import pl.mrugames.client_server.client.ClientWorker;
-import pl.mrugames.client_server.client.Comm;
+import org.mockito.InOrder;
+import pl.mrugames.client_server.client.*;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -63,6 +62,32 @@ class RequestExecuteTaskSpec {
         doThrow(RuntimeException.class).when(comm).send(any());
         assertThrows(RuntimeException.class, task::call);
         verify(taskExecutor).submit(any(ClientShutdownTask.class));
+    }
+
+    @Test
+    void givenSwitchProtocolAfterResponse_whenCall_thenSendResponseSwitchProtocolAndSetClearSwitchProtocolField() throws Exception {
+        doReturn(new ProtocolSwitch("test", SwitchProtocolStrategy.AFTER_RESPONSE_SENT)).when(client).getProtocolSwitch();
+
+        task.call();
+
+        InOrder inOrder = inOrder(client, comm, worker);
+        inOrder.verify(worker).onRequest("request");
+        inOrder.verify(comm).send("response");
+        inOrder.verify(comm).switchProtocol("test");
+        inOrder.verify(client).scheduleProtocolSwitch(null);
+    }
+
+    @Test
+    void givenSwitchProtocolBeforeResponse_whenCall_thenSwitchProtocolClearSwitchProtocolFieldAndSendResponse() throws Exception {
+        doReturn(new ProtocolSwitch("test", SwitchProtocolStrategy.BEFORE_RESPONSE_SENT)).when(client).getProtocolSwitch();
+
+        task.call();
+
+        InOrder inOrder = inOrder(client, comm, worker);
+        inOrder.verify(worker).onRequest("request");
+        inOrder.verify(comm).switchProtocol("test");
+        inOrder.verify(client).scheduleProtocolSwitch(null);
+        inOrder.verify(comm).send("response");
     }
 
 }
