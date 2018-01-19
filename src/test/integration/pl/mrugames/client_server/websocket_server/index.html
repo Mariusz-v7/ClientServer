@@ -15,10 +15,13 @@
                 name: 'socket ' + i,
                 sentAmount: 0,
                 receivedAmount: 0,
-                sendInterval: 250 + 25 * i
+                sendInterval: 250 + 25 * i,
+                lastDuration: -1,
+                avgDuration: -1,
+                lastSent: null,
             };
-
-            document.body.innerHTML += '<div id="s' + i + '"><b>' + ws.name + ':</b> messages sent: <span id="sent-' + i + '">0</span>, messages received: <span id="received-' + i + '">0</span></div>';
+//todo: table will be better!
+            document.body.innerHTML += '<div id="s' + i + '"><b>' + ws.name + ':</b> messages sent: <span id="sent-' + i + '">0</span>, messages received: <span id="received-' + i + '">0</span>, last duration: <span id="duration-' + i + '"></span>, avg: <span id="avg-duration-' + i + '"></span></div>';
 
             wsList.push(ws);
         }
@@ -27,6 +30,20 @@
             wsList.forEach(function(socket) {
 
                 socket.socket.onmessage = function(m) {
+                    var now = new Date();
+
+                    socket.lastDuration = now.getTime() - socket.lastSent.getTime();
+
+                    if (socket.avgDuration !== -1) {
+                        socket.avgDuration *= socket.receivedAmount;
+                    }
+
+                    socket.avgDuration += socket.lastDuration;
+                    socket.avgDuration /= socket.receivedAmount + 1;
+
+                    document.getElementById('duration-' + socket.id).innerHTML = socket.lastDuration + ' ms';
+                    document.getElementById('avg-duration-' + socket.id).innerHTML = Math.round(socket.avgDuration * 100)/100 + ' ms';
+
                     ++socket.receivedAmount;
                     document.getElementById('received-' + socket.id).innerHTML = socket.receivedAmount;
                 };
@@ -37,6 +54,8 @@
                     }
 
                     ++socket.sentAmount;
+
+                    socket.lastSent = new Date();
 
                     socket.socket.send('message ' + socket.sentAmount);
 
