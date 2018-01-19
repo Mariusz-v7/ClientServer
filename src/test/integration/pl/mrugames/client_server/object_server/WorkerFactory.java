@@ -10,7 +10,7 @@ class WorkerFactory implements ClientWorkerFactory<Frame, Frame> {
     }
 
     @Override
-    public ClientWorker create(Comm comm, ClientInfo clientInfo, ClientController killme) {
-        return new Worker(comm, onShutDown, killme);
+    public ClientWorker create(Comm comm, ClientInfo clientInfo, ClientController controller) {
+        return new Worker(comm, onShutDown, controller);
     }
 }

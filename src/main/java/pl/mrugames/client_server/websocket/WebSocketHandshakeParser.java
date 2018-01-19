@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 public class WebSocketHandshakeParser {
     private static final Logger logger = LoggerFactory.getLogger(WebSocketHandshakeParser.class);
     private static WebSocketHandshakeParser instance;
+    private final static Pattern pattern = Pattern.compile("Sec-WebSocket-Key: (.*?)\r\n");
 
     public static synchronized WebSocketHandshakeParser getInstance() {
         if (instance == null) {
@@ -36,8 +37,11 @@ public class WebSocketHandshakeParser {
                 "\r\n";
     }
 
+    public boolean isReady(String request) {
+        return request.endsWith("\r\n\r\n");
+    }
+
     String findKey(String request) {
-        Pattern pattern = Pattern.compile("Sec-WebSocket-Key: (.*?)\r\n");
         Matcher matcher = pattern.matcher(request);
 
         if (matcher.find()) {

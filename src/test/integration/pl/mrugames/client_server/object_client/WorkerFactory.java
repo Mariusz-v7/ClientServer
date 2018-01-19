@@ -6,7 +6,7 @@ import pl.mrugames.client_server.object_server.Frame;
 public class WorkerFactory implements ClientWorkerFactory<Frame, Frame> {
 
     @Override
-    public ClientWorker create(Comm comm, ClientInfo clientInfo, ClientController killme) {
+    public ClientWorker create(Comm comm, ClientInfo clientInfo, ClientController controller) {
         return new Worker(comm);
     }
 }
