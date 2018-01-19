@@ -1,0 +1,57 @@
+<html>
+<head>
+</head>
+<body>
+<h1>WebSocket Test</h1>
+
+<script>
+        var wsList = [];
+        var amount = 100;
+
+        for (var i = 0; i < amount; ++i) {
+            var ws = {
+                id: i,
+                socket: new WebSocket('ws://localhost:10002'),
+                name: 'socket ' + i,
+                sentAmount: 0,
+                receivedAmount: 0,
+                sendInterval: 250 + 25 * i
+            };
+
+            document.body.innerHTML += '<div id="s' + i + '"><b>' + ws.name + ':</b> messages sent: <span id="sent-' + i + '">0</span>, messages received: <span id="received-' + i + '">0</span></div>';
+
+            wsList.push(ws);
+        }
+
+        setTimeout(function() {
+            wsList.forEach(function(socket) {
+
+                socket.socket.onmessage = function(m) {
+                    ++socket.receivedAmount;
+                    document.getElementById('received-' + socket.id).innerHTML = socket.receivedAmount;
+                };
+
+                setInterval(function() {
+                    if (socket.socket.readyState !== 1) {
+                        return;
+                    }
+
+                    ++socket.sentAmount;
+
+                    socket.socket.send('message ' + socket.sentAmount);
+
+                    document.getElementById('sent-' + socket.id).innerHTML = socket.sentAmount;
+                }, socket.sendInterval);
+            });
+        }, 500);
+
+
+
+
+
+
+
+
+</script>
+</body>
+</html>

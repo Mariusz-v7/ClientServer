@@ -15,7 +15,7 @@ public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
     private static HostManager hostManager;
-    private static ExecutorService executorService = Executors.newCachedThreadPool();
+    private static ExecutorService executorService = Executors.newFixedThreadPool(4);
 
     public static void main(String... args) throws InterruptedException, IOException {
         if (args.length != 1) {
