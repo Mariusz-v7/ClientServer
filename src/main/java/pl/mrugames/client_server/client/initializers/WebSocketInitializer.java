@@ -18,19 +18,24 @@ public class WebSocketInitializer implements ClientWorker<String, String> {
     private final ClientController clientController;
     private final ClientInfo clientInfo;
     private final ClientWorkerFactory<String, String> clientWorkerFactory;
+    private final Comm comm;
 
-    public WebSocketInitializer(WebSocketHandshakeParser parser,
-                                String webSocketProtocolName,
-                                ClientController clientController,
-                                ClientInfo clientInfo,
-                                ClientWorkerFactory<String, String> clientWorkerFactory) {
+    private volatile ClientWorker<String, String> targetWorker;
+
+    WebSocketInitializer(WebSocketHandshakeParser parser,
+                         String webSocketProtocolName,
+                         ClientController clientController,
+                         ClientInfo clientInfo,
+                         ClientWorkerFactory<String, String> clientWorkerFactory,
+                         Comm comm) {
         this.parser = parser;
         this.stringBuffer = new StringBuffer();
         this.isInitialized = new AtomicBoolean(false);
         this.webSocketProtocolName = webSocketProtocolName;
         this.clientController = clientController;
         this.clientInfo = clientInfo;
-        this.clientWorkerFactory = clientWorkerFactory; //todo: create client after initialization
+        this.clientWorkerFactory = clientWorkerFactory;
+        this.comm = comm;
     }
 
     @Nullable
@@ -45,25 +50,30 @@ public class WebSocketInitializer implements ClientWorker<String, String> {
     public String onRequest(String request) {
         if (!isInitialized.get()) {
             stringBuffer.append(request);
-            stringBuffer.append("\r\n");
 
             if (parser.isReady(stringBuffer.toString())) {
                 logger.info("[{}] WebSocket handshake procedure finished.", clientInfo.getName());
 
                 isInitialized.set(true);
                 clientController.switchProtocol(webSocketProtocolName, SwitchProtocolStrategy.AFTER_RESPONSE_SENT);
+                targetWorker = clientWorkerFactory.create(comm, clientInfo, clientController);
+                //todo: call on init, but how to return the value? maybe init worker in separate thread? just like normal procedure
                 return parser.parse(stringBuffer.toString());
             }
 
             return null;
         }
 
-        return null;
+        return targetWorker.onRequest(request);
     }
 
     @Nullable
     @Override
     public String onShutdown() {
+        if (targetWorker != null) {
+            return targetWorker.onShutdown();
+        }
+
         return null;
     }
 }

@@ -23,7 +23,7 @@ public class WebSocketWriter implements ClientWriter<WebSocketFrame> {
 
                 long payloadLen = frameToSend.getPayload().length;
                 if (payloadLen <= 0x7D) {
-                    byteBuffer.putInt((int) (payloadLen & 0x7F));
+                    byteBuffer.put((byte) (payloadLen & 0x7F));
                 } else if (payloadLen <= 0xFFFF) {
                     byteBuffer.put((byte) 0x7E);
                     byteBuffer.putShort((short) payloadLen);

@@ -16,6 +16,6 @@ public class WebSocketInitializerFactory implements ClientWorkerFactory<String, 
 
     @Override
     public ClientWorker<String, String> create(Comm comm, ClientInfo clientInfo, ClientController controller) {
-        return new WebSocketInitializer(WebSocketHandshakeParser.getInstance(), webSocketProtocol, controller, clientInfo, clientWorkerFactory);
+        return new WebSocketInitializer(WebSocketHandshakeParser.getInstance(), webSocketProtocol, controller, clientInfo, clientWorkerFactory, comm);
     }
 }
