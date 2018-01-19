@@ -8,6 +8,16 @@
         var wsList = [];
         var amount = 100;
 
+        var tableStr = '<table>';
+
+        tableStr += '<tr>\
+            <th>Socket</th>\
+            <th>Messages sent</th>\
+            <th>Messages received</th>\
+            <th>Last duration</th>\
+            <th>Avg duration</th>\
+        </tr>';
+
         for (var i = 0; i < amount; ++i) {
             var ws = {
                 id: i,
@@ -16,15 +26,24 @@
                 sentAmount: 0,
                 receivedAmount: 0,
                 sendInterval: 250 + 25 * i,
-                lastDuration: -1,
-                avgDuration: -1,
+                lastDuration: 0,
+                avgDuration: 0,
                 lastSent: null,
             };
-//todo: table will be better!
-            document.body.innerHTML += '<div id="s' + i + '"><b>' + ws.name + ':</b> messages sent: <span id="sent-' + i + '">0</span>, messages received: <span id="received-' + i + '">0</span>, last duration: <span id="duration-' + i + '"></span>, avg: <span id="avg-duration-' + i + '"></span></div>';
+
+            tableStr += '<tr>\
+                <td id="s' + i + '">' + ws.name + '</td>\
+                <td id="sent-' + i + '"></td>\
+                <td id="received-' + i + '"></td>\
+                <td id="duration-' + i + '"></td>\
+                <td id="avg-duration-' + i + '"></td>\
+            </tr>;'
 
             wsList.push(ws);
         }
+
+        tableStr += '</table>';
+        document.body.innerHTML += tableStr;
 
         setTimeout(function() {
             wsList.forEach(function(socket) {
@@ -34,10 +53,7 @@
 
                     socket.lastDuration = now.getTime() - socket.lastSent.getTime();
 
-                    if (socket.avgDuration !== -1) {
-                        socket.avgDuration *= socket.receivedAmount;
-                    }
-
+                    socket.avgDuration *= socket.receivedAmount;
                     socket.avgDuration += socket.lastDuration;
                     socket.avgDuration /= socket.receivedAmount + 1;
 
@@ -63,6 +79,7 @@
                 }, socket.sendInterval);
             });
         }, 500);
+
 
 
 
