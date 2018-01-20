@@ -115,6 +115,7 @@ public class HostManager implements Runnable {
             return;
         }
 
+        client.getReadBufferLock().lock();
         try {
             readToBuffer(client.getReadBuffer(), client.getChannel());
 
@@ -126,6 +127,8 @@ public class HostManager implements Runnable {
         } catch (Exception e) {
             logger.error("[{}] Failed to read from client", client.getName(), e);
             client.getTaskExecutor().submit(new ClientShutdownTask(client));
+        } finally {
+            client.getReadBufferLock().unlock();
         }
     }
 
@@ -217,6 +220,9 @@ public class HostManager implements Runnable {
         key.channel().close();
     }
 
+    /**
+     * This method is executed in host manager's thread to prevent from spawning multiple tasks (selector returns this key as long as the data is available)
+     */
     void readToBuffer(ByteBuffer readBuffer, SocketChannel socketChannel) throws IOException {
         readBuffer.compact();
         try {

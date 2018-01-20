@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -65,6 +66,8 @@ class HostManagerSpec {
         doReturn(true).when(acceptResult).isDone();
         doReturn(clientExecutor).when(client).getTaskExecutor();
         doReturn(socketChannel).when(client).getChannel();
+        doReturn(mock(Lock.class)).when(client).getReadBufferLock();
+        doReturn(mock(Lock.class)).when(client).getWriteBufferLock();
 
         readBuffer = mock(ByteBuffer.class);
         doReturn(readBuffer).when(client).getReadBuffer();
@@ -255,16 +258,22 @@ class HostManagerSpec {
     }
 
     @Test
-    void whenRead_thenCallReadToBuffer() throws IOException {
+    void whenRead_thenLockReadBufferAndCallReadToBuffer() throws IOException {
         hostManager.read(acceptResult, socketChannel);
-        verify(hostManager).readToBuffer(readBuffer, socketChannel);
+
+        InOrder inOrder = inOrder(hostManager, client.getReadBufferLock());
+
+        inOrder.verify(client.getReadBufferLock()).lock();
+        inOrder.verify(hostManager).readToBuffer(readBuffer, socketChannel);
+        inOrder.verify(client.getReadBufferLock()).unlock();
     }
 
     @Test
-    void givenReadFromBufferThrowsException_whenRead_thenSubmitShutdownTask() throws IOException {
+    void givenReadFromBufferThrowsException_whenRead_thenSubmitShutdownTaskAndUnlockReadBufferLock() throws IOException {
         doThrow(RuntimeException.class).when(hostManager).readToBuffer(readBuffer, socketChannel);
         hostManager.read(acceptResult, socketChannel);
         verify(clientExecutor).submit(any(ClientShutdownTask.class));
+        verify(client.getReadBufferLock()).unlock();
     }
 
 }

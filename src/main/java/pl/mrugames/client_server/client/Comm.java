@@ -72,10 +72,6 @@ public class Comm {
         this.outputFilterProcessor = toSwitch.getOutputFilterProcessor();
     }
 
-    public synchronized boolean canRead() throws Exception {
-        return clientReader.isReady();
-    }
-
     @SuppressWarnings("unchecked")
     public synchronized void send(Object frame) throws Exception {
         try (Timer.Context ignored = sendMetric.time()) {
@@ -100,6 +96,12 @@ public class Comm {
 
             lastDataSent = Instant.now();
         }
+    }
+
+    //todo: different locks for read and write
+
+    public synchronized boolean canRead() throws Exception {
+        return clientReader.isReady();
     }
 
     @Nullable

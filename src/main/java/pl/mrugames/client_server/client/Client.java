@@ -7,6 +7,8 @@ import pl.mrugames.client_server.tasks.TaskExecutor;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Client<In, Out> {
     private final static Logger logger = LoggerFactory.getLogger(Client.class);
@@ -18,6 +20,8 @@ public class Client<In, Out> {
     private final TaskExecutor taskExecutor;
     private final ByteBuffer readBuffer;
     private final AtomicBoolean shutdown = new AtomicBoolean();
+    private final Lock readBufferLock;
+    private final Lock writeBufferLock;
 
     private volatile ProtocolSwitch protocolSwitch;
 
@@ -33,6 +37,8 @@ public class Client<In, Out> {
         this.channel = channel;
         this.comm = comm;
         this.readBuffer = readBuffer;
+        this.readBufferLock = new ReentrantLock();
+        this.writeBufferLock = new ReentrantLock();
 
         logger.info("[{}] New client has been created", name);
     }
@@ -71,5 +77,13 @@ public class Client<In, Out> {
 
     public ProtocolSwitch getProtocolSwitch() {
         return protocolSwitch;
+    }
+
+    public Lock getReadBufferLock() {
+        return readBufferLock;
+    }
+
+    public Lock getWriteBufferLock() {
+        return writeBufferLock;
     }
 }
