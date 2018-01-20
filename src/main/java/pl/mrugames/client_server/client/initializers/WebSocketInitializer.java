@@ -48,20 +48,29 @@ public class WebSocketInitializer implements ClientWorker<String, String> {
     @Nullable
     @Override
     public String onRequest(String request) {
-        if (!isInitialized.get()) {
-            stringBuffer.append(request);
+        synchronized (this) {
+            if (!isInitialized.get()) {
+                stringBuffer.append(request);
 
-            if (parser.isReady(stringBuffer.toString())) {
-                logger.info("[{}] WebSocket handshake procedure finished.", clientInfo.getName());
+                if (parser.isReady(stringBuffer.toString())) {
+                    isInitialized.set(true);
+                    targetWorker = clientWorkerFactory.create(comm, clientInfo, clientController);
 
-                isInitialized.set(true);
-                clientController.switchProtocol(webSocketProtocolName, SwitchProtocolStrategy.AFTER_RESPONSE_SENT);
-                targetWorker = clientWorkerFactory.create(comm, clientInfo, clientController);
-                //todo: call on init, but how to return the value? maybe init worker in separate thread? just like normal procedure
-                return parser.parse(stringBuffer.toString());
+                    comm.switchProtocol(webSocketProtocolName);
+
+                    try {
+                        comm.send(parser.parse(stringBuffer.toString()));
+                    } catch (Exception e) {
+                        //todo
+                    }
+
+                    logger.info("[{}] WebSocket handshake procedure finished.", clientInfo.getName());
+
+                    return targetWorker.onInit();
+                }
+
+                return null;
             }
-
-            return null;
         }
 
         return targetWorker.onRequest(request);
