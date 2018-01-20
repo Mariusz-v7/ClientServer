@@ -66,17 +66,24 @@ public class Comm {
      * Before doing so, client <b>should wait until all his requests are finished</b>.
      * Client should resume sending requests only when he is absolutely sure that switching procedure was completed.
      */
-    public synchronized void switchProtocol(String protocol) { // todo: lock both buffers
+    public void switchProtocol(String protocol) {
         Protocol<? extends Serializable, ? extends Serializable> toSwitch = protocols.get(protocol);
 
         if (toSwitch == null) {
             throw new IllegalArgumentException("No defined protocol: '" + protocol + "'");
         }
 
-        this.clientReader = toSwitch.getClientReader();
-        this.clientWriter = toSwitch.getClientWriter();
-        this.inputFilterProcessor = toSwitch.getInputFilterProcessor();
-        this.outputFilterProcessor = toSwitch.getOutputFilterProcessor();
+        readBufferLock.lock();
+        writeBufferLock.lock();
+        try {
+            this.clientReader = toSwitch.getClientReader();
+            this.clientWriter = toSwitch.getClientWriter();
+            this.inputFilterProcessor = toSwitch.getInputFilterProcessor();
+            this.outputFilterProcessor = toSwitch.getOutputFilterProcessor();
+        } finally {
+            writeBufferLock.unlock();
+            readBufferLock.unlock();
+        }
     }
 
     public void send(Object frame) throws Exception {

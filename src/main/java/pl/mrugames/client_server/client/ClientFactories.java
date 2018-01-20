@@ -22,7 +22,8 @@ public class ClientFactories {
             int bufferSize) {
 
         ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeoutSeconds);
-        executorService.execute(clientWatchdog);
+        executorService.execute(clientWatchdog); // TODO: this should be run in different pool!!!
+        //TODO: Figure out whether it's worth to have only one watchdog for all hosts (not separate for each host)
 
         String httpProtocolName = "http-protocol";
         String webSocketProtocolName = "web-socket-protocol";

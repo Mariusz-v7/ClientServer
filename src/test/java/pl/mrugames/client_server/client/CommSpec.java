@@ -61,6 +61,9 @@ class CommSpec {
 
         commCreation = Instant.now();
         comm = spy(new Comm(protocols, writeBuffer, readBufferLock, writeBufferLock, channel, mock(Timer.class), mock(Timer.class), "default"));
+
+        reset(writeBufferLock);
+        reset(readBufferLock);
     }
 
     @Test
@@ -68,6 +71,15 @@ class CommSpec {
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> comm.switchProtocol("does not exist"));
 
         assertThat(e.getMessage()).isEqualTo("No defined protocol: 'does not exist'");
+    }
+
+    @Test
+    void whenSwitchProtocol_thenLockBothBuffers() {
+        comm.switchProtocol("default");
+        verify(readBufferLock).lock();
+        verify(writeBufferLock).lock();
+        verify(readBufferLock).unlock();
+        verify(writeBufferLock).unlock();
     }
 
     @Test
