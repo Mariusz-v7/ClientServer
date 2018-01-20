@@ -56,13 +56,15 @@ public class WebSocketInitializer implements ClientWorker<String, String> {
                     isInitialized.set(true);
                     targetWorker = clientWorkerFactory.create(comm, clientInfo, clientController);
 
-                    comm.switchProtocol(webSocketProtocolName);
-
                     try {
                         comm.send(parser.parse(stringBuffer.toString()));
                     } catch (Exception e) {
-                        //todo
+                        throw new IllegalStateException("Failed to send handshake response", e);
                     }
+
+                    stringBuffer.setLength(0);
+
+                    comm.switchProtocol(webSocketProtocolName);
 
                     logger.info("[{}] WebSocket handshake procedure finished.", clientInfo.getName());
 
