@@ -85,6 +85,8 @@ public class HostManager implements Runnable {
                 Future<Client> client = (Future<Client>) selectionKey.attachment();
                 read(client, (SocketChannel) channel);
             }
+        } catch (CancelledKeyException e) {
+            logger.debug("Failed to progress key: {}", selectionKey, e);
         } catch (Exception e) {
             logger.error("Failed to progress key: {}", selectionKey, e);
         }
