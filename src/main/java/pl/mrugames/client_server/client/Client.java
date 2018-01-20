@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class Client<In, Out> {
     private final static Logger logger = LoggerFactory.getLogger(Client.class);
@@ -30,15 +29,17 @@ public class Client<In, Out> {
            Comm comm,
            ClientWorker<In, Out> clientWorker,
            SocketChannel channel,
-           ByteBuffer readBuffer) {
+           ByteBuffer readBuffer,
+           Lock readBufferLock,
+           Lock writeBufferLock) {
         this.name = name;
         this.taskExecutor = taskExecutor;
         this.clientWorker = clientWorker;
         this.channel = channel;
         this.comm = comm;
         this.readBuffer = readBuffer;
-        this.readBufferLock = new ReentrantLock();
-        this.writeBufferLock = new ReentrantLock();
+        this.readBufferLock = readBufferLock;
+        this.writeBufferLock = writeBufferLock;
 
         logger.info("[{}] New client has been created", name);
     }

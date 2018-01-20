@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -81,7 +82,7 @@ class ClientFactorySpec {
             client = spy(client);
 
             return client;
-        }).when(clientFactory).createClient(anyString(), any(), any(), any(), any(), any());
+        }).when(clientFactory).createClient(anyString(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -117,13 +118,18 @@ class ClientFactorySpec {
         ByteBuffer readBuffer = mock(ByteBuffer.class);
         ByteBuffer writeBuffer = mock(ByteBuffer.class);
 
-        Comm comm = clientFactory.createComms("test", mock(SocketChannel.class), readBuffer, writeBuffer);
+        Lock readLock = mock(Lock.class);
+        Lock writeLock = mock(Lock.class);
+
+        Comm comm = clientFactory.createComms("test", mock(SocketChannel.class), readBuffer, writeBuffer, readLock, writeLock);
 
         assertThat(comm.getClientReader()).isSameAs(clientReader);
         assertThat(comm.getClientWriter()).isSameAs(clientWriter);
         assertThat(comm.getInputFilterProcessor()).isSameAs(inputFilterProcessor);
         assertThat(comm.getOutputFilterProcessor()).isSameAs(outputFilterProcessor);
         assertThat(comm.getWriteBuffer()).isSameAs(writeBuffer);
+        assertThat(comm.getWriteBufferLock()).isSameAs(writeLock);
+        assertThat(comm.getReadBufferLock()).isSameAs(readLock);
 
         ArgumentCaptor<ByteBuffer> argumentCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
 
@@ -180,7 +186,7 @@ class ClientFactorySpec {
         ByteBuffer readBuffer = mock(ByteBuffer.class);
         ByteBuffer writeBuffer = mock(ByteBuffer.class);
 
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> clientFactory.createComms("", mockSocketChannel, readBuffer, writeBuffer));
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> clientFactory.createComms("", mockSocketChannel, readBuffer, writeBuffer, mock(Lock.class), mock(Lock.class)));
 
         assertThat(e.getMessage()).isEqualTo("Duplicate protocol name: 'mock1'");
     }

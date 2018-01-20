@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -66,12 +68,14 @@ public class ClientFactory<In, Out> {
 
             ByteBuffer writeBuffer = ByteBuffer.allocate(bufferSize);
 
-            Comm comm = createComms(clientName, channel, readBuffer, writeBuffer);
+            Lock readLock = new ReentrantLock();
+            Lock writeLock = new ReentrantLock();
+            Comm comm = createComms(clientName, channel, readBuffer, writeBuffer, readLock, writeLock);
 
             ClientController clientController = new ClientController();
             ClientWorker<In, Out> clientWorker = createWorker(clientName, comm, clientInfo, clientController);
 
-            Client<In, Out> client = createClient(clientName, taskExecutor, comm, clientWorker, channel, readBuffer);
+            Client<In, Out> client = createClient(clientName, taskExecutor, comm, clientWorker, channel, readBuffer, readLock, writeLock);
             clientController.setClient(client);
 
             watchdog.register(client);
@@ -85,7 +89,7 @@ public class ClientFactory<In, Out> {
     }
 
     @SuppressWarnings("unchecked")
-    Comm createComms(String clientName, SocketChannel channel, ByteBuffer readBuffer, ByteBuffer writeBuffer) throws IOException {
+    Comm createComms(String clientName, SocketChannel channel, ByteBuffer readBuffer, ByteBuffer writeBuffer, Lock readBufferLock, Lock writeBufferLock) throws IOException {
         logger.info("[{}] Creating comms for client: {}", factoryName, clientName);
 
         String defaultProtocol = null;
@@ -107,6 +111,8 @@ public class ClientFactory<In, Out> {
         Comm comm = new Comm(
                 protocols,
                 writeBuffer,
+                readBufferLock,
+                writeBufferLock,
                 channel,
                 clientSendMetric,
                 clientReceiveMetric,
@@ -132,9 +138,11 @@ public class ClientFactory<In, Out> {
                                  Comm comm,
                                  ClientWorker<In, Out> clientWorker,
                                  SocketChannel channel,
-                                 ByteBuffer readBuffer
+                                 ByteBuffer readBuffer,
+                                 Lock readLock,
+                                 Lock writeLock
     ) {
-        return new Client<>(clientName, taskExecutor, comm, clientWorker, channel, readBuffer);
+        return new Client<>(clientName, taskExecutor, comm, clientWorker, channel, readBuffer, readLock, writeLock);
     }
 
     void closeChannel(SocketChannel channel) {

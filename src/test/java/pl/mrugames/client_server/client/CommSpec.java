@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,6 +34,8 @@ class CommSpec {
     private ByteBuffer writeBuffer;
     private SocketChannel channel;
     private Map<String, Protocol<? extends Serializable, ? extends Serializable>> protocols;
+    private Lock readBufferLock;
+    private Lock writeBufferLock;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -54,8 +57,11 @@ class CommSpec {
         protocols.put("default", new Protocol<>(clientWriter, clientReader, inputFilterProcessor, outputFilterProcessor, "default"));
         protocols.put("secondary", new Protocol<>(mock(ClientWriter.class), mock(ClientReader.class), mock(FilterProcessor.class), mock(FilterProcessor.class), "secondary"));
 
+        writeBufferLock = mock(Lock.class);
+        readBufferLock = mock(Lock.class);
+
         commCreation = Instant.now();
-        comm = new Comm(protocols, writeBuffer, channel, mock(Timer.class), mock(Timer.class), "default");
+        comm = new Comm(protocols, writeBuffer, readBufferLock, writeBufferLock, channel, mock(Timer.class), mock(Timer.class), "default");
     }
 
     @Test
@@ -174,6 +180,26 @@ class CommSpec {
         assertThrows(RuntimeException.class, () -> comm.send("anything"));
 
         verify(writeBuffer).compact();
+    }
+
+    @Test
+    void whenCanRead_thenLockBuffer() throws Exception {
+        InOrder inOrder = inOrder(clientReader, readBufferLock);
+
+        comm.canRead();
+
+        inOrder.verify(readBufferLock).lock();
+        inOrder.verify(clientReader).isReady();
+        inOrder.verify(readBufferLock).unlock();
+    }
+
+    @Test
+    void givenIsReadyThrowsException_whenCanRead_thenUnlockInFinally() throws Exception {
+        doThrow(RuntimeException.class).when(clientReader).isReady();
+
+        assertThrows(RuntimeException.class, comm::canRead);
+
+        verify(readBufferLock).unlock();
     }
 
 }

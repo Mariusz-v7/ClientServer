@@ -14,6 +14,7 @@ import java.nio.channels.SocketChannel;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.locks.Lock;
 
 public class Comm {
     private final static Logger logger = LoggerFactory.getLogger(Comm.class);
@@ -29,12 +30,16 @@ public class Comm {
     private final Timer receiveMetric;
     private final ByteBuffer writeBuffer;
     private final SocketChannel socketChannel;
+    private final Lock readBufferLock;
+    private final Lock writeBufferLock;
 
     private volatile Instant lastDataSent;
     private volatile Instant lastDataReceived;
 
     Comm(Map<String, Protocol<? extends Serializable, ? extends Serializable>> protocols,
          ByteBuffer writeBuffer,
+         Lock readBufferLock,
+         Lock writeBufferLock,
          SocketChannel socketChannel,
          Timer sendMetric,
          Timer receiveMetric,
@@ -42,6 +47,8 @@ public class Comm {
         this.protocols = protocols;
         this.writeBuffer = writeBuffer;
         this.socketChannel = socketChannel;
+        this.readBufferLock = readBufferLock;
+        this.writeBufferLock = writeBufferLock;
 
         this.sendMetric = sendMetric;
         this.receiveMetric = receiveMetric;
@@ -59,7 +66,7 @@ public class Comm {
      * Before doing so, client <b>should wait until all his requests are finished</b>.
      * Client should resume sending requests only when he is absolutely sure that switching procedure was completed.
      */
-    public synchronized void switchProtocol(String protocol) {
+    public synchronized void switchProtocol(String protocol) { // todo: lock both buffers
         Protocol<? extends Serializable, ? extends Serializable> toSwitch = protocols.get(protocol);
 
         if (toSwitch == null) {
@@ -98,10 +105,13 @@ public class Comm {
         }
     }
 
-    //todo: different locks for read and write
-
-    public synchronized boolean canRead() throws Exception {
-        return clientReader.isReady();
+    public boolean canRead() throws Exception {
+        readBufferLock.lock();
+        try {
+            return clientReader.isReady();
+        } finally {
+            readBufferLock.unlock();
+        }
     }
 
     @Nullable
@@ -164,5 +174,13 @@ public class Comm {
 
     Map<String, Protocol<? extends Serializable, ? extends Serializable>> getProtocols() {
         return protocols;
+    }
+
+    Lock getReadBufferLock() {
+        return readBufferLock;
+    }
+
+    Lock getWriteBufferLock() {
+        return writeBufferLock;
     }
 }
