@@ -15,7 +15,8 @@ public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
     private static HostManager hostManager;
-    private static ExecutorService executorService = Executors.newFixedThreadPool(6);
+    private static ExecutorService clientExecutor = Executors.newFixedThreadPool(4);
+    private static ExecutorService maintenanceExecutor = Executors.newCachedThreadPool();
 
     public static void main(String... args) throws InterruptedException, IOException {
         if (args.length != 1) {
@@ -33,20 +34,20 @@ public class Main {
                 "WebSocket Host",
                 60,
                 new WebSocketWorkerFactory(Main::shutdown),
-                executorService,
+                maintenanceExecutor,
                 1024
         );
 
-        hostManager.newHost("Main Host", port, clientFactory, executorService);
-        executorService.execute(hostManager);
+        hostManager.newHost("Main Host", port, clientFactory, clientExecutor);
+        clientExecutor.execute(hostManager);
 
         logger.info("Main finished...");
     }
 
     public static void shutdown() {
-        executorService.shutdownNow();
+        clientExecutor.shutdownNow();
         try {
-            executorService.awaitTermination(1, TimeUnit.MINUTES);
+            clientExecutor.awaitTermination(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             logger.error(e.getMessage(), e);
         }

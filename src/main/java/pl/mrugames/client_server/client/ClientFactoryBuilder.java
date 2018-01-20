@@ -26,7 +26,7 @@ public class ClientFactoryBuilder<In, Out> {
     public ClientFactoryBuilder(Function<ByteBuffer, ClientWriter> clientWriterFactory,
                                 Function<ByteBuffer, ClientReader> clientReaderFactory,
                                 ClientWorkerFactory<In, Out> clientWorkerFactory,
-                                ExecutorService executorService) {
+                                ExecutorService executorService) {  // todo: add separate executor service for maintenance (check ClientFactories for reference)
         this.clientWriterFactory = clientWriterFactory;
         this.clientReaderFactory = clientReaderFactory;
         this.clientWorkerFactory = clientWorkerFactory;

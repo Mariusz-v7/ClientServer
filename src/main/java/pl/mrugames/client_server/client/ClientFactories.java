@@ -14,16 +14,18 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 public class ClientFactories {
+    /**
+     * @param maintenanceThreadPool - thread pool for maintenance processes - should be different than pool for client execution
+     */
     public static ClientFactory<String, String> createClientFactoryForWSServer(
             String name,
             int timeoutSeconds,
             ClientWorkerFactory<String, String> clientWorkerFactory,
-            ExecutorService executorService,
+            ExecutorService maintenanceThreadPool,
             int bufferSize) {
 
         ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeoutSeconds);
-        executorService.execute(clientWatchdog); // TODO: this should be run in different pool!!!
-        //TODO: Figure out whether it's worth to have only one watchdog for all hosts (not separate for each host)
+        maintenanceThreadPool.execute(clientWatchdog);
 
         String httpProtocolName = "http-protocol";
         String webSocketProtocolName = "web-socket-protocol";
