@@ -115,17 +115,23 @@ public class Comm {
     }
 
     @Nullable
-    public synchronized Object receive() throws Exception {
-        if (!clientReader.isReady()) {
-            logger.debug("[RECEIVE] Reader is not ready!");
-            return null;
-        }
-
+    public Object receive() throws Exception {
         try (Timer.Context ignored = receiveMetric.time()) {
+            Serializable rawFrame;
+
+            readBufferLock.lock();
+            try {
+                if (!clientReader.isReady()) {
+                    logger.debug("[RECEIVE] Reader is not ready!");
+                    return null;
+                }
+
+                rawFrame = clientReader.read();
+            } finally {
+                readBufferLock.unlock();
+            }
 
             Object frame;
-
-            Serializable rawFrame = clientReader.read();
 
             logger.debug("[RECEIVE] Transforming from raw frame: '{}'", rawFrame);
 

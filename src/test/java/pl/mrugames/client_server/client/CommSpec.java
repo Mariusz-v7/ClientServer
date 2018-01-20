@@ -39,7 +39,6 @@ class CommSpec {
 
     @BeforeEach
     @SuppressWarnings("unchecked")
-
     void before() throws Exception {
         clientWriter = mock(ClientWriter.class);
         clientReader = mock(ClientReader.class);
@@ -61,7 +60,7 @@ class CommSpec {
         readBufferLock = mock(Lock.class);
 
         commCreation = Instant.now();
-        comm = new Comm(protocols, writeBuffer, readBufferLock, writeBufferLock, channel, mock(Timer.class), mock(Timer.class), "default");
+        comm = spy(new Comm(protocols, writeBuffer, readBufferLock, writeBufferLock, channel, mock(Timer.class), mock(Timer.class), "default"));
     }
 
     @Test
@@ -202,4 +201,46 @@ class CommSpec {
         verify(readBufferLock).unlock();
     }
 
+    @Test
+    void givenCanReadReturnsTrue_whenReceive_thenLockBuffer() throws Exception {
+        doReturn(true).when(clientReader).isReady();
+
+        InOrder inOrder = inOrder(comm, readBufferLock, clientReader);
+
+        comm.receive();
+
+        inOrder.verify(readBufferLock).lock();
+        inOrder.verify(clientReader).isReady();
+        inOrder.verify(clientReader).read();
+        inOrder.verify(readBufferLock).unlock();
+    }
+
+    @Test
+    void givenCanReadReturnsFalse_whenReceive_thenLockBuffer() throws Exception {
+        doReturn(false).when(clientReader).isReady();
+
+        InOrder inOrder = inOrder(comm, readBufferLock, clientReader);
+
+        comm.receive();
+
+        inOrder.verify(readBufferLock).lock();
+        inOrder.verify(clientReader).isReady();
+        inOrder.verify(readBufferLock).unlock();
+    }
+
+    @Test
+    void givenIsReadyThrowsException_whenReceive_thenUnlockBuffer() throws Exception {
+        doThrow(RuntimeException.class).when(clientReader).isReady();
+
+        assertThrows(RuntimeException.class, comm::receive);
+        verify(readBufferLock).unlock();
+    }
+
+    @Test
+    void givenReadThrowsException_whenReceive_thenUnlockBuffer() throws Exception {
+        doThrow(RuntimeException.class).when(clientReader).read();
+
+        assertThrows(RuntimeException.class, comm::receive);
+        verify(readBufferLock).unlock();
+    }
 }
