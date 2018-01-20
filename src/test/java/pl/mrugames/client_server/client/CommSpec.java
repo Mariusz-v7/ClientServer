@@ -243,4 +243,23 @@ class CommSpec {
         assertThrows(RuntimeException.class, comm::receive);
         verify(readBufferLock).unlock();
     }
+
+    @Test
+    void whenSendThenLockBuffer() throws Exception {
+        comm.send("test");
+
+        InOrder inOrder = inOrder(comm, writeBufferLock);
+        inOrder.verify(writeBufferLock).lock();
+        inOrder.verify(comm).writeToSocket(anyString());
+        inOrder.verify(writeBufferLock).unlock();
+    }
+
+    @Test
+    void givenWriteToSocketThrowsException_whenSend_thenUnlockBuffer() throws Exception {
+        doThrow(RuntimeException.class).when(comm).writeToSocket(anyString());
+        assertThrows(RuntimeException.class, () -> comm.send("any"));
+        verify(writeBufferLock).unlock();
+
+    }
+
 }

@@ -79,8 +79,7 @@ public class Comm {
         this.outputFilterProcessor = toSwitch.getOutputFilterProcessor();
     }
 
-    @SuppressWarnings("unchecked")
-    public synchronized void send(Object frame) throws Exception {
+    public void send(Object frame) throws Exception {
         try (Timer.Context ignored = sendMetric.time()) {
             logger.debug("[SEND] Transforming to raw frame: '{}'", frame);
 
@@ -88,13 +87,12 @@ public class Comm {
             if (result.isPresent()) {
                 Serializable rawFrame = result.get();
                 logger.debug("[SEND] Frame after transformation: '{}'", rawFrame);
-                ((ClientWriter<Serializable>) clientWriter).write(rawFrame);
 
-                writeBuffer.flip();
+                writeBufferLock.lock();
                 try {
-                    socketChannel.write(writeBuffer);
+                    writeToSocket(rawFrame);
                 } finally {
-                    writeBuffer.compact();
+                    writeBufferLock.unlock();
                 }
 
             } else {
@@ -147,6 +145,18 @@ public class Comm {
             }
 
             return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    void writeToSocket(Serializable rawFrame) throws Exception {
+        ((ClientWriter<Serializable>) clientWriter).write(rawFrame);
+
+        writeBuffer.flip();
+        try {
+            socketChannel.write(writeBuffer);
+        } finally {
+            writeBuffer.compact();
         }
     }
 
