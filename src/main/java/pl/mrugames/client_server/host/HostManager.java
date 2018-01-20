@@ -119,6 +119,8 @@ public class HostManager implements Runnable {
             ClientRequestTask clientRequestTask = new ClientRequestTask(client);
 
             client.getTaskExecutor().submit(clientRequestTask);
+        } catch (IOException e) {
+            logger.debug("[{}] Failed to read from client", client.getName(), e);
         } catch (Exception e) {
             logger.error("[{}] Failed to read from client", client.getName(), e);
             client.getTaskExecutor().submit(new ClientShutdownTask(client));

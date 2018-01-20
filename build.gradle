@@ -73,7 +73,23 @@ task telnetExampleJar(type: Jar) {
     from sourceSets.test.output
 
     manifest {
-        attributes 'Main-Class': 'pl.mrugames.commons.telnet_example.Main'
+        attributes 'Main-Class': 'pl.mrugames.commons.client_server.telnet_example.Main'
+    }
+
+    with jar
+}
+
+task webSocketExampleJar(type: Jar) {
+    baseName = project.name + '-websocket-example'
+
+    from configurations.compile.collect {
+        it.isDirectory() ? it : zipTree(it)
+    }
+
+    from sourceSets.test.output
+
+    manifest {
+        attributes 'Main-Class': 'pl.mrugames.commons.client_server.websocket_server.Main'
     }
 
     with jar
