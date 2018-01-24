@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.client.ClientFactoryBuilder;
+import pl.mrugames.client_server.client.ProtocolFactory;
+import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.io.TextReader;
 import pl.mrugames.client_server.client.io.TextWriter;
 
@@ -29,11 +31,13 @@ public class Main {
         ExecutorService executorService = Executors.newCachedThreadPool();
 
         ClientFactory<String, String> clientFactory =
-                new ClientFactoryBuilder<>(TextWriter::new, TextReader::new, new LocalClientWorkerFactory(), executorService)
+                new ClientFactoryBuilder<>(new LocalClientWorkerFactory(), executorService,
+                        new ProtocolFactory<>(TextWriter::new, TextReader::new, FilterProcessor.EMPTY_FILTER_PROCESSOR, FilterProcessor.EMPTY_FILTER_PROCESSOR, "default")
+                )
                         .setName("Local Client")
                         .build();
 
-        try {
+        try {//TODO
             SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(address, port));
 //            Client localClientWorker = clientFactory.create(socketChannel, executorService);
 

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.Metrics;
+import pl.mrugames.client_server.client.filters.FilterProcessor;
 import pl.mrugames.client_server.client.io.LineReader;
 import pl.mrugames.client_server.client.io.LineWriter;
 import pl.mrugames.client_server.host.HostManager;
@@ -42,16 +43,22 @@ class TimeoutSpec {
 
         clientWorker = new TimeoutClientWorker();
 
-        ClientFactory clientFactory = new ClientFactoryBuilder<>(buffer -> {
-            lineWriter = new LineWriter(buffer);
-            return lineWriter;
-        },
-                LineReader::new,
+        ClientFactory clientFactory = new ClientFactoryBuilder<>(
                 (comm, clientInfo, killme) -> {
                     this.comm = comm;
                     return clientWorker;
                 },
-                executorService)
+                executorService,
+                new ProtocolFactory<>(
+                        buffer -> {
+                            lineWriter = new LineWriter(buffer);
+                            return lineWriter;
+                        },
+                        LineReader::new,
+                        FilterProcessor.EMPTY_FILTER_PROCESSOR,
+                        FilterProcessor.EMPTY_FILTER_PROCESSOR,
+                        "default"
+                ))
                 .setTimeout(timeout)
                 .setName("Text Server")
                 .build();
