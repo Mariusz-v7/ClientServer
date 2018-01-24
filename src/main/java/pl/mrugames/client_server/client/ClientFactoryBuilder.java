@@ -47,7 +47,7 @@ public class ClientFactoryBuilder<In, Out> {
 
     @SuppressWarnings("unchecked")
     public ClientFactory<In, Out> build() {
-        ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeout);
+        ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog");  // TODO: why cannot have common watchdog?
         maintenanceExecutor.execute(clientWatchdog);
 
         return new ClientFactory(
@@ -56,7 +56,8 @@ public class ClientFactoryBuilder<In, Out> {
                 clientWorkerFactory,
                 protocolFactories,
                 clientWatchdog,
-                bufferSize
+                bufferSize,
+                timeout
         );
     }
 }

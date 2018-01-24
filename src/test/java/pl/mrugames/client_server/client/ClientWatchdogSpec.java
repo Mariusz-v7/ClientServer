@@ -27,12 +27,13 @@ class ClientWatchdogSpec {
     @BeforeEach
     void before() throws InterruptedException, IOException {
         client = mock(Client.class);
+        doReturn(30L).when(client).getTimeoutSeconds();
 
         taskExecutor = mock(TaskExecutor.class);
         doReturn(taskExecutor).when(client).getTaskExecutor();
 
         executorService = Executors.newSingleThreadExecutor();
-        watchdog = spy(new ClientWatchdog("Test", 30));
+        watchdog = spy(new ClientWatchdog("Test"));
 
         executorService.execute(watchdog);
         if (!watchdog.awaitStart(30, TimeUnit.SECONDS)) {
@@ -72,7 +73,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now().minusSeconds(31)).when(comm).getLastDataSent();
         doReturn(Instant.now()).when(comm).getLastDataReceived();
 
-        assertTrue(watchdog.isTimeout(comm, ""));
+        assertTrue(watchdog.isTimeout(comm, "", 30));
     }
 
     @Test
@@ -81,7 +82,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now()).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(31)).when(comm).getLastDataReceived();
 
-        assertTrue(watchdog.isTimeout(comm, ""));
+        assertTrue(watchdog.isTimeout(comm, "", 30));
     }
 
     @Test
@@ -90,7 +91,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now()).when(comm).getLastDataSent();
         doReturn(Instant.now()).when(comm).getLastDataReceived();
 
-        assertFalse(watchdog.isTimeout(comm, ""));
+        assertFalse(watchdog.isTimeout(comm, "", 30));
     }
 
     @Test
@@ -99,7 +100,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now().minusSeconds(10)).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(5)).when(comm).getLastDataReceived();
 
-        assertThat(watchdog.calculateSecondsToTimeout(comm)).isEqualTo(20);
+        assertThat(watchdog.calculateSecondsToTimeout(comm, 30)).isEqualTo(20);
     }
 
     @Test
@@ -108,7 +109,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now().minusSeconds(5)).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(10)).when(comm).getLastDataReceived();
 
-        assertThat(watchdog.calculateSecondsToTimeout(comm)).isEqualTo(20);
+        assertThat(watchdog.calculateSecondsToTimeout(comm, 30)).isEqualTo(20);
     }
 
     @Test
@@ -117,7 +118,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now().minusSeconds(15)).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(15)).when(comm).getLastDataReceived();
 
-        assertThat(watchdog.calculateSecondsToTimeout(comm)).isEqualTo(15);
+        assertThat(watchdog.calculateSecondsToTimeout(comm, 30)).isEqualTo(15);
     }
 
     @Test
@@ -126,7 +127,7 @@ class ClientWatchdogSpec {
         doReturn(Instant.now().minusSeconds(29).minusMillis(50)).when(comm).getLastDataSent();
         doReturn(Instant.now().minusSeconds(15)).when(comm).getLastDataReceived();
 
-        assertThat(watchdog.calculateSecondsToTimeout(comm)).isEqualTo(1);
+        assertThat(watchdog.calculateSecondsToTimeout(comm, 30)).isEqualTo(1);
     }
 
     @Test
@@ -138,7 +139,7 @@ class ClientWatchdogSpec {
     @Test
     void givenConnectionRegistered_whenWatchdogIsRun_thenCallCheck() throws InterruptedException {
         Thread.sleep(100);
-        doReturn(true).when(watchdog).isTimeout(any(), any());
+        doReturn(true).when(watchdog).isTimeout(any(), any(), anyLong());
         watchdog.register(client);
 
         Thread.sleep(100);
@@ -149,7 +150,7 @@ class ClientWatchdogSpec {
     void givenConnectionRegistered_whenIsTimeoutReturnTrue_thenRemove() throws InterruptedException, IOException {
         stop();
 
-        doReturn(true).when(watchdog).isTimeout(any(), any());
+        doReturn(true).when(watchdog).isTimeout(any(), any(), anyLong());
 
         watchdog.register(client);
 
@@ -163,7 +164,7 @@ class ClientWatchdogSpec {
     void givenAllConnectionsTimedOut_whenCheck_thenReturnMinusOne() throws InterruptedException {
         stop();
 
-        doReturn(true).when(watchdog).isTimeout(any(), any());
+        doReturn(true).when(watchdog).isTimeout(any(), any(), anyLong());
 
         watchdog.register(mock(Client.class));
         watchdog.register(mock(Client.class));
@@ -175,11 +176,15 @@ class ClientWatchdogSpec {
     void givenConnectionsNotTimedOut_whenCheck_thenReturnSoonestPossibleTimeout() throws InterruptedException {
         stop();
 
-        doReturn(true, false, false).when(watchdog).isTimeout(any(), any());
+        doReturn(true, false, false).when(watchdog).isTimeout(any(), any(), anyLong());
 
         Client client1 = mock(Client.class);
         Client client2 = mock(Client.class);
         Client client3 = mock(Client.class);
+
+        doReturn(30L).when(client1).getTimeoutSeconds();
+        doReturn(30L).when(client2).getTimeoutSeconds();
+        doReturn(30L).when(client3).getTimeoutSeconds();
 
         Comm comm1 = mock(Comm.class);
         Comm comm2 = mock(Comm.class);
@@ -193,16 +198,16 @@ class ClientWatchdogSpec {
         watchdog.register(client2);
         watchdog.register(client3);
 
-        doReturn(30L).when(watchdog).calculateSecondsToTimeout(comm2);
-        doReturn(20L).when(watchdog).calculateSecondsToTimeout(comm3);
+        doReturn(30L).when(watchdog).calculateSecondsToTimeout(comm2, 30);
+        doReturn(20L).when(watchdog).calculateSecondsToTimeout(comm3, 30);
 
         assertThat(watchdog.check()).isEqualTo(20);
     }
 
     @Test
     void givenConnectionNotTimedOut_whenWatchdogIsRun_thenWaitGivenAmountOfSeconds() throws InterruptedException {
-        doReturn(false).when(watchdog).isTimeout(any(), any());
-        doReturn(1L).when(watchdog).calculateSecondsToTimeout(any());
+        doReturn(false).when(watchdog).isTimeout(any(), any(), anyLong());
+        doReturn(1L).when(watchdog).calculateSecondsToTimeout(any(), anyLong());
 
         watchdog.register(client);
 
@@ -215,8 +220,8 @@ class ClientWatchdogSpec {
 
     @Test
     void givenConnectionNotTimedOut_whenWatchdogIsRun_thenNextCallIsWhenNewConnectionIsRegistered() throws InterruptedException {
-        doReturn(false).when(watchdog).isTimeout(any(), any());
-        doReturn(10L).when(watchdog).calculateSecondsToTimeout(any());
+        doReturn(false).when(watchdog).isTimeout(any(), any(), anyLong());
+        doReturn(10L).when(watchdog).calculateSecondsToTimeout(any(), anyLong());
 
         watchdog.register(mock(Client.class));
 

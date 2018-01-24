@@ -21,15 +21,13 @@ class ClientWatchdog implements Runnable {
 
     private final Timer cleanupMetric;
     private final String name;
-    private final long timeoutSeconds;
     private final CountDownLatch startSignal;
     final CopyOnWriteArraySet<Client> clients;
     final Semaphore semaphore;
     private volatile boolean running;
 
-    ClientWatchdog(String name, long timeoutSeconds) {
+    ClientWatchdog(String name) {
         this.name = name;
-        this.timeoutSeconds = timeoutSeconds;
         this.startSignal = new CountDownLatch(1);
         clients = new CopyOnWriteArraySet<>();
         semaphore = new Semaphore(0);
@@ -46,6 +44,7 @@ class ClientWatchdog implements Runnable {
 
     @Override
     public void run() {
+        // todo: replace logger with metrics - set logger  to debug
         try {
             running = true;
             startSignal.countDown();
@@ -93,7 +92,7 @@ class ClientWatchdog implements Runnable {
             for (Client client : clients) {
                 semaphore.acquire();
 
-                if (isTimeout(client.getComm(), client.getName())) {
+                if (isTimeout(client.getComm(), client.getName(), client.getTimeoutSeconds())) {
                     logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, client.getName());
 
                     try {
@@ -107,7 +106,7 @@ class ClientWatchdog implements Runnable {
 
                     logger.info("[{}] Connection removed. Client: {}", name, client.getName());
                 } else {
-                    long nextTimeout = calculateSecondsToTimeout(client.getComm());
+                    long nextTimeout = calculateSecondsToTimeout(client.getComm(), client.getTimeoutSeconds());
                     if (nextPossibleTimeout == -1 || nextPossibleTimeout > nextTimeout) {
                         nextPossibleTimeout = nextTimeout;
                     }
@@ -120,7 +119,7 @@ class ClientWatchdog implements Runnable {
         }
     }
 
-    boolean isTimeout(Comm comm, String clientName) {
+    boolean isTimeout(Comm comm, String clientName, long timeoutSeconds) {
         Instant timeout = Instant.now().minusSeconds(timeoutSeconds);
         if (comm.getLastDataReceived().isBefore(timeout)) {
             logger.info("[{}] Reception timeout. Client: {}", name, clientName);
@@ -135,7 +134,7 @@ class ClientWatchdog implements Runnable {
         return false;
     }
 
-    long calculateSecondsToTimeout(Comm comm) {
+    long calculateSecondsToTimeout(Comm comm, long timeoutSeconds) {
         Instant timeout = Instant.now().minusSeconds(timeoutSeconds);
 
         long receiveTimeout = Duration.between(timeout, comm.getLastDataReceived()).toMillis();

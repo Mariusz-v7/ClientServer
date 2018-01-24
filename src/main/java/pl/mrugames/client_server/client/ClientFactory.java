@@ -29,6 +29,7 @@ public class ClientFactory<In, Out> {
     private final ClientWatchdog watchdog;
     private final int bufferSize;
     private final List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories;
+    private final long timeoutSeconds;
 
     private final Timer clientSendMetric;
     private final Timer clientReceiveMetric;
@@ -38,7 +39,8 @@ public class ClientFactory<In, Out> {
                   ClientWorkerFactory<In, Out> clientWorkerFactory,
                   List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories,
                   ClientWatchdog clientWatchdog,
-                  int bufferSize
+                  int bufferSize,
+                  long timeoutSeconds
     ) {
         this.clientId = new AtomicLong();
         this.factoryName = factoryName;
@@ -47,6 +49,7 @@ public class ClientFactory<In, Out> {
         this.protocolFactories = protocolFactories;
         this.watchdog = clientWatchdog;
         this.bufferSize = bufferSize;
+        this.timeoutSeconds = timeoutSeconds;
 
         this.clientSendMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "send"));
         this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
@@ -142,7 +145,7 @@ public class ClientFactory<In, Out> {
                                  Lock readLock,
                                  Lock writeLock
     ) {
-        return new Client<>(clientName, taskExecutor, comm, clientWorker, channel, readBuffer, readLock, writeLock);
+        return new Client<>(clientName, taskExecutor, comm, clientWorker, channel, readBuffer, readLock, writeLock, timeoutSeconds);
     }
 
     void closeChannel(SocketChannel channel) {

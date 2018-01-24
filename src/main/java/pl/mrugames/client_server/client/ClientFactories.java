@@ -24,7 +24,7 @@ public class ClientFactories {
             ExecutorService maintenanceThreadPool,
             int bufferSize) {
 
-        ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeoutSeconds);
+        ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog"); // todo
         maintenanceThreadPool.execute(clientWatchdog);
 
         String httpProtocolName = "http-protocol";
@@ -50,7 +50,8 @@ public class ClientFactories {
                 webSocketWorkerFactory,
                 protocolFactories,
                 clientWatchdog,
-                bufferSize
+                bufferSize,
+                timeoutSeconds
         );
     }
 
@@ -62,7 +63,7 @@ public class ClientFactories {
             int bufferSize
     ) {
 
-        ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog", timeoutSeconds);
+        ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog"); // TODO
         executorService.execute(clientWatchdog);
 
         return null; // todo
