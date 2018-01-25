@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
     private static HostManager hostManager;
-    private static ExecutorService executorService = Executors.newCachedThreadPool();
+    private static ExecutorService maintenanceExecutor = Executors.newCachedThreadPool();
 
     public static void main(String... args) throws InterruptedException, IOException {
         if (args.length != 1) {
@@ -26,29 +26,29 @@ public class Main {
             return;
         }
 
-        hostManager = new HostManager();
+        hostManager = HostManager.create(4);
 
         final int port = Integer.valueOf(args[0]);
 
         logger.info("Main started...");
 
-        ClientFactory clientFactory = new ClientFactoryBuilder<>(new ExampleClientWorkerFactory(Main::shutdown), executorService,
+        ClientFactory clientFactory = new ClientFactoryBuilder<>(new ExampleClientWorkerFactory(Main::shutdown), maintenanceExecutor,
                 new ProtocolFactory<>(LineWriter::new, LineReader::new, FilterProcessor.EMPTY_FILTER_PROCESSOR, FilterProcessor.EMPTY_FILTER_PROCESSOR, "default")
         )
                 .setName("Text Server")
                 .build();
 
-        hostManager.newHost("Main Host", port, clientFactory, executorService);
+        hostManager.newHost("Main Host", port, clientFactory);
 
-        executorService.execute(hostManager);
+        hostManager.run();
 
         logger.info("Main finished...");
     }
 
     private static void shutdown() {
         try {
-            executorService.shutdownNow();
-            executorService.awaitTermination(1, TimeUnit.MINUTES);
+            hostManager.shutdown();
+            hostManager.awaitTermination(1, TimeUnit.MINUTES);
 
         } catch (InterruptedException e) {
             logger.error(e.getMessage(), e);

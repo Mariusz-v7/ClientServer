@@ -63,8 +63,8 @@ class TimeoutSpec {
                 .setName("Text Server")
                 .build();
 
-        hostManager = new HostManager();
-        hostManager.newHost("Timeout Host", port, clientFactory, executorService);
+        hostManager = HostManager.create(executorService);
+        hostManager.newHost("Timeout Host", port, clientFactory);
 
         executorService.submit(hostManager);
     }

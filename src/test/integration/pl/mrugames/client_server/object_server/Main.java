@@ -29,18 +29,18 @@ public class Main {
 
         ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Java server", 60, new WorkerFactory(Main::shutdown), executorService, 1024);
 
-        hostManager = new HostManager();
-        hostManager.newHost("Main Host", port, clientFactory, executorService);
+        hostManager = HostManager.create(4);
+        hostManager.newHost("Main Host", port, clientFactory);
 
-        executorService.execute(hostManager);
+        hostManager.run();
 
         logger.info("Main finished...");
     }
 
     public static void shutdown() {
         try {
-            executorService.shutdownNow();
-            executorService.awaitTermination(1, TimeUnit.MINUTES);
+            hostManager.shutdown();
+            hostManager.awaitTermination(1, TimeUnit.MINUTES);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }

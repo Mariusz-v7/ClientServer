@@ -7,6 +7,7 @@ import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.tasks.ClientRequestTask;
 import pl.mrugames.client_server.tasks.ClientShutdownTask;
 import pl.mrugames.client_server.tasks.NewClientAcceptTask;
+import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -14,27 +15,50 @@ import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 public class HostManager implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final ExecutorService executorService;
+    private final CountDownLatch shutdownSignal = new CountDownLatch(1);
+    private final CountDownLatch startSignal = new CountDownLatch(1);
+    private final boolean manageExecutorService;
+    private final TaskExecutor taskExecutor;
 
     volatile Selector selector;
     volatile boolean started = false;
     final List<Host> hosts;
 
-    public HostManager() throws IOException, InterruptedException {
-        this.hosts = new CopyOnWriteArrayList<>();
+    public static HostManager create(int numThreads) {
+        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+        return new HostManager(executorService, true);
     }
 
-    public synchronized void newHost(String name, int port, ClientFactory clientFactory, ExecutorService clientExecutor) {
+    /**
+     * When you use this method, you have to manage executorService on your own (eg. start it and stop it)
+     */
+    public static HostManager create(ExecutorService executorService) {
+        return new HostManager(executorService, false);
+    }
+
+    HostManager(ExecutorService clientExecutor, boolean manageExecutorService) {
+        this(clientExecutor, manageExecutorService, new TaskExecutor(clientExecutor));
+    }
+
+    HostManager(ExecutorService clientExecutor, boolean manageExecutorService, TaskExecutor taskExecutor) {
+        this.hosts = new CopyOnWriteArrayList<>();
+        this.executorService = clientExecutor;
+        this.manageExecutorService = manageExecutorService;
+        this.taskExecutor = taskExecutor;
+    }
+
+    public synchronized void newHost(String name, int port, ClientFactory clientFactory) {
         if (started) {
             throw new HostManagerIsRunningException("Host Manager is running. Please submit your hosts before starting Host Manager's thread!");
         }
 
-        Host host = new Host(name, port, clientFactory, clientExecutor);
+        Host host = new Host(name, port, clientFactory);
         hosts.add(host);
 
         logger.info("New Host has been submitted: {}", host);
@@ -42,6 +66,8 @@ public class HostManager implements Runnable {
 
     @Override
     public void run() {
+        startSignal.countDown();
+
         try {
             synchronized (this) {
                 logger.info("Host Manager has been started in thread: {}", Thread.currentThread().getName());
@@ -69,7 +95,22 @@ public class HostManager implements Runnable {
         } catch (Exception e) {
             logger.error("Failed to open selector!");
         } finally {
-            shutdown();
+            try {
+                shutdown();
+            } finally {
+                if (manageExecutorService) {
+                    executorService.shutdownNow();
+                    try {
+                        if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
+                            logger.error("Executor did not terminate.");
+                        }
+                    } catch (InterruptedException e) {
+                        logger.error("Failed to wait for executor termination", e);
+                    }
+                }
+
+                shutdownSignal.countDown();
+            }
         }
     }
 
@@ -140,8 +181,8 @@ public class HostManager implements Runnable {
 
             configure(socketChannel);
 
-            NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), socketChannel, host.getTaskExecutor());
-            Future<Client> result = host.getTaskExecutor().submit(acceptTask);
+            NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), socketChannel, taskExecutor);
+            Future<Client> result = taskExecutor.submit(acceptTask);
 
             register(socketChannel, result);
         } catch (Exception e) {
@@ -251,5 +292,13 @@ public class HostManager implements Runnable {
      */
     void closeClientChannel(SocketChannel channel) throws IOException {
         channel.close();
+    }
+
+    public boolean awaitTermination(long timeout, TimeUnit timeUnit) throws InterruptedException {
+        return shutdownSignal.await(timeout, timeUnit);
+    }
+
+    public boolean awaitStart(long timeout, TimeUnit timeUnit) throws InterruptedException {
+        return startSignal.await(timeout, timeUnit);
     }
 }

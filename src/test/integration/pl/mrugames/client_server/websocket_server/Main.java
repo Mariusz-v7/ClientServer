@@ -15,7 +15,6 @@ public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
     private static HostManager hostManager;
-    private static ExecutorService clientExecutor = Executors.newFixedThreadPool(4);
     private static ExecutorService maintenanceExecutor = Executors.newCachedThreadPool();
 
     public static void main(String... args) throws InterruptedException, IOException {
@@ -24,7 +23,7 @@ public class Main {
             return;
         }
 
-        hostManager = new HostManager();
+        hostManager = HostManager.create(4);
 
         final int port = Integer.valueOf(args[0]);
 
@@ -38,16 +37,16 @@ public class Main {
                 1024
         );
 
-        hostManager.newHost("Main Host", port, clientFactory, clientExecutor);
-        clientExecutor.execute(hostManager);
+        hostManager.newHost("Main Host", port, clientFactory);
+        hostManager.run();
 
         logger.info("Main finished...");
     }
 
     public static void shutdown() {
-        clientExecutor.shutdownNow();
+        hostManager.shutdown();
         try {
-            clientExecutor.awaitTermination(1, TimeUnit.MINUTES);
+            hostManager.awaitTermination(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             logger.error(e.getMessage(), e);
         }

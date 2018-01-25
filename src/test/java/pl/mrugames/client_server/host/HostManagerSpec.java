@@ -19,10 +19,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,11 +35,14 @@ class HostManagerSpec {
     private Future<Client> acceptResult;
     private Client client;
     private ByteBuffer readBuffer;
+    private ExecutorService executorService;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void before() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        hostManager = spy(new HostManager());
+        executorService = mock(ExecutorService.class);
+        clientExecutor = mock(TaskExecutor.class);
+        hostManager = spy(new HostManager(executorService, false, clientExecutor));
 
         host = mock(Host.class);
         serverSocketChannel = mock(ServerSocketChannel.class);
@@ -50,9 +50,6 @@ class HostManagerSpec {
 
         socketChannel = mock(SocketChannel.class);
         doReturn(socketChannel).when(serverSocketChannel).accept();
-
-        clientExecutor = mock(TaskExecutor.class);
-        doReturn(clientExecutor).when(host).getTaskExecutor();
 
         acceptResult = mock(Future.class);
         doReturn(acceptResult).when(clientExecutor).submit(any(NewClientAcceptTask.class));
@@ -92,7 +89,7 @@ class HostManagerSpec {
     void givenManagerIsStarted_whenNewHost_thenException() throws IOException {
         hostManager.started = true;
 
-        HostManagerIsRunningException e = assertThrows(HostManagerIsRunningException.class, () -> hostManager.newHost("test", 1999, mock(ClientFactory.class), mock(ExecutorService.class)));
+        HostManagerIsRunningException e = assertThrows(HostManagerIsRunningException.class, () -> hostManager.newHost("test", 1999, mock(ClientFactory.class)));
         assertThat(e.getMessage()).isEqualTo("Host Manager is running. Please submit your hosts before starting Host Manager's thread!");
     }
 
@@ -103,7 +100,7 @@ class HostManagerSpec {
 
     @Test
     void whenNewHost_thenAddToList() {
-        hostManager.newHost("Test", 1234, mock(ClientFactory.class), mock(ExecutorService.class));
+        hostManager.newHost("Test", 1234, mock(ClientFactory.class));
         assertThat(hostManager.hosts).hasSize(1);
 
         Host host = hostManager.hosts.get(0);
@@ -117,8 +114,8 @@ class HostManagerSpec {
         ServerSocketChannel factoryProduct = mock(ServerSocketChannel.class);
         doReturn(factoryProduct).when(hostManager).serverSocketChannelFactory(any(Host.class));
 
-        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class), mock(ExecutorService.class));
-        Host host2 = new Host("Host 2", 1235, mock(ClientFactory.class), mock(ExecutorService.class));
+        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class));
+        Host host2 = new Host("Host 2", 1235, mock(ClientFactory.class));
 
         hostManager.hosts.add(host1);
         hostManager.hosts.add(host2);
@@ -136,7 +133,7 @@ class HostManagerSpec {
     void factoryThrowsException_catchIt() throws IOException {
         doThrow(RuntimeException.class).when(hostManager).serverSocketChannelFactory(any());
 
-        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class), mock(ExecutorService.class));
+        Host host1 = new Host("Host 1", 1234, mock(ClientFactory.class));
         hostManager.hosts.add(host1);
 
         hostManager.startHosts();
@@ -274,6 +271,31 @@ class HostManagerSpec {
         hostManager.read(acceptResult, socketChannel);
         verify(clientExecutor).submit(any(ClientShutdownTask.class));
         verify(client.getReadBufferLock()).unlock();
+    }
+
+    @Test
+    void givenManageExecutorServiceIsTrue_whenRun_thenManageExecutor() throws InterruptedException {
+        HostManager hostManager = new HostManager(executorService, true);
+        ExecutorService tmp = Executors.newSingleThreadExecutor();
+        tmp.execute(hostManager);
+
+        hostManager.awaitStart(1, TimeUnit.SECONDS);
+        tmp.shutdownNow();
+        hostManager.awaitTermination(1, TimeUnit.SECONDS);
+        verify(executorService).shutdownNow();
+        verify(executorService).awaitTermination(anyLong(), any());
+    }
+
+    @Test
+    void giveManageExecutorServiceIsFalse_whenRun_thenDoNotManageExecutor() throws InterruptedException {
+        HostManager hostManager = new HostManager(executorService, false);
+        ExecutorService tmp = Executors.newSingleThreadExecutor();
+        tmp.execute(hostManager);
+
+        hostManager.awaitStart(1, TimeUnit.SECONDS);
+        tmp.shutdownNow();
+        hostManager.awaitTermination(1, TimeUnit.SECONDS);
+        verify(executorService, never()).shutdownNow();
     }
 
 }

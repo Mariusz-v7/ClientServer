@@ -20,7 +20,7 @@ class ClientWatchdog implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientWatchdog.class);
 
     private final Timer cleanupMetric;
-    private final String name;
+    private final String name; // todo: remove name
     private final CountDownLatch startSignal;
     final CopyOnWriteArraySet<Client> clients;
     final Semaphore semaphore;
