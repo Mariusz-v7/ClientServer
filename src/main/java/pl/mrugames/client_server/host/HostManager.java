@@ -95,6 +95,9 @@ public class HostManager implements Runnable {
                     Set<SelectionKey> selectionKeys = selector.selectedKeys();
                     selectionKeys.forEach(this::progressKey);
                     selectionKeys.clear();
+                } catch (ClosedSelectorException e) {
+                    logger.debug(e.getMessage(), e);
+                    break;
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
                     break;
@@ -201,7 +204,7 @@ public class HostManager implements Runnable {
 
             configure(socketChannel);
 
-            NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), socketChannel, taskExecutor);
+            NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), socketChannel, taskExecutor, clientWatchdog);
             Future<Client> result = taskExecutor.submit(acceptTask);
 
             register(socketChannel, result);
@@ -240,24 +243,28 @@ public class HostManager implements Runnable {
     public synchronized void shutdown() {
         logger.info("Host Manager is stopping");
 
-        Set<SelectionKey> keys = selector.keys();
-        for (SelectionKey key : keys) {
-            logger.info("Closing connection: {}", key.attachment());
-
-            try {
-                closeChannel(key);
-            } catch (Exception e) {
-                logger.info("Failed to close connection: {}", key.attachment());
-                continue;
-            }
-
-            logger.info("Connection closed: {}", key.attachment());
-        }
-
         try {
-            selector.close();
-        } catch (IOException e) {
-            logger.error("Failed to close selector", e);
+            Set<SelectionKey> keys = selector.keys();
+            for (SelectionKey key : keys) {
+                logger.info("Closing connection: {}", key.attachment());
+
+                try {
+                    closeChannel(key);
+                } catch (Exception e) {
+                    logger.info("Failed to close connection: {}", key.attachment());
+                    continue;
+                }
+
+                logger.info("Connection closed: {}", key.attachment());
+            }
+        } catch (ClosedSelectorException e) {
+            logger.warn("Selector is closed already", e);
+        } finally {
+            try {
+                selector.close();
+            } catch (IOException e) {
+                logger.error("Failed to close selector", e);
+            }
         }
 
         logger.info("Host Manager has been stopped");

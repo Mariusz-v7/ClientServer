@@ -2,11 +2,9 @@ package pl.mrugames.client_server.client;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 public class ClientFactoryBuilder<In, Out> {
     private final ClientWorkerFactory<In, Out> clientWorkerFactory;
-    private final ExecutorService maintenanceExecutor;
     private final List<ProtocolFactory> protocolFactories;
 
     private String name = "Client";
@@ -14,10 +12,8 @@ public class ClientFactoryBuilder<In, Out> {
     private int bufferSize = 1024;
 
     public ClientFactoryBuilder(ClientWorkerFactory<In, Out> clientWorkerFactory,
-                                ExecutorService maintenanceExecutor,
                                 ProtocolFactory initialProtocolFactory) {
         this.clientWorkerFactory = clientWorkerFactory;
-        this.maintenanceExecutor = maintenanceExecutor;
         this.protocolFactories = new LinkedList<>();
         this.protocolFactories.add(initialProtocolFactory);
     }
@@ -47,15 +43,11 @@ public class ClientFactoryBuilder<In, Out> {
 
     @SuppressWarnings("unchecked")
     public ClientFactory<In, Out> build() {
-        ClientWatchdog clientWatchdog = new ClientWatchdog();  // TODO: why cannot have common watchdog?
-        maintenanceExecutor.execute(clientWatchdog);
-
         return new ClientFactory(
                 name,
                 name + "-client",
                 clientWorkerFactory,
                 protocolFactories,
-                clientWatchdog,
                 bufferSize,
                 timeout
         );

@@ -11,21 +11,14 @@ import pl.mrugames.client_server.client.io.WebSocketWriter;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 public class ClientFactories {
-    /**
-     * @param maintenanceThreadPool - thread pool for maintenance processes - should be different than pool for client execution
-     */
+
     public static ClientFactory<String, String> createClientFactoryForWSServer(
             String name,
             int timeoutSeconds,
             ClientWorkerFactory<String, String> clientWorkerFactory,
-            ExecutorService maintenanceThreadPool,
             int bufferSize) {
-
-        ClientWatchdog clientWatchdog = new ClientWatchdog(); // todo
-        maintenanceThreadPool.execute(clientWatchdog);
 
         String httpProtocolName = "http-protocol";
         String webSocketProtocolName = "web-socket-protocol";
@@ -49,7 +42,6 @@ public class ClientFactories {
                 name + "-client",
                 webSocketWorkerFactory,
                 protocolFactories,
-                clientWatchdog,
                 bufferSize,
                 timeoutSeconds
         );
@@ -59,12 +51,8 @@ public class ClientFactories {
             String name,
             int timeoutSeconds,
             ClientWorkerFactory<?, ?> clientWorkerFactory,
-            ExecutorService executorService,
             int bufferSize
     ) {
-
-        ClientWatchdog clientWatchdog = new ClientWatchdog(); // TODO
-        executorService.execute(clientWatchdog);
 
         return null; // todo
 //        return new ClientFactory<>(

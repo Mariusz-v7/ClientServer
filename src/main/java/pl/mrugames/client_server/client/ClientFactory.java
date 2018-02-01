@@ -26,7 +26,6 @@ public class ClientFactory<In, Out> {
     private final String factoryName;
     private final String clientNamePrefix;
     private final ClientWorkerFactory<In, Out> clientWorkerFactory;
-    private final ClientWatchdog watchdog;
     private final int bufferSize;
     private final List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories;
     private final long timeoutSeconds;
@@ -38,7 +37,6 @@ public class ClientFactory<In, Out> {
                   String clientNamePrefix,
                   ClientWorkerFactory<In, Out> clientWorkerFactory,
                   List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories,
-                  ClientWatchdog clientWatchdog,
                   int bufferSize,
                   long timeoutSeconds
     ) {
@@ -47,7 +45,6 @@ public class ClientFactory<In, Out> {
         this.clientNamePrefix = clientNamePrefix;
         this.clientWorkerFactory = clientWorkerFactory;
         this.protocolFactories = protocolFactories;
-        this.watchdog = clientWatchdog;
         this.bufferSize = bufferSize;
         this.timeoutSeconds = timeoutSeconds;
 
@@ -55,11 +52,7 @@ public class ClientFactory<In, Out> {
         this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
     }
 
-    public Client<In, Out> create(SocketChannel channel, TaskExecutor taskExecutor) throws Exception {
-        if (!watchdog.isRunning()) {
-            throw new IllegalStateException("Client Watchdog is dead! Cannot accept new connection.");
-        }
-
+    public Client<In, Out> create(SocketChannel channel, TaskExecutor taskExecutor, ClientWatchdog watchdog) throws Exception {
         try {
             logger.info("[{}] New client is being created!", factoryName);
 

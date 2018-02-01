@@ -7,15 +7,12 @@ import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.host.HostManager;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
     private static HostManager hostManager;
-    private static ExecutorService maintenanceExecutor = Executors.newCachedThreadPool();
 
     public static void main(String... args) throws InterruptedException, IOException {
         if (args.length != 1) {
@@ -33,7 +30,6 @@ public class Main {
                 "WebSocket Host",
                 60,
                 new WebSocketWorkerFactory(Main::shutdown),
-                maintenanceExecutor,
                 1024
         );
 

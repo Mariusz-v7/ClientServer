@@ -3,10 +3,7 @@ package pl.mrugames.client_server.tasks;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import pl.mrugames.client_server.client.Client;
-import pl.mrugames.client_server.client.ClientFactory;
-import pl.mrugames.client_server.client.ClientWorker;
-import pl.mrugames.client_server.client.Comm;
+import pl.mrugames.client_server.client.*;
 
 import java.nio.channels.SocketChannel;
 
@@ -22,6 +19,7 @@ class NewClientAcceptTaskSpec {
     private TaskExecutor clientExecutor;
     private ClientWorker clientWorker;
     private Comm comm;
+    private ClientWatchdog watchdog;
 
     @SuppressWarnings("unchecked")
     @BeforeEach
@@ -31,6 +29,7 @@ class NewClientAcceptTaskSpec {
         clientWorker = mock(ClientWorker.class);
         comm = mock(Comm.class);
         clientChannel = mock(SocketChannel.class);
+        watchdog = mock(ClientWatchdog.class);
 
         doReturn(clientWorker).when(client).getClientWorker();
         doReturn(comm).when(client).getComm();
@@ -38,9 +37,9 @@ class NewClientAcceptTaskSpec {
         clientExecutor = mock(TaskExecutor.class);
         doReturn(clientExecutor).when(client).getTaskExecutor();
 
-        doReturn(client).when(clientFactory).create(clientChannel, clientExecutor);
+        doReturn(client).when(clientFactory).create(clientChannel, clientExecutor, watchdog);
 
-        task = spy(new NewClientAcceptTask("Test host", clientFactory, clientChannel, clientExecutor));
+        task = spy(new NewClientAcceptTask("Test host", clientFactory, clientChannel, clientExecutor, watchdog));
         doNothing().when(task).close(clientChannel);
     }
 
@@ -50,7 +49,7 @@ class NewClientAcceptTaskSpec {
 
         Client result = task.call();
 
-        inOrder.verify(clientFactory).create(clientChannel, clientExecutor);
+        inOrder.verify(clientFactory).create(clientChannel, clientExecutor, watchdog);
 
         assertThat(result).isSameAs(client);
     }
@@ -58,7 +57,7 @@ class NewClientAcceptTaskSpec {
     @Test
     void givenFactoryThrowsException_whenCall_thenCloseSocketAndRethrow() throws Exception {
         RuntimeException e = new RuntimeException();
-        doThrow(e).when(clientFactory).create(clientChannel, clientExecutor);
+        doThrow(e).when(clientFactory).create(clientChannel, clientExecutor, watchdog);
 
         RuntimeException thrown = assertThrows(RuntimeException.class, () -> task.call());
 

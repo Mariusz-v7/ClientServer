@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
+import pl.mrugames.client_server.client.ClientWatchdog;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
@@ -21,15 +22,18 @@ public class NewClientAcceptTask<In, Out> implements Callable<Client<In, Out>> {
     private final SocketChannel clientChannel;
     private final TaskExecutor taskExecutor;
     private final Timer clientAcceptMetric;
+    private final ClientWatchdog watchdog;
 
     public NewClientAcceptTask(String hostName,
                                ClientFactory<In, Out> clientFactory,
                                SocketChannel clientChannel,
-                               TaskExecutor taskExecutor) {
+                               TaskExecutor taskExecutor,
+                               ClientWatchdog watchdog) {
         this.hostName = hostName;
         this.clientFactory = clientFactory;
         this.clientChannel = clientChannel;
         this.taskExecutor = taskExecutor;
+        this.watchdog = watchdog;
         clientAcceptMetric = Metrics.getRegistry().timer(name(NewClientAcceptTask.class, hostName));
     }
 
@@ -42,7 +46,7 @@ public class NewClientAcceptTask<In, Out> implements Callable<Client<In, Out>> {
         try (Timer.Context ignored = clientAcceptMetric.time()) {
             logger.info("[{}] New client has been accepted: {}/{}", hostName, clientChannel.getLocalAddress(), clientChannel.getRemoteAddress());
 
-            client = clientFactory.create(clientChannel, taskExecutor);
+            client = clientFactory.create(clientChannel, taskExecutor, watchdog);
 
             Out onInitResult = client.getClientWorker().onInit();
             if (onInitResult != null) {

@@ -48,7 +48,6 @@ class TimeoutSpec {
                     this.comm = comm;
                     return clientWorker;
                 },
-                executorService,
                 new ProtocolFactory<>(
                         buffer -> {
                             lineWriter = new LineWriter(buffer);

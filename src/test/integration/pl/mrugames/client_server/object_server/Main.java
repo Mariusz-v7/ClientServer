@@ -7,15 +7,12 @@ import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.host.HostManager;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
 
     private static HostManager hostManager;
-    private static ExecutorService executorService = Executors.newCachedThreadPool();
 
     public static void main(String... args) throws InterruptedException, IOException {
         if (args.length != 1) {
@@ -27,7 +24,7 @@ public class Main {
 
         logger.info("Main started...");
 
-        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Java server", 60, new WorkerFactory(Main::shutdown), executorService, 1024);
+        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Java server", 60, new WorkerFactory(Main::shutdown), 1024);
 
         hostManager = HostManager.create(4);
         hostManager.newHost("Main Host", port, clientFactory);

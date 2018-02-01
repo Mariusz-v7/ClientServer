@@ -20,7 +20,6 @@ public class ClientWatchdog implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientWatchdog.class);
 
     private final Timer cleanupMetric;
-    private final String name = ""; // todo: remove name
     private final CountDownLatch startSignal;
     final CopyOnWriteArraySet<Client> clients;
     final Semaphore semaphore;
@@ -31,7 +30,7 @@ public class ClientWatchdog implements Runnable {
         clients = new CopyOnWriteArraySet<>();
         semaphore = new Semaphore(0);
 
-        cleanupMetric = Metrics.getRegistry().timer(MetricRegistry.name(ClientWatchdog.class, name, "cleanup"));
+        cleanupMetric = Metrics.getRegistry().timer(MetricRegistry.name(ClientWatchdog.class, "cleanup"));
         Metrics.getRegistry().register(MetricRegistry.name(ClientWatchdog.class, "clients", "registered"), (Gauge<Integer>) clients::size);
         Metrics.getHealthCheckRegistry().register(MetricRegistry.name(ClientWatchdog.class, "running"), new HealthCheck() {
             @Override
@@ -48,30 +47,30 @@ public class ClientWatchdog implements Runnable {
             running = true;
             startSignal.countDown();
 
-            logger.info("[{}] Watchdog have started in thread: {}", name, Thread.currentThread().getName());
+            logger.info("Watchdog have started in thread: {}", Thread.currentThread().getName());
 
             long nextPossibleTimeout = -1;
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     if (nextPossibleTimeout == -1) {
-                        logger.info("[{}] There are no connections registered.", name);
+                        logger.info("There are no connections registered.");
                         semaphore.acquire();
                         semaphore.release();
                     } else {
                         int connections = clients.size();
-                        logger.info("[{}] There are {} connections registered. Next possible timeout in: {} s.", name, connections, nextPossibleTimeout);
+                        logger.info("There are {} connections registered. Next possible timeout in: {} s.", connections, nextPossibleTimeout);
 
                         if (semaphore.tryAcquire(connections + 1, nextPossibleTimeout, TimeUnit.SECONDS)) {
-                            logger.info("[{}] New connection has been registered. Running next check.", name);
+                            logger.info("New connection has been registered. Running next check.");
                             semaphore.release(connections + 1);
                         } else {
-                            logger.info("[{}] Possible timeout elapsed. Running next check.", name);
+                            logger.info("Possible timeout elapsed. Running next check.");
                         }
                     }
 
-                    logger.info("[{}] There are {} connections registered. Starting clean up.", name, clients.size());
+                    logger.info("There are {} connections registered. Starting clean up.", clients.size());
                     nextPossibleTimeout = check();
-                    logger.info("[{}] Clean up finished. There are {} connections registered.", name, clients.size());
+                    logger.info("Clean up finished. There are {} connections registered.", clients.size());
 
                 } catch (InterruptedException e) {
                     break;
@@ -79,7 +78,7 @@ public class ClientWatchdog implements Runnable {
             }
         } finally {
             running = false;
-            logger.info("[{}] Watchdog have finished in thread: {}", name, Thread.currentThread().getName());
+            logger.info("Watchdog have finished in thread: {}", Thread.currentThread().getName());
         }
     }
 
@@ -92,18 +91,18 @@ public class ClientWatchdog implements Runnable {
                 semaphore.acquire();
 
                 if (isTimeout(client.getComm(), client.getName(), client.getTimeoutSeconds())) {
-                    logger.info("[{}] Connection is timed out, cleaning. Client: {}", name, client.getName());
+                    logger.info("Connection is timed out, cleaning. Client: {}", client.getName());
 
                     try {
                         client.getTaskExecutor().submit(new ClientShutdownTask(client));
-                        logger.info("[{}] Connection closed. Client: {}", name, client.getName());
+                        logger.info("Connection closed. Client: {}", client.getName());
                     } catch (Exception e) {
-                        logger.error("[{}] Error during channel close. Client: {}", name, client.getName(), e);
+                        logger.error("Error during channel close. Client: {}", client.getName(), e);
                     } finally {
                         clients.remove(client);
                     }
 
-                    logger.info("[{}] Connection removed. Client: {}", name, client.getName());
+                    logger.info("Connection removed. Client: {}", client.getName());
                 } else {
                     long nextTimeout = calculateSecondsToTimeout(client.getComm(), client.getTimeoutSeconds());
                     if (nextPossibleTimeout == -1 || nextPossibleTimeout > nextTimeout) {
@@ -121,12 +120,12 @@ public class ClientWatchdog implements Runnable {
     boolean isTimeout(Comm comm, String clientName, long timeoutSeconds) {
         Instant timeout = Instant.now().minusSeconds(timeoutSeconds);
         if (comm.getLastDataReceived().isBefore(timeout)) {
-            logger.info("[{}] Reception timeout. Client: {}", name, clientName);
+            logger.info("Reception timeout. Client: {}", clientName);
             return true;
         }
 
         if (comm.getLastDataSent().isBefore(timeout)) {
-            logger.info("[{}] Send timeout. Client: {}", name, clientName);
+            logger.info("Send timeout. Client: {}", clientName);
             return true;
         }
 
@@ -148,7 +147,7 @@ public class ClientWatchdog implements Runnable {
     synchronized void register(Client client) {
         clients.add(client);
         semaphore.release();
-        logger.info("[{}] New connection has been registered. Client: {}", name, client.getName());
+        logger.info("New connection has been registered. Client: {}", client.getName());
     }
 
     public boolean isRunning() {

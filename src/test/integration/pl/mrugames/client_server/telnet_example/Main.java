@@ -11,14 +11,11 @@ import pl.mrugames.client_server.client.io.LineWriter;
 import pl.mrugames.client_server.host.HostManager;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
     private static HostManager hostManager;
-    private static ExecutorService maintenanceExecutor = Executors.newCachedThreadPool();
 
     public static void main(String... args) throws InterruptedException, IOException {
         if (args.length != 1) {
@@ -32,7 +29,7 @@ public class Main {
 
         logger.info("Main started...");
 
-        ClientFactory clientFactory = new ClientFactoryBuilder<>(new ExampleClientWorkerFactory(Main::shutdown), maintenanceExecutor,
+        ClientFactory clientFactory = new ClientFactoryBuilder<>(new ExampleClientWorkerFactory(Main::shutdown),
                 new ProtocolFactory<>(LineWriter::new, LineReader::new, FilterProcessor.EMPTY_FILTER_PROCESSOR, FilterProcessor.EMPTY_FILTER_PROCESSOR, "default")
         )
                 .setName("Text Server")
