@@ -1,11 +1,14 @@
 package pl.mrugames.client_server.host;
 
+import com.codahale.metrics.MetricFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
+import pl.mrugames.client_server.client.ClientWatchdog;
 import pl.mrugames.client_server.tasks.ClientRequestTask;
 import pl.mrugames.client_server.tasks.ClientShutdownTask;
 import pl.mrugames.client_server.tasks.NewClientAcceptTask;
@@ -37,6 +40,7 @@ class HostManagerSpec {
     private ByteBuffer readBuffer;
     private ExecutorService executorService;
     private ExecutorService maintenanceExecutor;
+    private ClientWatchdog clientWatchdog;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -44,7 +48,8 @@ class HostManagerSpec {
         executorService = mock(ExecutorService.class);
         clientExecutor = mock(TaskExecutor.class);
         maintenanceExecutor = mock(ExecutorService.class);
-        hostManager = spy(new HostManager(executorService, false, clientExecutor, maintenanceExecutor));
+        clientWatchdog = mock(ClientWatchdog.class);
+        hostManager = spy(new HostManager(executorService, false, clientExecutor, maintenanceExecutor, clientWatchdog));
 
         host = mock(Host.class);
         serverSocketChannel = mock(ServerSocketChannel.class);
@@ -78,6 +83,8 @@ class HostManagerSpec {
         if (hostManager.selector != null) {
             hostManager.selector.close();
         }
+
+        Metrics.getRegistry().removeMatching(MetricFilter.ALL);
     }
 
     @Test
@@ -311,6 +318,18 @@ class HostManagerSpec {
 
         verify(maintenanceExecutor).shutdownNow();
         verify(maintenanceExecutor).awaitTermination(anyLong(), any());
+    }
+
+    @Test
+    void whenStartHostManager_thenStartWatchdog() throws InterruptedException {
+        ExecutorService tmp = Executors.newSingleThreadExecutor();
+        tmp.execute(hostManager);
+        hostManager.awaitStart(1, TimeUnit.SECONDS);
+
+        verify(maintenanceExecutor).execute(clientWatchdog);
+
+        tmp.shutdownNow();
+        hostManager.awaitTermination(1, TimeUnit.SECONDS);
     }
 
 }

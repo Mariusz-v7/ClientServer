@@ -47,7 +47,7 @@ public class ClientFactoryBuilder<In, Out> {
 
     @SuppressWarnings("unchecked")
     public ClientFactory<In, Out> build() {
-        ClientWatchdog clientWatchdog = new ClientWatchdog(name + "-watchdog");  // TODO: why cannot have common watchdog?
+        ClientWatchdog clientWatchdog = new ClientWatchdog();  // TODO: why cannot have common watchdog?
         maintenanceExecutor.execute(clientWatchdog);
 
         return new ClientFactory(

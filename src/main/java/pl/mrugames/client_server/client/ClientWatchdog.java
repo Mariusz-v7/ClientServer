@@ -16,18 +16,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-class ClientWatchdog implements Runnable {
+public class ClientWatchdog implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ClientWatchdog.class);
 
     private final Timer cleanupMetric;
-    private final String name; // todo: remove name
+    private final String name = ""; // todo: remove name
     private final CountDownLatch startSignal;
     final CopyOnWriteArraySet<Client> clients;
     final Semaphore semaphore;
     private volatile boolean running;
 
-    ClientWatchdog(String name) {
-        this.name = name;
+    public ClientWatchdog() {
         this.startSignal = new CountDownLatch(1);
         clients = new CopyOnWriteArraySet<>();
         semaphore = new Semaphore(0);

@@ -33,7 +33,7 @@ class ClientWatchdogSpec {
         doReturn(taskExecutor).when(client).getTaskExecutor();
 
         executorService = Executors.newSingleThreadExecutor();
-        watchdog = spy(new ClientWatchdog("Test"));
+        watchdog = spy(new ClientWatchdog());
 
         executorService.execute(watchdog);
         if (!watchdog.awaitStart(30, TimeUnit.SECONDS)) {
