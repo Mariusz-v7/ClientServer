@@ -25,6 +25,7 @@ public class HostManager implements Runnable {
     private final CountDownLatch startSignal = new CountDownLatch(1);
     private final boolean manageExecutorService;
     private final TaskExecutor taskExecutor;
+    private final ExecutorService maintenanceExecutor;
 
     volatile Selector selector;
     volatile boolean started = false;
@@ -43,14 +44,15 @@ public class HostManager implements Runnable {
     }
 
     HostManager(ExecutorService clientExecutor, boolean manageExecutorService) {
-        this(clientExecutor, manageExecutorService, new TaskExecutor(clientExecutor));
+        this(clientExecutor, manageExecutorService, new TaskExecutor(clientExecutor), Executors.newSingleThreadExecutor());
     }
 
-    HostManager(ExecutorService clientExecutor, boolean manageExecutorService, TaskExecutor taskExecutor) {
+    HostManager(ExecutorService clientExecutor, boolean manageExecutorService, TaskExecutor taskExecutor, ExecutorService maintenanceExecutor) {
         this.hosts = new CopyOnWriteArrayList<>();
         this.executorService = clientExecutor;
         this.manageExecutorService = manageExecutorService;
         this.taskExecutor = taskExecutor;
+        this.maintenanceExecutor = maintenanceExecutor;
     }
 
     public synchronized void newHost(String name, int port, ClientFactory clientFactory) {
@@ -98,12 +100,24 @@ public class HostManager implements Runnable {
             try {
                 shutdown();
             } finally {
+                maintenanceExecutor.shutdownNow();
+
+                try {
+                    if (!maintenanceExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+                        logger.error("Maintenance Executor did not terminate.");
+                    }
+                } catch (InterruptedException e) {
+                    logger.error("Failed to wait for executor termination", e);
+                }
+
                 if (manageExecutorService) {
                     executorService.shutdownNow();
+
                     try {
                         if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
-                            logger.error("Executor did not terminate.");
+                            logger.error("Client Executor did not terminate.");
                         }
+
                     } catch (InterruptedException e) {
                         logger.error("Failed to wait for executor termination", e);
                     }

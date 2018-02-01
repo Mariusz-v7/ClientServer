@@ -36,13 +36,15 @@ class HostManagerSpec {
     private Client client;
     private ByteBuffer readBuffer;
     private ExecutorService executorService;
+    private ExecutorService maintenanceExecutor;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void before() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         executorService = mock(ExecutorService.class);
         clientExecutor = mock(TaskExecutor.class);
-        hostManager = spy(new HostManager(executorService, false, clientExecutor));
+        maintenanceExecutor = mock(ExecutorService.class);
+        hostManager = spy(new HostManager(executorService, false, clientExecutor, maintenanceExecutor));
 
         host = mock(Host.class);
         serverSocketChannel = mock(ServerSocketChannel.class);
@@ -296,6 +298,19 @@ class HostManagerSpec {
         tmp.shutdownNow();
         hostManager.awaitTermination(1, TimeUnit.SECONDS);
         verify(executorService, never()).shutdownNow();
+    }
+
+    @Test
+    void whenManagerIsShutdown_thenShutdownMaintenanceExecutor() throws InterruptedException {
+        ExecutorService tmp = Executors.newSingleThreadExecutor();
+        tmp.execute(hostManager);
+
+        hostManager.awaitStart(1, TimeUnit.SECONDS);
+        tmp.shutdownNow();
+        hostManager.awaitTermination(1, TimeUnit.SECONDS);
+
+        verify(maintenanceExecutor).shutdownNow();
+        verify(maintenanceExecutor).awaitTermination(anyLong(), any());
     }
 
 }
