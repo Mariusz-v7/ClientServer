@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -251,18 +252,23 @@ public class HostManager implements Runnable {
         logger.info("Host Manager is stopping");
 
         try {
-            Set<SelectionKey> keys = selector.keys(); // TODO: concurrent modification exception
+            Set<SelectionKey> keys = selector.keys();
+            List<SelectableChannel> channelsToClose = new LinkedList<>();
             for (SelectionKey key : keys) {
-                logger.info("Closing connection: {}", key.attachment());
+                channelsToClose.add(key.channel());
+            }
+
+            for (SelectableChannel channel : channelsToClose) {
+                logger.info("Closing connection: {}", channel);
 
                 try {
-                    closeChannel(key);
+                    closeChannel(channel);
                 } catch (Exception e) {
-                    logger.info("Failed to close connection: {}", key.attachment());
+                    logger.info("Failed to close connection: {}", channel);
                     continue;
                 }
 
-                logger.info("Connection closed: {}", key.attachment());
+                logger.info("Connection closed: {}", channel);
             }
         } catch (ClosedSelectorException e) {
             logger.warn("Selector is closed already", e);
@@ -294,8 +300,8 @@ public class HostManager implements Runnable {
         return serverSocketChannel;
     }
 
-    void closeChannel(SelectionKey key) throws IOException {
-        key.channel().close();
+    void closeChannel(SelectableChannel channel) throws IOException {
+        channel.close();
     }
 
     /**

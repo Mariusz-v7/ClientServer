@@ -16,10 +16,7 @@ import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -157,7 +154,15 @@ class HostManagerSpec {
         SelectionKey key2 = mock(SelectionKey.class);
         SelectionKey key3 = mock(SelectionKey.class);
 
-        doThrow(RuntimeException.class).when(hostManager).closeChannel(key2);
+        SelectableChannel channel1 = mock(SelectableChannel.class);
+        SelectableChannel channel2 = mock(SelectableChannel.class);
+        SelectableChannel channel3 = mock(SelectableChannel.class);
+
+        doReturn(channel1).when(key1).channel();
+        doReturn(channel2).when(key2).channel();
+        doReturn(channel3).when(key3).channel();
+
+        doThrow(RuntimeException.class).when(hostManager).closeChannel(channel2);
 
         Set<SelectionKey> selectionKeySet = new HashSet<>();
         selectionKeySet.add(key1);
@@ -168,9 +173,9 @@ class HostManagerSpec {
 
         hostManager.shutdown();
 
-        verify(hostManager).closeChannel(key1);
-        verify(hostManager).closeChannel(key2);
-        verify(hostManager).closeChannel(key3);
+        verify(hostManager).closeChannel(channel1);
+        verify(hostManager).closeChannel(channel2);
+        verify(hostManager).closeChannel(channel3);
     }
 
     @Test
