@@ -28,10 +28,11 @@ public class HostManager implements Runnable {
     private final TaskExecutor taskExecutor;
     private final ExecutorService maintenanceExecutor;
     private final ClientWatchdog clientWatchdog;
+    final List<Host> hosts;
 
     volatile Selector selector;
     volatile boolean started = false;
-    final List<Host> hosts;
+    private volatile boolean stopped = false;
 
     public static HostManager create(int numThreads) {
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
@@ -93,8 +94,10 @@ public class HostManager implements Runnable {
                     }
 
                     Set<SelectionKey> selectionKeys = selector.selectedKeys();
-                    selectionKeys.forEach(this::progressKey);
-                    selectionKeys.clear();
+                    synchronized (this) {
+                        selectionKeys.forEach(this::progressKey);
+                        selectionKeys.clear();
+                    }
                 } catch (ClosedSelectorException e) {
                     logger.debug(e.getMessage(), e);
                     break;
@@ -241,10 +244,14 @@ public class HostManager implements Runnable {
     }
 
     public synchronized void shutdown() {
+        if (stopped) {
+            return;
+        }
+
         logger.info("Host Manager is stopping");
 
         try {
-            Set<SelectionKey> keys = selector.keys();
+            Set<SelectionKey> keys = selector.keys(); // TODO: concurrent modification exception
             for (SelectionKey key : keys) {
                 logger.info("Closing connection: {}", key.attachment());
 
@@ -259,15 +266,18 @@ public class HostManager implements Runnable {
             }
         } catch (ClosedSelectorException e) {
             logger.warn("Selector is closed already", e);
+        } catch (Exception e) {
+            logger.error("Error during shutdown", e);
         } finally {
             try {
                 selector.close();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 logger.error("Failed to close selector", e);
             }
         }
 
         logger.info("Host Manager has been stopped");
+        stopped = true;
     }
 
     /**
