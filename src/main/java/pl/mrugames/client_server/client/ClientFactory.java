@@ -52,7 +52,7 @@ public class ClientFactory<In, Out> {
         this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
     }
 
-    public Client<In, Out> create(SocketChannel channel, TaskExecutor taskExecutor, ClientWatchdog watchdog) throws Exception {
+    public Client<In, Out> create(SocketChannel channel, TaskExecutor taskExecutor, ConnectionWatchdog watchdog) throws Exception {
         try {
             logger.info("[{}] New client is being created!", factoryName);
 

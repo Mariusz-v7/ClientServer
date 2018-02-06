@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
-import pl.mrugames.client_server.client.ClientWatchdog;
+import pl.mrugames.client_server.client.ConnectionWatchdog;
 import pl.mrugames.client_server.tasks.ClientRequestTask;
 import pl.mrugames.client_server.tasks.ClientShutdownTask;
 import pl.mrugames.client_server.tasks.NewClientAcceptTask;
@@ -28,7 +28,7 @@ public class HostManager implements Runnable {
     private final boolean manageExecutorService;
     private final TaskExecutor taskExecutor;
     private final ExecutorService maintenanceExecutor;
-    private final ClientWatchdog clientWatchdog;
+    private final ConnectionWatchdog connectionWatchdog;
     final List<Host> hosts;
 
     volatile Selector selector;
@@ -48,17 +48,17 @@ public class HostManager implements Runnable {
     }
 
     HostManager(ExecutorService clientExecutor, boolean manageExecutorService) {
-        this(clientExecutor, manageExecutorService, new TaskExecutor(clientExecutor), Executors.newSingleThreadExecutor(), new ClientWatchdog());
+        this(clientExecutor, manageExecutorService, new TaskExecutor(clientExecutor), Executors.newSingleThreadExecutor(), new ConnectionWatchdog());
     }
 
     HostManager(ExecutorService clientExecutor, boolean manageExecutorService, TaskExecutor taskExecutor,
-                ExecutorService maintenanceExecutor, ClientWatchdog clientWatchdog) {
+                ExecutorService maintenanceExecutor, ConnectionWatchdog connectionWatchdog) {
         this.hosts = new CopyOnWriteArrayList<>();
         this.executorService = clientExecutor;
         this.manageExecutorService = manageExecutorService;
         this.taskExecutor = taskExecutor;
         this.maintenanceExecutor = maintenanceExecutor;
-        this.clientWatchdog = clientWatchdog;
+        this.connectionWatchdog = connectionWatchdog;
     }
 
     public synchronized void newHost(String name, int port, ClientFactory clientFactory) {
@@ -77,7 +77,7 @@ public class HostManager implements Runnable {
         startSignal.countDown();
 
         try {
-            maintenanceExecutor.execute(clientWatchdog);
+            maintenanceExecutor.execute(connectionWatchdog);
 
             synchronized (this) {
                 logger.info("Host Manager has been started in thread: {}", Thread.currentThread().getName());
@@ -208,7 +208,7 @@ public class HostManager implements Runnable {
 
             configure(socketChannel);
 
-            NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), socketChannel, taskExecutor, clientWatchdog);
+            NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), socketChannel, taskExecutor, connectionWatchdog);
             Future<Client> result = taskExecutor.submit(acceptTask);
 
             register(socketChannel, result);

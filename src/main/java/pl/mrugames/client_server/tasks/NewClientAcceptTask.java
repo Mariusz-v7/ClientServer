@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
-import pl.mrugames.client_server.client.ClientWatchdog;
+import pl.mrugames.client_server.client.ConnectionWatchdog;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
@@ -22,13 +22,13 @@ public class NewClientAcceptTask<In, Out> implements Callable<Client<In, Out>> {
     private final SocketChannel clientChannel;
     private final TaskExecutor taskExecutor;
     private final Timer clientAcceptMetric;
-    private final ClientWatchdog watchdog;
+    private final ConnectionWatchdog watchdog;
 
     public NewClientAcceptTask(String hostName,
                                ClientFactory<In, Out> clientFactory,
                                SocketChannel clientChannel,
                                TaskExecutor taskExecutor,
-                               ClientWatchdog watchdog) {
+                               ConnectionWatchdog watchdog) {
         this.hostName = hostName;
         this.clientFactory = clientFactory;
         this.clientChannel = clientChannel;

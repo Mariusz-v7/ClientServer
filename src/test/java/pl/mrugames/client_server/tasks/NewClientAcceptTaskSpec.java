@@ -19,7 +19,7 @@ class NewClientAcceptTaskSpec {
     private TaskExecutor clientExecutor;
     private ClientWorker clientWorker;
     private Comm comm;
-    private ClientWatchdog watchdog;
+    private ConnectionWatchdog watchdog;
 
     @SuppressWarnings("unchecked")
     @BeforeEach
@@ -29,7 +29,7 @@ class NewClientAcceptTaskSpec {
         clientWorker = mock(ClientWorker.class);
         comm = mock(Comm.class);
         clientChannel = mock(SocketChannel.class);
-        watchdog = mock(ClientWatchdog.class);
+        watchdog = mock(ConnectionWatchdog.class);
 
         doReturn(clientWorker).when(client).getClientWorker();
         doReturn(comm).when(client).getComm();

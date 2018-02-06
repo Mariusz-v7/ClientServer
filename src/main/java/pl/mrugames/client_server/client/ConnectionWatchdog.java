@@ -16,8 +16,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class ClientWatchdog implements Runnable {
-    private final static Logger logger = LoggerFactory.getLogger(ClientWatchdog.class);
+public class ConnectionWatchdog implements Runnable {
+    private final static Logger logger = LoggerFactory.getLogger(ConnectionWatchdog.class);
 
     private final Timer cleanupMetric;
     private final CountDownLatch startSignal;
@@ -25,14 +25,14 @@ public class ClientWatchdog implements Runnable {
     final Semaphore semaphore;
     private volatile boolean running;
 
-    public ClientWatchdog() {
+    public ConnectionWatchdog() {
         this.startSignal = new CountDownLatch(1);
         clients = new CopyOnWriteArraySet<>();
         semaphore = new Semaphore(0);
 
-        cleanupMetric = Metrics.getRegistry().timer(MetricRegistry.name(ClientWatchdog.class, "cleanup"));
-        Metrics.getRegistry().register(MetricRegistry.name(ClientWatchdog.class, "clients", "registered"), (Gauge<Integer>) clients::size);
-        Metrics.getHealthCheckRegistry().register(MetricRegistry.name(ClientWatchdog.class, "running"), new HealthCheck() {
+        cleanupMetric = Metrics.getRegistry().timer(MetricRegistry.name(ConnectionWatchdog.class, "cleanup"));
+        Metrics.getRegistry().register(MetricRegistry.name(ConnectionWatchdog.class, "clients", "registered"), (Gauge<Integer>) clients::size);
+        Metrics.getHealthCheckRegistry().register(MetricRegistry.name(ConnectionWatchdog.class, "running"), new HealthCheck() {
             @Override
             protected Result check() throws Exception {
                 return running ? HealthCheck.Result.healthy("Watchdog is running") : HealthCheck.Result.unhealthy("Watchdog is not running");

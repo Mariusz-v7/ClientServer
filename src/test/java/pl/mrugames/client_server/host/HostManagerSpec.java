@@ -8,7 +8,7 @@ import org.mockito.InOrder;
 import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
-import pl.mrugames.client_server.client.ClientWatchdog;
+import pl.mrugames.client_server.client.ConnectionWatchdog;
 import pl.mrugames.client_server.tasks.ClientRequestTask;
 import pl.mrugames.client_server.tasks.ClientShutdownTask;
 import pl.mrugames.client_server.tasks.NewClientAcceptTask;
@@ -37,7 +37,7 @@ class HostManagerSpec {
     private ByteBuffer readBuffer;
     private ExecutorService executorService;
     private ExecutorService maintenanceExecutor;
-    private ClientWatchdog clientWatchdog;
+    private ConnectionWatchdog connectionWatchdog;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -45,8 +45,8 @@ class HostManagerSpec {
         executorService = mock(ExecutorService.class);
         clientExecutor = mock(TaskExecutor.class);
         maintenanceExecutor = mock(ExecutorService.class);
-        clientWatchdog = mock(ClientWatchdog.class);
-        hostManager = spy(new HostManager(executorService, false, clientExecutor, maintenanceExecutor, clientWatchdog));
+        connectionWatchdog = mock(ConnectionWatchdog.class);
+        hostManager = spy(new HostManager(executorService, false, clientExecutor, maintenanceExecutor, connectionWatchdog));
 
         host = mock(Host.class);
         serverSocketChannel = mock(ServerSocketChannel.class);
@@ -331,7 +331,7 @@ class HostManagerSpec {
         tmp.execute(hostManager);
         hostManager.awaitStart(1, TimeUnit.SECONDS);
 
-        verify(maintenanceExecutor).execute(clientWatchdog);
+        verify(maintenanceExecutor).execute(connectionWatchdog);
 
         tmp.shutdownNow();
         hostManager.awaitTermination(1, TimeUnit.SECONDS);

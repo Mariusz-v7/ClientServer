@@ -18,8 +18,8 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class ClientWatchdogSpec {
-    private ClientWatchdog watchdog;
+class ConnectionWatchdogSpec {
+    private ConnectionWatchdog watchdog;
     private ExecutorService executorService;
     private Client client;
     private TaskExecutor taskExecutor;
@@ -33,7 +33,7 @@ class ClientWatchdogSpec {
         doReturn(taskExecutor).when(client).getTaskExecutor();
 
         executorService = Executors.newSingleThreadExecutor();
-        watchdog = spy(new ClientWatchdog());
+        watchdog = spy(new ConnectionWatchdog());
 
         executorService.execute(watchdog);
         if (!watchdog.awaitStart(30, TimeUnit.SECONDS)) {
