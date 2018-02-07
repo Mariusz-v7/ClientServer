@@ -10,6 +10,8 @@ public class TaskWatchdog implements Runnable {
 
     @Override
     public void run() {
+        //TODO: add to timeout watchdog
+        //TODO: log exceptions from tasks
 
     }
 }
