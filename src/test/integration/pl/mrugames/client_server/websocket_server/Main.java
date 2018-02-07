@@ -29,6 +29,7 @@ public class Main {
         ClientFactory<String, String> clientFactory = ClientFactories.createClientFactoryForWSServer(
                 "WebSocket Host",
                 60,
+                30,
                 new WebSocketWorkerFactory(Main::shutdown),
                 1024
         );

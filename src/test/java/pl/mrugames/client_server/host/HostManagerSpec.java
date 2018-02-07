@@ -56,7 +56,7 @@ class HostManagerSpec {
         doReturn(socketChannel).when(serverSocketChannel).accept();
 
         acceptResult = mock(Future.class);
-        doReturn(acceptResult).when(clientExecutor).submit(any(NewClientAcceptTask.class));
+        doReturn(acceptResult).when(clientExecutor).submit(any(NewClientAcceptTask.class), anyLong());
 
         doNothing().when(hostManager).configure(socketChannel);
         doNothing().when(hostManager).register(socketChannel, acceptResult);
@@ -182,14 +182,14 @@ class HostManagerSpec {
     @SuppressWarnings("unchecked")
     void whenAccept_thenSubmitNewTask() {
         hostManager.accept(serverSocketChannel, host);
-        verify(clientExecutor).submit(any(NewClientAcceptTask.class));
+        verify(clientExecutor).submit(any(NewClientAcceptTask.class), anyLong());
     }
 
     @Test
     @SuppressWarnings("unchecked")
     void whenRead_thenSubmitNewTask() throws ExecutionException, InterruptedException {
         hostManager.read(acceptResult, socketChannel);
-        verify(clientExecutor).submit(any(ClientRequestTask.class));
+        verify(clientExecutor).submit(any(ClientRequestTask.class), anyLong());
     }
 
     @Test
@@ -200,7 +200,7 @@ class HostManagerSpec {
         hostManager.accept(serverSocketChannel, host);
 
         inOrder.verify(hostManager).configure(socketChannel);
-        inOrder.verify(clientExecutor).submit(any(NewClientAcceptTask.class));
+        inOrder.verify(clientExecutor).submit(any(NewClientAcceptTask.class), anyLong());
         inOrder.verify(hostManager).register(socketChannel, acceptResult);
     }
 
@@ -283,7 +283,7 @@ class HostManagerSpec {
     void givenReadFromBufferThrowsException_whenRead_thenSubmitShutdownTaskAndUnlockReadBufferLock() throws IOException {
         doThrow(RuntimeException.class).when(hostManager).readToBuffer(readBuffer, socketChannel);
         hostManager.read(acceptResult, socketChannel);
-        verify(clientExecutor).submit(any(ClientShutdownTask.class));
+        verify(clientExecutor).submit(any(ClientShutdownTask.class), anyLong());
         verify(client.getReadBufferLock()).unlock();
     }
 

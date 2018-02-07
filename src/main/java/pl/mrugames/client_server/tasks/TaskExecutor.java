@@ -14,7 +14,7 @@ public class TaskExecutor {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> Future<T> submit(Callable<T> task) {
+    public <T> Future<T> submit(Callable<T> task, long timeoutSeconds) {
         //TODO: add to timeout watchdog
         //TODO: log exceptions from tasks
         return executor.submit(task);

@@ -21,7 +21,8 @@ public class Client<In, Out> {
     private final AtomicBoolean shutdown = new AtomicBoolean();
     private final Lock readBufferLock;
     private final Lock writeBufferLock;
-    private final long timeoutSeconds;
+    private final long connectionTimeoutSeconds;
+    private final long requestTimeoutSeconds;
 
     private volatile ProtocolSwitch protocolSwitch;
 
@@ -33,7 +34,8 @@ public class Client<In, Out> {
            ByteBuffer readBuffer,
            Lock readBufferLock,
            Lock writeBufferLock,
-           long timeoutSeconds) {
+           long connectionTimeoutSeconds,
+           long requestTimeoutSeconds) {
         this.name = name;
         this.taskExecutor = taskExecutor;
         this.clientWorker = clientWorker;
@@ -42,7 +44,8 @@ public class Client<In, Out> {
         this.readBuffer = readBuffer;
         this.readBufferLock = readBufferLock;
         this.writeBufferLock = writeBufferLock;
-        this.timeoutSeconds = timeoutSeconds;
+        this.connectionTimeoutSeconds = connectionTimeoutSeconds;
+        this.requestTimeoutSeconds = requestTimeoutSeconds;
 
         logger.info("[{}] New client has been created", name);
     }
@@ -91,7 +94,11 @@ public class Client<In, Out> {
         return writeBufferLock;
     }
 
-    public long getTimeoutSeconds() {
-        return timeoutSeconds;
+    public long getConnectionTimeoutSeconds() {
+        return connectionTimeoutSeconds;
+    }
+
+    public long getRequestTimeoutSeconds() {
+        return requestTimeoutSeconds;
     }
 }

@@ -90,11 +90,11 @@ public class ConnectionWatchdog implements Runnable {
             for (Client client : clients) {
                 semaphore.acquire();
 
-                if (isTimeout(client.getComm(), client.getName(), client.getTimeoutSeconds())) {
+                if (isTimeout(client.getComm(), client.getName(), client.getConnectionTimeoutSeconds())) {
                     logger.info("Connection is timed out, cleaning. Client: {}", client.getName());
 
                     try {
-                        client.getTaskExecutor().submit(new ClientShutdownTask(client));
+                        client.getTaskExecutor().submit(new ClientShutdownTask(client), client.getRequestTimeoutSeconds());
                         logger.info("Connection closed. Client: {}", client.getName());
                     } catch (Exception e) {
                         logger.error("Error during channel close. Client: {}", client.getName(), e);
@@ -104,7 +104,7 @@ public class ConnectionWatchdog implements Runnable {
 
                     logger.info("Connection removed. Client: {}", client.getName());
                 } else {
-                    long nextTimeout = calculateSecondsToTimeout(client.getComm(), client.getTimeoutSeconds());
+                    long nextTimeout = calculateSecondsToTimeout(client.getComm(), client.getConnectionTimeoutSeconds());
                     if (nextPossibleTimeout == -1 || nextPossibleTimeout > nextTimeout) {
                         nextPossibleTimeout = nextTimeout;
                     }

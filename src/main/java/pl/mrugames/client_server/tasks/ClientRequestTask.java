@@ -28,7 +28,7 @@ public class ClientRequestTask implements Callable<Void> {
         } catch (Exception e) {
             logger.error("[{}] Failed to process request", client.getName(), e);
 
-            client.getTaskExecutor().submit(new ClientShutdownTask(client));
+            client.getTaskExecutor().submit(new ClientShutdownTask(client), client.getRequestTimeoutSeconds());
             throw e;
         }
 
@@ -52,7 +52,7 @@ public class ClientRequestTask implements Callable<Void> {
 
         for (int i = 0; i < requests.size(); ++i) {
             if (i < requests.size() - 1) {
-                client.getTaskExecutor().submit(new RequestExecuteTask(client, requests.get(i)));
+                client.getTaskExecutor().submit(new RequestExecuteTask(client, requests.get(i)), client.getRequestTimeoutSeconds());
             } else {
                 return new RequestExecuteTask(client, requests.get(i));
             }

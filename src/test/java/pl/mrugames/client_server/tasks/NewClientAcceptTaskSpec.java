@@ -89,7 +89,7 @@ class NewClientAcceptTaskSpec {
     void givenOnInitThrowsException_whenCall_thenSubmitShutdownTaskWithoutClosingTheChannel() throws Exception {
         doThrow(RuntimeException.class).when(clientWorker).onInit();
         assertThrows(RuntimeException.class, task::call);
-        verify(clientExecutor).submit(any(ClientShutdownTask.class));
+        verify(clientExecutor).submit(any(ClientShutdownTask.class), anyLong());
         verify(task, never()).close(any());
     }
 }

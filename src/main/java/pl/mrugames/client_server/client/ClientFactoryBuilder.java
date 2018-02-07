@@ -8,7 +8,8 @@ public class ClientFactoryBuilder<In, Out> {
     private final List<ProtocolFactory> protocolFactories;
 
     private String name = "Client";
-    private int timeout = 60;
+    private int connectionTimeout = 60;
+    private int requestTimeout = 30;
     private int bufferSize = 1024;
 
     public ClientFactoryBuilder(ClientWorkerFactory<In, Out> clientWorkerFactory,
@@ -24,10 +25,15 @@ public class ClientFactoryBuilder<In, Out> {
     }
 
     /**
-     * @param timeout [s]
+     * @param connectionTimeout [s]
      */
-    public ClientFactoryBuilder<In, Out> setTimeout(int timeout) {
-        this.timeout = timeout;
+    public ClientFactoryBuilder<In, Out> setConnectionTimeout(int connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
+        return this;
+    }
+
+    public ClientFactoryBuilder<In, Out> setRequestTimeout(int requestTimeout) {
+        this.requestTimeout = requestTimeout;
         return this;
     }
 
@@ -49,7 +55,8 @@ public class ClientFactoryBuilder<In, Out> {
                 clientWorkerFactory,
                 protocolFactories,
                 bufferSize,
-                timeout
+                connectionTimeout,
+                requestTimeout
         );
     }
 }

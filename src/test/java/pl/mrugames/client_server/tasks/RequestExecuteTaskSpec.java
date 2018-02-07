@@ -54,14 +54,14 @@ class RequestExecuteTaskSpec {
     void givenWorkerThrowsException_whenCall_thenSubmitShutdown() throws Exception {
         doThrow(RuntimeException.class).when(worker).onRequest(any());
         assertThrows(RuntimeException.class, task::call);
-        verify(taskExecutor).submit(any(ClientShutdownTask.class));
+        verify(taskExecutor).submit(any(ClientShutdownTask.class), anyLong());
     }
 
     @Test
     void givenCommSendThrowsException_whenCall_thenSubmitShutdown() throws Exception {
         doThrow(RuntimeException.class).when(comm).send(any());
         assertThrows(RuntimeException.class, task::call);
-        verify(taskExecutor).submit(any(ClientShutdownTask.class));
+        verify(taskExecutor).submit(any(ClientShutdownTask.class), anyLong());
     }
 
     @Test

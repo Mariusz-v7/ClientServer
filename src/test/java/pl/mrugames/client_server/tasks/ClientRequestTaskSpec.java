@@ -78,7 +78,7 @@ class ClientRequestTaskSpec {
         RequestExecuteTask lastTask = task.executeTask();
 
         ArgumentCaptor<RequestExecuteTask> argumentCaptor = ArgumentCaptor.forClass(RequestExecuteTask.class);
-        verify(taskExecutor, times(2)).submit(argumentCaptor.capture());
+        verify(taskExecutor, times(2)).submit(argumentCaptor.capture(), anyLong());
 
         List<RequestExecuteTask> allValues = argumentCaptor.getAllValues();
 

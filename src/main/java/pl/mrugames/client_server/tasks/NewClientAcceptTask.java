@@ -58,7 +58,7 @@ public class NewClientAcceptTask<In, Out> implements Callable<Client<In, Out>> {
             logger.error("[{}] Error during client creation", hostName, e);
 
             if (client != null) {
-                client.getTaskExecutor().submit(new ClientShutdownTask(client));
+                client.getTaskExecutor().submit(new ClientShutdownTask(client), client.getRequestTimeoutSeconds());
             } else {
                 logger.error("[{}] Closing client's socket", hostName);
 

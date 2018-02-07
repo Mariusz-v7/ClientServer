@@ -45,7 +45,7 @@ public class RequestExecuteTask implements Callable<Void> {
                 client.scheduleProtocolSwitch(null);
             }
         } catch (Exception e) {
-            client.getTaskExecutor().submit(new ClientShutdownTask(client));
+            client.getTaskExecutor().submit(new ClientShutdownTask(client), client.getRequestTimeoutSeconds());
             throw e;
         }
 

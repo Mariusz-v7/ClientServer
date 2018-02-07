@@ -73,6 +73,7 @@ class ClientFactorySpec {
                 clientWorkerFactory,
                 protocolFactories,
                 1024,
+                30,
                 30));
 
         doNothing().when(clientFactory).closeChannel(any());
@@ -173,6 +174,7 @@ class ClientFactorySpec {
                 clientWorkerFactory,
                 protocolFactories,
                 1024,
+                30,
                 30);
 
         ByteBuffer readBuffer = mock(ByteBuffer.class);

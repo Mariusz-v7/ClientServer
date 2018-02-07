@@ -29,6 +29,7 @@ public class HostManager implements Runnable {
     private final TaskExecutor taskExecutor;
     private final ExecutorService maintenanceExecutor;
     private final ConnectionWatchdog connectionWatchdog;
+    private final long clientAcceptTimeoutSeconds = 30;
     final List<Host> hosts;
 
     volatile Selector selector;
@@ -189,12 +190,12 @@ public class HostManager implements Runnable {
 
             ClientRequestTask clientRequestTask = new ClientRequestTask(client);
 
-            client.getTaskExecutor().submit(clientRequestTask);
+            client.getTaskExecutor().submit(clientRequestTask, client.getRequestTimeoutSeconds());
         } catch (IOException e) {
             logger.debug("[{}] Failed to read from client", client.getName(), e);
         } catch (Exception e) {
             logger.error("[{}] Failed to read from client", client.getName(), e);
-            client.getTaskExecutor().submit(new ClientShutdownTask(client));
+            client.getTaskExecutor().submit(new ClientShutdownTask(client), client.getRequestTimeoutSeconds());
         } finally {
             client.getReadBufferLock().unlock();
         }
@@ -209,7 +210,7 @@ public class HostManager implements Runnable {
             configure(socketChannel);
 
             NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), socketChannel, taskExecutor, connectionWatchdog);
-            Future<Client> result = taskExecutor.submit(acceptTask);
+            Future<Client> result = taskExecutor.submit(acceptTask, clientAcceptTimeoutSeconds);
 
             register(socketChannel, result);
         } catch (Exception e) {

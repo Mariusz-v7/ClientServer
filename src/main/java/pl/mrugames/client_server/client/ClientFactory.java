@@ -28,7 +28,8 @@ public class ClientFactory<In, Out> {
     private final ClientWorkerFactory<In, Out> clientWorkerFactory;
     private final int bufferSize;
     private final List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories;
-    private final long timeoutSeconds;
+    private final long connectionTimeoutSeconds;
+    private final long requestTimeoutSeconds;
 
     private final Timer clientSendMetric;
     private final Timer clientReceiveMetric;
@@ -38,7 +39,8 @@ public class ClientFactory<In, Out> {
                   ClientWorkerFactory<In, Out> clientWorkerFactory,
                   List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories,
                   int bufferSize,
-                  long timeoutSeconds
+                  long connectionTimeoutSeconds,
+                  long requestTimeoutSeconds
     ) {
         this.clientId = new AtomicLong();
         this.factoryName = factoryName;
@@ -46,7 +48,8 @@ public class ClientFactory<In, Out> {
         this.clientWorkerFactory = clientWorkerFactory;
         this.protocolFactories = protocolFactories;
         this.bufferSize = bufferSize;
-        this.timeoutSeconds = timeoutSeconds;
+        this.connectionTimeoutSeconds = connectionTimeoutSeconds;
+        this.requestTimeoutSeconds = requestTimeoutSeconds;
 
         this.clientSendMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "send"));
         this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
@@ -138,7 +141,7 @@ public class ClientFactory<In, Out> {
                                  Lock readLock,
                                  Lock writeLock
     ) {
-        return new Client<>(clientName, taskExecutor, comm, clientWorker, channel, readBuffer, readLock, writeLock, timeoutSeconds);
+        return new Client<>(clientName, taskExecutor, comm, clientWorker, channel, readBuffer, readLock, writeLock, connectionTimeoutSeconds, requestTimeoutSeconds);
     }
 
     void closeChannel(SocketChannel channel) {

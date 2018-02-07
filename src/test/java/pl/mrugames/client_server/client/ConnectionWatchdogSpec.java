@@ -27,7 +27,7 @@ class ConnectionWatchdogSpec {
     @BeforeEach
     void before() throws InterruptedException, IOException {
         client = mock(Client.class);
-        doReturn(30L).when(client).getTimeoutSeconds();
+        doReturn(30L).when(client).getConnectionTimeoutSeconds();
 
         taskExecutor = mock(TaskExecutor.class);
         doReturn(taskExecutor).when(client).getTaskExecutor();
@@ -156,7 +156,7 @@ class ConnectionWatchdogSpec {
 
         watchdog.check();
 
-        verify(taskExecutor).submit(any(ClientShutdownTask.class));
+        verify(taskExecutor).submit(any(ClientShutdownTask.class), anyLong());
         assertThat(watchdog.clients).isEmpty();
     }
 
@@ -182,9 +182,9 @@ class ConnectionWatchdogSpec {
         Client client2 = mock(Client.class);
         Client client3 = mock(Client.class);
 
-        doReturn(30L).when(client1).getTimeoutSeconds();
-        doReturn(30L).when(client2).getTimeoutSeconds();
-        doReturn(30L).when(client3).getTimeoutSeconds();
+        doReturn(30L).when(client1).getConnectionTimeoutSeconds();
+        doReturn(30L).when(client2).getConnectionTimeoutSeconds();
+        doReturn(30L).when(client3).getConnectionTimeoutSeconds();
 
         Comm comm1 = mock(Comm.class);
         Comm comm2 = mock(Comm.class);

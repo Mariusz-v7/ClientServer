@@ -16,7 +16,8 @@ public class ClientFactories {
 
     public static ClientFactory<String, String> createClientFactoryForWSServer(
             String name,
-            int timeoutSeconds,
+            int connectionTimeoutSeconds,
+            int requestTimeoutSeconds,
             ClientWorkerFactory<String, String> clientWorkerFactory,
             int bufferSize) {
 
@@ -43,7 +44,8 @@ public class ClientFactories {
                 webSocketWorkerFactory,
                 protocolFactories,
                 bufferSize,
-                timeoutSeconds
+                connectionTimeoutSeconds,
+                requestTimeoutSeconds
         );
     }
 

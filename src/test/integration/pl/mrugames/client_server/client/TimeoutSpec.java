@@ -58,7 +58,7 @@ class TimeoutSpec {
                         FilterProcessor.EMPTY_FILTER_PROCESSOR,
                         "default"
                 ))
-                .setTimeout(timeout)
+                .setConnectionTimeout(timeout)
                 .setName("Text Server")
                 .build();
 

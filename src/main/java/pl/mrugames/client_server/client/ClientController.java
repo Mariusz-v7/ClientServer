@@ -9,7 +9,7 @@ public class ClientController {
      * Schedules a task to kill the client.
      */
     public void shutdown() {
-        client.getTaskExecutor().submit(new ClientShutdownTask(client));
+        client.getTaskExecutor().submit(new ClientShutdownTask(client), client.getRequestTimeoutSeconds());
     }
 
     public void switchProtocol(Protocol protocol, SwitchProtocolStrategy switchProtocolStrategy) {
