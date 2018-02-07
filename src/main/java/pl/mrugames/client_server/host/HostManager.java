@@ -5,10 +5,7 @@ import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.client.ConnectionWatchdog;
-import pl.mrugames.client_server.tasks.ClientRequestTask;
-import pl.mrugames.client_server.tasks.ClientShutdownTask;
-import pl.mrugames.client_server.tasks.NewClientAcceptTask;
-import pl.mrugames.client_server.tasks.TaskExecutor;
+import pl.mrugames.client_server.tasks.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -29,7 +26,7 @@ public class HostManager implements Runnable {
     private final TaskExecutor taskExecutor;
     private final ExecutorService maintenanceExecutor;
     private final ConnectionWatchdog connectionWatchdog;
-    private final long clientAcceptTimeoutSeconds = 30;
+    private final TaskWatchdog taskWatchdog;
     final List<Host> hosts;
 
     volatile Selector selector;
@@ -38,28 +35,29 @@ public class HostManager implements Runnable {
 
     public static HostManager create(int numThreads) {
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
-        return new HostManager(executorService, true);
+        return new HostManager(executorService, true, new TaskWatchdog());
     }
 
     /**
      * When you use this method, you have to manage executorService on your own (eg. start it and stop it)
      */
     public static HostManager create(ExecutorService executorService) {
-        return new HostManager(executorService, false);
+        return new HostManager(executorService, false, new TaskWatchdog());
     }
 
-    HostManager(ExecutorService clientExecutor, boolean manageExecutorService) {
-        this(clientExecutor, manageExecutorService, new TaskExecutor(clientExecutor), Executors.newSingleThreadExecutor(), new ConnectionWatchdog());
+    HostManager(ExecutorService clientExecutor, boolean manageExecutorService, TaskWatchdog taskWatchdog) {
+        this(clientExecutor, manageExecutorService, new TaskExecutor(clientExecutor, taskWatchdog), Executors.newFixedThreadPool(2), new ConnectionWatchdog(), taskWatchdog);
     }
 
     HostManager(ExecutorService clientExecutor, boolean manageExecutorService, TaskExecutor taskExecutor,
-                ExecutorService maintenanceExecutor, ConnectionWatchdog connectionWatchdog) {
+                ExecutorService maintenanceExecutor, ConnectionWatchdog connectionWatchdog, TaskWatchdog taskWatchdog) {
         this.hosts = new CopyOnWriteArrayList<>();
         this.executorService = clientExecutor;
         this.manageExecutorService = manageExecutorService;
         this.taskExecutor = taskExecutor;
         this.maintenanceExecutor = maintenanceExecutor;
         this.connectionWatchdog = connectionWatchdog;
+        this.taskWatchdog = taskWatchdog;
     }
 
     public synchronized void newHost(String name, int port, ClientFactory clientFactory) {
@@ -79,6 +77,7 @@ public class HostManager implements Runnable {
 
         try {
             maintenanceExecutor.execute(connectionWatchdog);
+            maintenanceExecutor.execute(taskWatchdog);
 
             synchronized (this) {
                 logger.info("Host Manager has been started in thread: {}", Thread.currentThread().getName());
@@ -210,7 +209,7 @@ public class HostManager implements Runnable {
             configure(socketChannel);
 
             NewClientAcceptTask acceptTask = new NewClientAcceptTask(host.getName(), host.getClientFactory(), socketChannel, taskExecutor, connectionWatchdog);
-            Future<Client> result = taskExecutor.submit(acceptTask, clientAcceptTimeoutSeconds);
+            Future<Client> result = taskExecutor.submit(acceptTask, host.getClientFactory().getRequestTimeoutSeconds());
 
             register(socketChannel, result);
         } catch (Exception e) {

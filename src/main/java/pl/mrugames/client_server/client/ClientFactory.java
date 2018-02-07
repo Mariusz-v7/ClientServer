@@ -155,4 +155,7 @@ public class ClientFactory<In, Out> {
         }
     }
 
+    public long getRequestTimeoutSeconds() {
+        return requestTimeoutSeconds;
+    }
 }

@@ -9,10 +9,12 @@ import static org.mockito.Mockito.mock;
 class TaskExecutorSpec {
     private TaskExecutor taskExecutor;
     private CompletionService completionService;
+    private TaskWatchdog taskWatchdog;
 
     @BeforeEach
     void before() {
         completionService = mock(CompletionService.class);
-        taskExecutor = new TaskExecutor(completionService);
+        taskWatchdog = mock(TaskWatchdog.class);
+        taskExecutor = new TaskExecutor(completionService, taskWatchdog);
     }
 }

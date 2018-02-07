@@ -9,10 +9,7 @@ import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.client.ConnectionWatchdog;
-import pl.mrugames.client_server.tasks.ClientRequestTask;
-import pl.mrugames.client_server.tasks.ClientShutdownTask;
-import pl.mrugames.client_server.tasks.NewClientAcceptTask;
-import pl.mrugames.client_server.tasks.TaskExecutor;
+import pl.mrugames.client_server.tasks.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,6 +35,7 @@ class HostManagerSpec {
     private ExecutorService executorService;
     private ExecutorService maintenanceExecutor;
     private ConnectionWatchdog connectionWatchdog;
+    private TaskWatchdog taskWatchdog;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -46,11 +44,16 @@ class HostManagerSpec {
         clientExecutor = mock(TaskExecutor.class);
         maintenanceExecutor = mock(ExecutorService.class);
         connectionWatchdog = mock(ConnectionWatchdog.class);
-        hostManager = spy(new HostManager(executorService, false, clientExecutor, maintenanceExecutor, connectionWatchdog));
+        taskWatchdog = mock(TaskWatchdog.class);
+        hostManager = spy(new HostManager(executorService, false, clientExecutor, maintenanceExecutor, connectionWatchdog, taskWatchdog));
 
         host = mock(Host.class);
         serverSocketChannel = mock(ServerSocketChannel.class);
         doReturn(serverSocketChannel).when(host).getServerSocketChannel();
+
+        ClientFactory clientFactory = mock(ClientFactory.class);
+
+        doReturn(clientFactory).when(host).getClientFactory();
 
         socketChannel = mock(SocketChannel.class);
         doReturn(socketChannel).when(serverSocketChannel).accept();
@@ -289,7 +292,7 @@ class HostManagerSpec {
 
     @Test
     void givenManageExecutorServiceIsTrue_whenRun_thenManageExecutor() throws InterruptedException {
-        HostManager hostManager = new HostManager(executorService, true);
+        HostManager hostManager = new HostManager(executorService, true, taskWatchdog);
         ExecutorService tmp = Executors.newSingleThreadExecutor();
         tmp.execute(hostManager);
 
@@ -302,7 +305,7 @@ class HostManagerSpec {
 
     @Test
     void giveManageExecutorServiceIsFalse_whenRun_thenDoNotManageExecutor() throws InterruptedException {
-        HostManager hostManager = new HostManager(executorService, false);
+        HostManager hostManager = new HostManager(executorService, false, taskWatchdog);
         ExecutorService tmp = Executors.newSingleThreadExecutor();
         tmp.execute(hostManager);
 
@@ -332,6 +335,18 @@ class HostManagerSpec {
         hostManager.awaitStart(1, TimeUnit.SECONDS);
 
         verify(maintenanceExecutor).execute(connectionWatchdog);
+
+        tmp.shutdownNow();
+        hostManager.awaitTermination(1, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void whenStartHostManager_thenStartTaskWatchdog() throws InterruptedException {
+        ExecutorService tmp = Executors.newSingleThreadExecutor();
+        tmp.execute(hostManager);
+        hostManager.awaitStart(1, TimeUnit.SECONDS);
+
+        verify(maintenanceExecutor).execute(taskWatchdog);
 
         tmp.shutdownNow();
         hostManager.awaitTermination(1, TimeUnit.SECONDS);
