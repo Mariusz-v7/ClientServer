@@ -292,7 +292,7 @@ class HostManagerSpec {
 
     @Test
     void givenManageExecutorServiceIsTrue_whenRun_thenManageExecutor() throws InterruptedException {
-        HostManager hostManager = new HostManager(executorService, true, taskWatchdog);
+        HostManager hostManager = new HostManager(executorService, true, clientExecutor, maintenanceExecutor, connectionWatchdog, taskWatchdog);
         ExecutorService tmp = Executors.newSingleThreadExecutor();
         tmp.execute(hostManager);
 
@@ -305,7 +305,7 @@ class HostManagerSpec {
 
     @Test
     void giveManageExecutorServiceIsFalse_whenRun_thenDoNotManageExecutor() throws InterruptedException {
-        HostManager hostManager = new HostManager(executorService, false, taskWatchdog);
+        HostManager hostManager = new HostManager(executorService, false, clientExecutor, maintenanceExecutor, connectionWatchdog, taskWatchdog);
         ExecutorService tmp = Executors.newSingleThreadExecutor();
         tmp.execute(hostManager);
 

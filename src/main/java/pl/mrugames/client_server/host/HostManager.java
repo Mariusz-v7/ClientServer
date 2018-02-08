@@ -35,18 +35,27 @@ public class HostManager implements Runnable {
 
     public static HostManager create(int numThreads) {
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
-        return new HostManager(executorService, true, new TaskWatchdog());
+        CompletionService completionService = new ExecutorCompletionService(executorService);
+        TaskWatchdog taskWatchdog = new TaskWatchdog(completionService);
+        ConnectionWatchdog connectionWatchdog = new ConnectionWatchdog();
+
+        return new HostManager(executorService, true, new TaskExecutor(completionService, taskWatchdog), connectionWatchdog, taskWatchdog);
     }
 
     /**
      * When you use this method, you have to manage executorService on your own (eg. start it and stop it)
      */
     public static HostManager create(ExecutorService executorService) {
-        return new HostManager(executorService, false, new TaskWatchdog());
+        CompletionService completionService = new ExecutorCompletionService(executorService);
+        TaskWatchdog taskWatchdog = new TaskWatchdog(completionService);
+        ConnectionWatchdog connectionWatchdog = new ConnectionWatchdog();
+
+        return new HostManager(executorService, false, new TaskExecutor(completionService, taskWatchdog), connectionWatchdog, taskWatchdog);
     }
 
-    HostManager(ExecutorService clientExecutor, boolean manageExecutorService, TaskWatchdog taskWatchdog) {
-        this(clientExecutor, manageExecutorService, new TaskExecutor(clientExecutor, taskWatchdog), Executors.newFixedThreadPool(2), new ConnectionWatchdog(), taskWatchdog);
+    private HostManager(ExecutorService clientExecutor, boolean manageExecutorService, TaskExecutor taskExecutor,
+                        ConnectionWatchdog connectionWatchdog, TaskWatchdog taskWatchdog) {
+        this(clientExecutor, manageExecutorService, taskExecutor, Executors.newFixedThreadPool(2), connectionWatchdog, taskWatchdog);
     }
 
     HostManager(ExecutorService clientExecutor, boolean manageExecutorService, TaskExecutor taskExecutor,

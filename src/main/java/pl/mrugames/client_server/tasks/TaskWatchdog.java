@@ -2,14 +2,17 @@ package pl.mrugames.client_server.tasks;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 
 public class TaskWatchdog implements Runnable {
-    List<TaskData> tasks;
+    final List<TaskData> tasks;
+    private final CompletionService executor;
 
-    public TaskWatchdog() {
-        tasks = new CopyOnWriteArrayList<>();
+    public TaskWatchdog(CompletionService executor) {
+        this.tasks = new CopyOnWriteArrayList<>();
+        this.executor = executor;
     }
 
     void submit(Future<?> request, long timeoutSeconds) {
@@ -43,5 +46,9 @@ public class TaskWatchdog implements Runnable {
         //TODO: log exceptions from tasks
 
         //TODO: break when new task submitted
+
+        while (!Thread.currentThread().isInterrupted()) {
+
+        }
     }
 }

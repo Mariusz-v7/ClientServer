@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.Future;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -13,10 +14,12 @@ import static org.mockito.Mockito.*;
 
 class TaskWatchdogSpec {
     private TaskWatchdog watchdog;
+    private CompletionService completionService;
 
     @BeforeEach
     void before() {
-        watchdog = spy(new TaskWatchdog());
+        completionService = mock(CompletionService.class);
+        watchdog = spy(new TaskWatchdog(completionService));
     }
 
     @Test

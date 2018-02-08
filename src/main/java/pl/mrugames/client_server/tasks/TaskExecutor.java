@@ -1,16 +1,14 @@
 package pl.mrugames.client_server.tasks;
 
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.Future;
 
 public class TaskExecutor {
     private final CompletionService executor;
     private final TaskWatchdog taskWatchdog;
 
-    public TaskExecutor(ExecutorService executor, TaskWatchdog taskWatchdog) {
-        this(new ExecutorCompletionService<>(executor), taskWatchdog);
-    }
-
-    TaskExecutor(CompletionService completionService, TaskWatchdog taskWatchdog) {
+    public TaskExecutor(CompletionService completionService, TaskWatchdog taskWatchdog) {
         this.executor = completionService;
         this.taskWatchdog = taskWatchdog;
     }
