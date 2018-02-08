@@ -65,15 +65,15 @@ public class TaskWatchdog implements Runnable {
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                taskCount.acquire();
+                taskCount.acquire(); // wait for tasks amount not 0
+                taskCount.release(); // restore tasks amount
+
                 cycle();
             } catch (InterruptedException e) {
                 logger.info("Watchdog interrupted");
                 break;
             } catch (Exception e) {
                 logger.error("Error during clean up: " + e.getMessage(), e);
-            } finally {
-                taskCount.release();
             }
         }
 
@@ -83,17 +83,20 @@ public class TaskWatchdog implements Runnable {
     synchronized void cycle() throws InterruptedException {
         long seconds = getNextPossibleTimeout();
 
-        TimeUnit.SECONDS.sleep(seconds); // TODO: use completion service and capture completed tasks
+        if (seconds > 0) {
+            // should not be in synchronized block
+            TimeUnit.SECONDS.sleep(seconds); // TODO: use completion service and capture completed tasks
+        }
 
         Instant now = Instant.now();
         removeTimedOut(now);
     }
 
-    void removeTimedOut(Instant now) {
+    void removeTimedOut(Instant now) throws InterruptedException {
         List<TaskData> timedOutList = getTimedOutList(now);
 
         for (TaskData taskData : timedOutList) {
-            tasks.remove(taskData);
+            removeTask(taskData);
 
             logger.error("Task timed out {}", taskData);
 
@@ -112,6 +115,11 @@ public class TaskWatchdog implements Runnable {
             }
 
         }
+    }
+
+    void removeTask(TaskData taskData) throws InterruptedException {
+        tasks.remove(taskData);
+        taskCount.acquire();
     }
 
     void awaitStart() throws InterruptedException {
