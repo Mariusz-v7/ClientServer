@@ -3,6 +3,7 @@ package pl.mrugames.client_server.client;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.health.HealthCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,7 @@ public class ConnectionWatchdog implements Runnable {
     private final Counter acceptedConnections;
     private final Counter finishedConnections;
     private final Histogram connectionDuration;
-    private final Counter cleanUpCycles;
+    private final Meter cleanUpCycles;
 
     public ConnectionWatchdog() {
         this.startSignal = new CountDownLatch(1);
@@ -48,7 +49,7 @@ public class ConnectionWatchdog implements Runnable {
         acceptedConnections = Metrics.getRegistry().counter(name(ConnectionWatchdog.class, "accepted_connections"));
         finishedConnections = Metrics.getRegistry().counter(name(ConnectionWatchdog.class, "finished_connections"));
         connectionDuration = Metrics.getRegistry().histogram(name(ConnectionWatchdog.class, "connections_durations"));
-        cleanUpCycles = Metrics.getRegistry().counter(name(ConnectionWatchdog.class, "cleanup_cycles"));
+        cleanUpCycles = Metrics.getRegistry().meter(name(ConnectionWatchdog.class, "cleanup_cycles"));
     }
 
     @Override
@@ -64,7 +65,7 @@ public class ConnectionWatchdog implements Runnable {
                 lastCycle = Instant.now();
 
                 try {
-                    cleanUpCycles.inc();
+                    cleanUpCycles.mark();
                     if (nextPossibleTimeout == -1) {
                         logger.debug("There are no connections registered.");
                         semaphore.acquire();

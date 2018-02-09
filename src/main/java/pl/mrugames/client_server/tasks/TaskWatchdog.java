@@ -3,6 +3,7 @@ package pl.mrugames.client_server.tasks;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.health.HealthCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,7 @@ public class TaskWatchdog implements Runnable {
     private final Counter timedOutTasks;
     private final Histogram taskDurations;
     private final Counter tasksSubmitted;
-    private final Counter cleanUpCycles;
+    private final Meter cleanUpCycles;
 
     private volatile Instant lastCycle;
 
@@ -43,7 +44,7 @@ public class TaskWatchdog implements Runnable {
         timedOutTasks = Metrics.getRegistry().counter(name(TaskWatchdog.class, "timed_out_tasks"));
         taskDurations = Metrics.getRegistry().histogram(name(TaskWatchdog.class, "tasks_durations"));
         tasksSubmitted = Metrics.getRegistry().counter(name(TaskWatchdog.class, "tasks_submitted"));
-        cleanUpCycles = Metrics.getRegistry().counter(name(TaskWatchdog.class, "cleanup_cycles"));
+        cleanUpCycles = Metrics.getRegistry().meter(name(TaskWatchdog.class, "cleanup_cycles"));
 
         Metrics.getHealthCheckRegistry().register(name(TaskWatchdog.class), new HealthCheck() {
             @Override
@@ -119,7 +120,7 @@ public class TaskWatchdog implements Runnable {
 
     void cycle() throws InterruptedException {
         lastCycle = Instant.now();
-        cleanUpCycles.inc();
+        cleanUpCycles.mark();
 
         long seconds = getNextPossibleTimeout();
 
