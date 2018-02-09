@@ -37,6 +37,14 @@ public class ExampleClientWorker implements ClientWorker<String, String> {
         } else if (request.equals("shutdown")) {
             shutdownServer.run();
             return "Shutdown procedure initiated!";
+        } else if (request.equals("sleep")) {
+            try {
+                Thread.sleep(999999999);
+            } catch (InterruptedException e) {
+                return "interrupted";
+            }
+        } else if (request.equals("exception")) {
+            throw new UnsupportedOperationException();
         }
 
         return "Your message was: " + request;

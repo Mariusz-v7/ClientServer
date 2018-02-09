@@ -25,4 +25,13 @@ public class TaskData {
     public long getTimeoutSeconds() {
         return timeoutSeconds;
     }
+
+    @Override
+    public String toString() {
+        return "TaskData{" +
+                "result=" + result +
+                ", submitted=" + submitted +
+                ", timeoutSeconds=" + timeoutSeconds +
+                '}';
+    }
 }

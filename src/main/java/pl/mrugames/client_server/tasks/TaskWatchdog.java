@@ -56,19 +56,20 @@ public class TaskWatchdog implements Runnable {
 
     @Override
     public void run() {
-        //TODO: remove when done or timeout
-        //TODO: log exceptions from tasks
-
-        //TODO: break when new task submitted
-
         startSignal.countDown();
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
+                logger.info("Awaiting for tasks.");
+
                 taskCount.acquire(); // wait for tasks amount not 0
                 taskCount.release(); // restore tasks amount
 
+                logger.info("There are {} tasks, starting cycle", tasks.size());
+
                 cycle();
+
+                logger.info("There are {} tasks, after cycle", tasks.size());
             } catch (InterruptedException e) {
                 logger.info("Watchdog interrupted");
                 break;
@@ -80,19 +81,39 @@ public class TaskWatchdog implements Runnable {
         stopSignal.countDown();
     }
 
-    synchronized void cycle() throws InterruptedException {
+    void cycle() throws InterruptedException {
         long seconds = getNextPossibleTimeout();
 
+        logger.info("Next possible timeout in: {} seconds", seconds);
+
         if (seconds > 0) {
-            // should not be in synchronized block
-            TimeUnit.SECONDS.sleep(seconds); // TODO: use completion service and capture completed tasks
+            if (completionService.poll(seconds, TimeUnit.SECONDS) != null) {
+                logger.info("Task has been finished before timeout, running checks");
+            }
         }
 
         Instant now = Instant.now();
         removeTimedOut(now);
+        removeDone();
     }
 
-    void removeTimedOut(Instant now) throws InterruptedException {
+    synchronized void removeDone() throws InterruptedException {
+        List<TaskData> completed = tasks.stream()
+                .filter(task -> task.getResult().isDone())
+                .collect(Collectors.toList());
+
+        for (TaskData task : completed) {
+            try {
+                task.getResult().get();
+            } catch (Exception e) {
+                logger.error("Task finished with exception: {}", task, e);
+            } finally {
+                removeTask(task);
+            }
+        }
+    }
+
+    synchronized void removeTimedOut(Instant now) throws InterruptedException {
         List<TaskData> timedOutList = getTimedOutList(now);
 
         for (TaskData taskData : timedOutList) {
