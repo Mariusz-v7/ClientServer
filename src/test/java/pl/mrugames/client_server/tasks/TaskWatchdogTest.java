@@ -1,8 +1,10 @@
 package pl.mrugames.client_server.tasks;
 
+import com.codahale.metrics.MetricFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import pl.mrugames.client_server.Metrics;
 
 import java.time.Duration;
 import java.util.concurrent.*;
@@ -59,6 +61,8 @@ class TaskWatchdogTest {
         watchdogExecutor.shutdownNow();
 
         taskWatchdog.awaitStop();
+
+        Metrics.getRegistry().removeMatching(MetricFilter.ALL);
     }
 
     @Test

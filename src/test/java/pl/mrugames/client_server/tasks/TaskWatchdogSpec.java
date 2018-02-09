@@ -1,7 +1,10 @@
 package pl.mrugames.client_server.tasks;
 
+import com.codahale.metrics.MetricFilter;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import pl.mrugames.client_server.Metrics;
 
 import java.time.Instant;
 import java.util.concurrent.CompletionService;
@@ -20,6 +23,11 @@ class TaskWatchdogSpec {
     void before() {
         completionService = mock(CompletionService.class);
         watchdog = spy(new TaskWatchdog(completionService));
+    }
+
+    @AfterEach
+    void after() {
+        Metrics.getRegistry().removeMatching(MetricFilter.ALL);
     }
 
     @Test

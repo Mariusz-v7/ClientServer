@@ -1,16 +1,23 @@
 package pl.mrugames.client_server.tasks;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.health.HealthCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.client_server.Metrics;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
+import static com.codahale.metrics.MetricRegistry.name;
+
 public class TaskWatchdog implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    // TODO add merits (eg. amount of tasks, avg time, etc)
 
     final List<TaskData> tasks;
     private final CompletionService completionService;
@@ -18,14 +25,43 @@ public class TaskWatchdog implements Runnable {
     private final CountDownLatch stopSignal = new CountDownLatch(1);
     private final Semaphore taskCount = new Semaphore(0);
 
+    private final Counter finishedTasks;
+    private final Counter failedTasks;
+    private final Counter timedOutTasks;
+    private final Histogram taskDurations;
+    private final Meter tasksSubmitted;
+    private final Meter cleanUpCycles;
+
+    private volatile Instant lastCycle;
+
     public TaskWatchdog(CompletionService completionService) {
         this.tasks = new CopyOnWriteArrayList<>();
         this.completionService = completionService;
+
+        Metrics.getRegistry().register(name(TaskWatchdog.class, "pending_tasks"), (Gauge<Integer>) tasks::size);
+        finishedTasks = Metrics.getRegistry().counter(name(TaskWatchdog.class, "finished_tasks"));
+        failedTasks = Metrics.getRegistry().counter(name(TaskWatchdog.class, "failed_tasks"));
+        timedOutTasks = Metrics.getRegistry().counter(name(TaskWatchdog.class, "timed_out_tasks"));
+        taskDurations = Metrics.getRegistry().histogram(name(TaskWatchdog.class, "tasks_durations"));
+        tasksSubmitted = Metrics.getRegistry().meter(name(TaskWatchdog.class, "tasks_submitted"));
+        cleanUpCycles = Metrics.getRegistry().meter(name(TaskWatchdog.class, "cleanup_cycles"));
+
+        Metrics.getHealthCheckRegistry().register(name(TaskWatchdog.class), new HealthCheck() {
+            @Override
+            protected Result check() throws Exception {
+                if (startSignal.getCount() == 0 && stopSignal.getCount() == 1) {
+                    return HealthCheck.Result.healthy("Last cycle: " + lastCycle);
+                } else {
+                    return HealthCheck.Result.unhealthy("Start signal: " + startSignal.getCount() + ", stop signal: " + stopSignal.getCount());
+                }
+            }
+        });
     }
 
     synchronized void submit(Future<?> request, long timeoutSeconds) {
         tasks.add(new TaskData(request, Instant.now(), timeoutSeconds));
         taskCount.release();
+        tasksSubmitted.mark();
     }
 
     long getNextPossibleTimeout() {
@@ -83,6 +119,9 @@ public class TaskWatchdog implements Runnable {
     }
 
     void cycle() throws InterruptedException {
+        lastCycle = Instant.now();
+        cleanUpCycles.mark();
+
         long seconds = getNextPossibleTimeout();
 
         logger.debug("Next possible timeout in: {} seconds", seconds);
@@ -106,8 +145,11 @@ public class TaskWatchdog implements Runnable {
         for (TaskData task : completed) {
             try {
                 task.getResult().get();
+                finishedTasks.inc();
+                updateDuration(task);
             } catch (Exception e) {
                 logger.error("Task finished with exception: {}", task, e);
+                failedTasks.inc();
             } finally {
                 removeTask(task);
             }
@@ -127,16 +169,28 @@ public class TaskWatchdog implements Runnable {
                 if (taskData.getResult().isDone()) {
                     try {
                         taskData.getResult().get();
+                        finishedTasks.inc();
+                        updateDuration(taskData);
                     } catch (Exception e) {
                         logger.error("Task completed with error: ", e);
+                        failedTasks.inc();
                     }
 
                 } else {
                     logger.error("Failed to shutdown task: {}", taskData);
                 }
+            } else {
+                timedOutTasks.inc();
             }
 
         }
+    }
+
+    private void updateDuration(TaskData taskData) {
+        Instant now = Instant.now();
+        long duration = now.toEpochMilli() - taskData.getSubmitted().toEpochMilli();
+
+        taskDurations.update(duration);
     }
 
     void removeTask(TaskData taskData) throws InterruptedException {
