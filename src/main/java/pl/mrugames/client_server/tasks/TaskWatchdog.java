@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 public class TaskWatchdog implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
+    // TODO add merits (eg. amount of tasks, avg time, etc)
 
     final List<TaskData> tasks;
     private final CompletionService completionService;
@@ -60,16 +61,16 @@ public class TaskWatchdog implements Runnable {
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                logger.info("Awaiting for tasks.");
+                logger.debug("Awaiting for tasks.");
 
                 taskCount.acquire(); // wait for tasks amount not 0
                 taskCount.release(); // restore tasks amount
 
-                logger.info("There are {} tasks, starting cycle", tasks.size());
+                logger.debug("There are {} tasks, starting cycle", tasks.size());
 
                 cycle();
 
-                logger.info("There are {} tasks, after cycle", tasks.size());
+                logger.debug("There are {} tasks, after cycle", tasks.size());
             } catch (InterruptedException e) {
                 logger.info("Watchdog interrupted");
                 break;
@@ -84,11 +85,11 @@ public class TaskWatchdog implements Runnable {
     void cycle() throws InterruptedException {
         long seconds = getNextPossibleTimeout();
 
-        logger.info("Next possible timeout in: {} seconds", seconds);
+        logger.debug("Next possible timeout in: {} seconds", seconds);
 
         if (seconds > 0) {
             if (completionService.poll(seconds, TimeUnit.SECONDS) != null) {
-                logger.info("Task has been finished before timeout, running checks");
+                logger.debug("Task has been finished before timeout, running checks");
             }
         }
 
