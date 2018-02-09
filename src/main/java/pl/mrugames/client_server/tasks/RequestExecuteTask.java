@@ -1,33 +1,25 @@
 package pl.mrugames.client_server.tasks;
 
-import com.codahale.metrics.Timer;
-import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ProtocolSwitch;
 import pl.mrugames.client_server.client.SwitchProtocolStrategy;
 
 import java.util.concurrent.Callable;
 
-import static com.codahale.metrics.MetricRegistry.name;
-
 public class RequestExecuteTask implements Callable<Void> {
     private final Client client;
     private final Object frame;
 
-    private final Timer requestProcessingMetric;
-
     public RequestExecuteTask(Client client, Object frame) {
         this.client = client;
         this.frame = frame;
-
-        requestProcessingMetric = Metrics.getRegistry().timer(name(ClientRequestTask.class, client.getName()));
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public Void call() throws Exception {
 
-        try (Timer.Context ignored = requestProcessingMetric.time()) {
+        try {
             Object response = client.getClientWorker().onRequest(frame);
             ProtocolSwitch protocolSwitch = client.getProtocolSwitch();
 

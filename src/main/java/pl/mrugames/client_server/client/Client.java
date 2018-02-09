@@ -6,6 +6,7 @@ import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 
@@ -23,6 +24,7 @@ public class Client<In, Out> {
     private final Lock writeBufferLock;
     private final long connectionTimeoutSeconds;
     private final long requestTimeoutSeconds;
+    private final Instant created;
 
     private volatile ProtocolSwitch protocolSwitch;
 
@@ -46,6 +48,7 @@ public class Client<In, Out> {
         this.writeBufferLock = writeBufferLock;
         this.connectionTimeoutSeconds = connectionTimeoutSeconds;
         this.requestTimeoutSeconds = requestTimeoutSeconds;
+        this.created = Instant.now();
 
         logger.info("[{}] New client has been created", name);
     }
@@ -100,5 +103,9 @@ public class Client<In, Out> {
 
     public long getRequestTimeoutSeconds() {
         return requestTimeoutSeconds;
+    }
+
+    public Instant getCreated() {
+        return created;
     }
 }

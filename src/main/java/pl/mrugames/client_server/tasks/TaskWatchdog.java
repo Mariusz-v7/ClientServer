@@ -3,7 +3,6 @@ package pl.mrugames.client_server.tasks;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.health.HealthCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +28,8 @@ public class TaskWatchdog implements Runnable {
     private final Counter failedTasks;
     private final Counter timedOutTasks;
     private final Histogram taskDurations;
-    private final Meter tasksSubmitted;
-    private final Meter cleanUpCycles;
+    private final Counter tasksSubmitted;
+    private final Counter cleanUpCycles;
 
     private volatile Instant lastCycle;
 
@@ -43,8 +42,8 @@ public class TaskWatchdog implements Runnable {
         failedTasks = Metrics.getRegistry().counter(name(TaskWatchdog.class, "failed_tasks"));
         timedOutTasks = Metrics.getRegistry().counter(name(TaskWatchdog.class, "timed_out_tasks"));
         taskDurations = Metrics.getRegistry().histogram(name(TaskWatchdog.class, "tasks_durations"));
-        tasksSubmitted = Metrics.getRegistry().meter(name(TaskWatchdog.class, "tasks_submitted"));
-        cleanUpCycles = Metrics.getRegistry().meter(name(TaskWatchdog.class, "cleanup_cycles"));
+        tasksSubmitted = Metrics.getRegistry().counter(name(TaskWatchdog.class, "tasks_submitted"));
+        cleanUpCycles = Metrics.getRegistry().counter(name(TaskWatchdog.class, "cleanup_cycles"));
 
         Metrics.getHealthCheckRegistry().register(name(TaskWatchdog.class), new HealthCheck() {
             @Override
@@ -52,7 +51,7 @@ public class TaskWatchdog implements Runnable {
                 if (startSignal.getCount() == 0 && stopSignal.getCount() == 1) {
                     return HealthCheck.Result.healthy("Last cycle: " + lastCycle);
                 } else {
-                    return HealthCheck.Result.unhealthy("Start signal: " + startSignal.getCount() + ", stop signal: " + stopSignal.getCount());
+                    return HealthCheck.Result.unhealthy("Start signal: " + startSignal.getCount() + ", stop signal: " + stopSignal.getCount() + ", last cycle: " + lastCycle);
                 }
             }
         });
@@ -61,7 +60,7 @@ public class TaskWatchdog implements Runnable {
     synchronized void submit(Future<?> request, long timeoutSeconds) {
         tasks.add(new TaskData(request, Instant.now(), timeoutSeconds));
         taskCount.release();
-        tasksSubmitted.mark();
+        tasksSubmitted.inc();
     }
 
     long getNextPossibleTimeout() {
@@ -120,7 +119,7 @@ public class TaskWatchdog implements Runnable {
 
     void cycle() throws InterruptedException {
         lastCycle = Instant.now();
-        cleanUpCycles.mark();
+        cleanUpCycles.inc();
 
         long seconds = getNextPossibleTimeout();
 

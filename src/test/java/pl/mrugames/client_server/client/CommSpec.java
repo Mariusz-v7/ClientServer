@@ -1,6 +1,5 @@
 package pl.mrugames.client_server.client;
 
-import com.codahale.metrics.Timer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -60,7 +59,7 @@ class CommSpec {
         readBufferLock = mock(Lock.class);
 
         commCreation = Instant.now();
-        comm = spy(new Comm(protocols, writeBuffer, readBufferLock, writeBufferLock, channel, mock(Timer.class), mock(Timer.class), "default"));
+        comm = spy(new Comm(protocols, writeBuffer, readBufferLock, writeBufferLock, channel, "default"));
 
         reset(writeBufferLock);
         reset(readBufferLock);

@@ -1,6 +1,5 @@
 package pl.mrugames.client_server.client;
 
-import com.codahale.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.mrugames.client_server.client.filters.FilterProcessor;
@@ -26,8 +25,6 @@ public class Comm {
 
     private final Map<String, Protocol<? extends Serializable, ? extends Serializable>> protocols;
 
-    private final Timer sendMetric;
-    private final Timer receiveMetric;
     private final ByteBuffer writeBuffer;
     private final SocketChannel socketChannel;
     private final Lock readBufferLock;
@@ -41,17 +38,12 @@ public class Comm {
          Lock readBufferLock,
          Lock writeBufferLock,
          SocketChannel socketChannel,
-         Timer sendMetric,
-         Timer receiveMetric,
          String defaultProtocol) {
         this.protocols = protocols;
         this.writeBuffer = writeBuffer;
         this.socketChannel = socketChannel;
         this.readBufferLock = readBufferLock;
         this.writeBufferLock = writeBufferLock;
-
-        this.sendMetric = sendMetric;
-        this.receiveMetric = receiveMetric;
 
         Instant now = Instant.now();
 
@@ -87,27 +79,25 @@ public class Comm {
     }
 
     public void send(Object frame) throws Exception {
-        try (Timer.Context ignored = sendMetric.time()) {
-            logger.debug("[SEND] Transforming to raw frame: '{}'", frame);
+        logger.debug("[SEND] Transforming to raw frame: '{}'", frame);
 
-            Optional<? extends Serializable> result = outputFilterProcessor.filter(frame);
-            if (result.isPresent()) {
-                Serializable rawFrame = result.get();
-                logger.debug("[SEND] Frame after transformation: '{}'", rawFrame);
+        Optional<? extends Serializable> result = outputFilterProcessor.filter(frame);
+        if (result.isPresent()) {
+            Serializable rawFrame = result.get();
+            logger.debug("[SEND] Frame after transformation: '{}'", rawFrame);
 
-                writeBufferLock.lock();
-                try {
-                    writeToSocket(rawFrame);
-                } finally {
-                    writeBufferLock.unlock();
-                }
-
-            } else {
-                logger.debug("[SEND] Frame '{}' filtered out!", frame);
+            writeBufferLock.lock();
+            try {
+                writeToSocket(rawFrame);
+            } finally {
+                writeBufferLock.unlock();
             }
 
-            lastDataSent = Instant.now();
+        } else {
+            logger.debug("[SEND] Frame '{}' filtered out!", frame);
         }
+
+        lastDataSent = Instant.now();
     }
 
     public boolean canRead() throws Exception {
@@ -121,38 +111,36 @@ public class Comm {
 
     @Nullable
     public Object receive() throws Exception {
-        try (Timer.Context ignored = receiveMetric.time()) {
-            Serializable rawFrame;
+        Serializable rawFrame;
 
-            readBufferLock.lock();
-            try {
-                if (!clientReader.isReady()) {
-                    logger.debug("[RECEIVE] Reader is not ready!");
-                    return null;
-                }
-
-                rawFrame = clientReader.read();
-            } finally {
-                readBufferLock.unlock();
+        readBufferLock.lock();
+        try {
+            if (!clientReader.isReady()) {
+                logger.debug("[RECEIVE] Reader is not ready!");
+                return null;
             }
 
-            Object frame;
-
-            logger.debug("[RECEIVE] Transforming from raw frame: '{}'", rawFrame);
-
-            Optional<? extends Serializable> result = inputFilterProcessor.filter(rawFrame);
-            if (result.isPresent()) {
-                frame = result.get();
-                logger.debug("[RECEIVE] Frame after transformation: '{}'", frame);
-
-                lastDataReceived = Instant.now();
-                return frame;
-            } else {
-                logger.debug("[RECEIVE] Frame '{}' filtered out!", rawFrame);
-            }
-
-            return null;
+            rawFrame = clientReader.read();
+        } finally {
+            readBufferLock.unlock();
         }
+
+        Object frame;
+
+        logger.debug("[RECEIVE] Transforming from raw frame: '{}'", rawFrame);
+
+        Optional<? extends Serializable> result = inputFilterProcessor.filter(rawFrame);
+        if (result.isPresent()) {
+            frame = result.get();
+            logger.debug("[RECEIVE] Frame after transformation: '{}'", frame);
+
+            lastDataReceived = Instant.now();
+            return frame;
+        } else {
+            logger.debug("[RECEIVE] Frame '{}' filtered out!", rawFrame);
+        }
+
+        return null;
     }
 
     @SuppressWarnings("unchecked")

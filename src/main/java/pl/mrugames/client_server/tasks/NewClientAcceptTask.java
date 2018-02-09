@@ -1,9 +1,7 @@
 package pl.mrugames.client_server.tasks;
 
-import com.codahale.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.client.Client;
 import pl.mrugames.client_server.client.ClientFactory;
 import pl.mrugames.client_server.client.ConnectionWatchdog;
@@ -12,8 +10,6 @@ import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Callable;
 
-import static com.codahale.metrics.MetricRegistry.name;
-
 public class NewClientAcceptTask<In, Out> implements Callable<Client<In, Out>> {
     private final static Logger logger = LoggerFactory.getLogger(NewClientAcceptTask.class);
 
@@ -21,7 +17,6 @@ public class NewClientAcceptTask<In, Out> implements Callable<Client<In, Out>> {
     private final ClientFactory<In, Out> clientFactory;
     private final SocketChannel clientChannel;
     private final TaskExecutor taskExecutor;
-    private final Timer clientAcceptMetric;
     private final ConnectionWatchdog watchdog;
 
     public NewClientAcceptTask(String hostName,
@@ -34,7 +29,6 @@ public class NewClientAcceptTask<In, Out> implements Callable<Client<In, Out>> {
         this.clientChannel = clientChannel;
         this.taskExecutor = taskExecutor;
         this.watchdog = watchdog;
-        clientAcceptMetric = Metrics.getRegistry().timer(name(NewClientAcceptTask.class, hostName));
     }
 
     @Override
@@ -43,7 +37,7 @@ public class NewClientAcceptTask<In, Out> implements Callable<Client<In, Out>> {
 
         Client<In, Out> client = null;
 
-        try (Timer.Context ignored = clientAcceptMetric.time()) {
+        try {
             logger.info("[{}] New client has been accepted: {}/{}", hostName, clientChannel.getLocalAddress(), clientChannel.getRemoteAddress());
 
             client = clientFactory.create(clientChannel, taskExecutor, watchdog);

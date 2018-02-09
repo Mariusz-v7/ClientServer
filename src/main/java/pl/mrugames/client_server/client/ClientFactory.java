@@ -1,9 +1,7 @@
 package pl.mrugames.client_server.client;
 
-import com.codahale.metrics.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.client_server.Metrics;
 import pl.mrugames.client_server.tasks.TaskExecutor;
 
 import java.io.IOException;
@@ -17,8 +15,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.codahale.metrics.MetricRegistry.name;
-
 public class ClientFactory<In, Out> {
     private static final Logger logger = LoggerFactory.getLogger(ClientFactory.class);
 
@@ -30,9 +26,6 @@ public class ClientFactory<In, Out> {
     private final List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories;
     private final long connectionTimeoutSeconds;
     private final long requestTimeoutSeconds;
-
-    private final Timer clientSendMetric;
-    private final Timer clientReceiveMetric;
 
     ClientFactory(String factoryName,
                   String clientNamePrefix,
@@ -50,9 +43,6 @@ public class ClientFactory<In, Out> {
         this.bufferSize = bufferSize;
         this.connectionTimeoutSeconds = connectionTimeoutSeconds;
         this.requestTimeoutSeconds = requestTimeoutSeconds;
-
-        this.clientSendMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "send"));
-        this.clientReceiveMetric = Metrics.getRegistry().timer(name(ClientFactory.class, "client", "receive"));
     }
 
     public Client<In, Out> create(SocketChannel channel, TaskExecutor taskExecutor, ConnectionWatchdog watchdog) throws Exception {
@@ -113,8 +103,6 @@ public class ClientFactory<In, Out> {
                 readBufferLock,
                 writeBufferLock,
                 channel,
-                clientSendMetric,
-                clientReceiveMetric,
                 defaultProtocol);
 
         logger.info("[{}] Comms has been created for client: {}", factoryName, clientName);
