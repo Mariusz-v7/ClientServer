@@ -5,13 +5,14 @@ import pl.mrugames.client_server.client.filters.StringToWebSocketFrameFilter;
 import pl.mrugames.client_server.client.filters.WebSocketFrameToStringFilter;
 import pl.mrugames.client_server.client.io.*;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 public class ProtocolFactories {
 
-    public static List<ProtocolFactory<?, ?>> createProtocolFactoryForWebSocket(String httpProtocolName, String webSocketProtocolName) {
+    public static List<ProtocolFactory<? extends Serializable, ? extends Serializable>> createProtocolFactoryForWebSocket(String httpProtocolName, String webSocketProtocolName) {
         List<ProtocolFactory<?, ?>> protocolFactories = new LinkedList<>();
 
         protocolFactories.add(
@@ -28,7 +29,7 @@ public class ProtocolFactories {
         return Collections.unmodifiableList(protocolFactories);
     }
 
-    public static List<ProtocolFactory<?, ?>> createProtocolFactoryForObjectSocket(String protocolName) {
+    public static List<ProtocolFactory<? extends Serializable, ? extends Serializable>> createProtocolFactoryForObjectSocket(String protocolName) {
         return Collections.singletonList(new ProtocolFactory<>(
                 ObjectWriter::new,
                 ObjectReader::new,

@@ -2,6 +2,7 @@ package pl.mrugames.client_server.client;
 
 import pl.mrugames.client_server.client.initializers.WebSocketInitializerFactory;
 
+import java.io.Serializable;
 import java.util.List;
 
 public class ClientFactories {
@@ -33,7 +34,7 @@ public class ClientFactories {
             int requestTimeoutSeconds,
             ClientWorkerFactory<In, Out> clientWorkerFactory,
             int bufferSize,
-            List<ProtocolFactory<?, ?>> protocolFactories
+            List<ProtocolFactory<? extends Serializable, ? extends Serializable>> protocolFactories
     ) {
         return new ClientFactory<>(
                 name,

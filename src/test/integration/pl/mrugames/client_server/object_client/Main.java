@@ -34,6 +34,8 @@ public class Main {
 
             System.out.println(read(inputStream));
 
+            write(outputStream, new Frame("shutdown"));
+
         } finally {
             socket.close();
         }
