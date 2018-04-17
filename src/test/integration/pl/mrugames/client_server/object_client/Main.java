@@ -2,11 +2,12 @@ package pl.mrugames.client_server.object_client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.client_server.object_server.Frame;
 
+import java.io.*;
 import java.net.InetSocketAddress;
-import java.nio.channels.SocketChannel;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.net.Socket;
+import java.nio.ByteBuffer;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
@@ -22,17 +23,40 @@ public class Main {
         final String address = args[0];
         final int port = Integer.valueOf(args[1]);
 
-        ExecutorService executorService = Executors.newCachedThreadPool();
-
-//        ClientFactory clientFactory = ClientFactories.createClientFactoryForJavaServer("Local Client", 60, new WorkerFactory(), executorService);
-
+        Socket socket = new Socket();
         try {
-            SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(address, port));
-//            Client client = clientFactory.create(socketChannel, executorService);
+            socket.connect(new InetSocketAddress(address, port));
 
-//            client.awaitStop(1, TimeUnit.DAYS);
+            InputStream inputStream = socket.getInputStream();
+            OutputStream outputStream = socket.getOutputStream();
+
+            write(outputStream, new Frame("Hello World!"));
+
+            System.out.println(read(inputStream));
+
         } finally {
-            executorService.shutdownNow();
+            socket.close();
         }
+    }
+
+    static void write(OutputStream outputStream, Frame frame) throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+        objectOutputStream.writeObject(frame);
+
+        byte[] bytes = byteArrayOutputStream.toByteArray();
+        byte[] sizeBytes = ByteBuffer.allocate(4).putInt(bytes.length).array();
+
+        outputStream.write(sizeBytes);
+        outputStream.write(bytes);
+    }
+
+    static Frame read(InputStream inputStream) throws IOException, ClassNotFoundException {
+        DataInputStream dataInputStream = new DataInputStream(inputStream);
+        dataInputStream.readInt();
+
+        ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
+
+        return (Frame) objectInputStream.readUnshared();
     }
 }
