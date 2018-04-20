@@ -2,15 +2,9 @@ package pl.mrugames.nucleus.server.client_example;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.nucleus.common.io.TextReader;
-import pl.mrugames.nucleus.common.io.TextWriter;
-import pl.mrugames.nucleus.server.client.ClientFactory;
-import pl.mrugames.nucleus.server.client.ClientFactoryBuilder;
-import pl.mrugames.nucleus.server.client.ProtocolFactory;
-import pl.mrugames.nucleus.server.client.filters.FilterProcessor;
-
-import java.net.InetSocketAddress;
-import java.nio.channels.SocketChannel;
+import pl.mrugames.nucleus.client.Client;
+import pl.mrugames.nucleus.common.io.LineReader;
+import pl.mrugames.nucleus.common.io.LineWriter;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
@@ -26,20 +20,21 @@ public class Main {
         final String address = args[0];
         final int port = Integer.valueOf(args[1]);
 
+        try (Client<String, String> client = new Client<>(address, port, LineWriter::new, LineReader::new)) {
+            System.out.println("READ> " + client.read());
 
-        ClientFactory<String, String> clientFactory =
-                new ClientFactoryBuilder<>(new LocalClientWorkerFactory(),
-                        new ProtocolFactory<>(TextWriter::new, TextReader::new, FilterProcessor.EMPTY_FILTER_PROCESSOR, FilterProcessor.EMPTY_FILTER_PROCESSOR, "default")
-                )
-                        .setName("Local Client")
-                        .build();
+            client.write("Hello World!");
+            client.write("TEST FRAME");
 
-        try {//TODO
-            SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(address, port));
-//            Client localClientWorker = clientFactory.create(socketChannel, executorService);
+            System.out.println("READ> " + client.read());
+            System.out.println("READ> " + client.read());
 
-//            localClientWorker.awaitStop(1, TimeUnit.DAYS);
-        } finally {
+            Thread.sleep(1000);
+
+            client.write("exit");
+
+            Thread.sleep(1000);
         }
+
     }
 }
