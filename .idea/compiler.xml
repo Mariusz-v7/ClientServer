@@ -4,6 +4,8 @@
     <bytecodeTargetLevel>
       <module name="client-server_main" target="1.9" />
       <module name="client-server_test" target="1.9" />
+      <module name="nucleus_main" target="1.9" />
+      <module name="nucleus_test" target="1.9" />
     </bytecodeTargetLevel>
   </component>
 </project>

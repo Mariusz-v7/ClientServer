@@ -4,6 +4,6 @@ module pl.mrugames.client_server {
     requires jsr305;
     requires metrics.healthchecks;
 
-    exports pl.mrugames.client_server.host;
-    exports pl.mrugames.client_server.client;
+    exports pl.mrugames.nucleus.server.host;
+    exports pl.mrugames.nucleus.server.client;
 }

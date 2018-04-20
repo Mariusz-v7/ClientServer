@@ -11,9 +11,6 @@
       <option name="taskNames">
         <list>
           <option value="clean" />
-          <option value="telnetExampleJar" />
-          <option value="clientExampleJar" />
-          <option value="webSocketExampleJar" />
           <option value="build" />
           <option value="publish" />
         </list>

@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/client-server.iml" filepath="$PROJECT_DIR$/.idea/modules/client-server.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/client-server_main.iml" filepath="$PROJECT_DIR$/.idea/modules/client-server_main.iml" group="client-server" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/client-server_test.iml" filepath="$PROJECT_DIR$/.idea/modules/client-server_test.iml" group="client-server" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/nucleus.iml" filepath="$PROJECT_DIR$/.idea/modules/nucleus.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/nucleus_main.iml" filepath="$PROJECT_DIR$/.idea/modules/nucleus_main.iml" group="nucleus" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/nucleus_test.iml" filepath="$PROJECT_DIR$/.idea/modules/nucleus_test.iml" group="nucleus" />
     </modules>
   </component>
 </project>
