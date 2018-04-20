@@ -2,9 +2,9 @@ package pl.mrugames.nucleus.server.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.nucleus.common.io.ClientReader;
+import pl.mrugames.nucleus.common.io.ClientWriter;
 import pl.mrugames.nucleus.server.client.filters.FilterProcessor;
-import pl.mrugames.nucleus.server.client.io.ClientReader;
-import pl.mrugames.nucleus.server.client.io.ClientWriter;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;

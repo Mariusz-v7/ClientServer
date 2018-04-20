@@ -1,4 +1,4 @@
-package pl.mrugames.nucleus.server.client.io;
+package pl.mrugames.nucleus.common.io;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

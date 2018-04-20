@@ -1,9 +1,9 @@
 package pl.mrugames.nucleus.server.client;
 
+import pl.mrugames.nucleus.common.io.*;
 import pl.mrugames.nucleus.server.client.filters.FilterProcessor;
 import pl.mrugames.nucleus.server.client.filters.StringToWebSocketFrameFilter;
 import pl.mrugames.nucleus.server.client.filters.WebSocketFrameToStringFilter;
-import pl.mrugames.nucleus.server.client.io.*;
 
 import java.io.Serializable;
 import java.util.Collections;

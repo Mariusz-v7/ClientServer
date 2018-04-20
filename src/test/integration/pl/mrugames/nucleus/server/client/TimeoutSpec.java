@@ -7,10 +7,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.nucleus.common.io.LineReader;
+import pl.mrugames.nucleus.common.io.LineWriter;
 import pl.mrugames.nucleus.server.Metrics;
 import pl.mrugames.nucleus.server.client.filters.FilterProcessor;
-import pl.mrugames.nucleus.server.client.io.LineReader;
-import pl.mrugames.nucleus.server.client.io.LineWriter;
 import pl.mrugames.nucleus.server.host.HostManager;
 
 import java.io.IOException;

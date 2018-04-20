@@ -1,4 +1,4 @@
-package pl.mrugames.nucleus.server.client.io;
+package pl.mrugames.nucleus.common.io;
 
 import java.io.*;
 import java.nio.ByteBuffer;

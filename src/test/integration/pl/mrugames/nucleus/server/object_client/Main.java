@@ -2,8 +2,8 @@ package pl.mrugames.nucleus.server.object_client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.mrugames.nucleus.server.client.io.ObjectReader;
-import pl.mrugames.nucleus.server.client.io.ObjectWriter;
+import pl.mrugames.nucleus.common.io.ObjectReader;
+import pl.mrugames.nucleus.common.io.ObjectWriter;
 import pl.mrugames.nucleus.server.object_server.Frame;
 
 import java.io.*;

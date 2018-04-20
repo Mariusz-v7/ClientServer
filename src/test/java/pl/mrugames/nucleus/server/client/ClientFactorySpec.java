@@ -3,9 +3,9 @@ package pl.mrugames.nucleus.server.client;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import pl.mrugames.nucleus.common.io.ClientReader;
+import pl.mrugames.nucleus.common.io.ClientWriter;
 import pl.mrugames.nucleus.server.client.filters.FilterProcessor;
-import pl.mrugames.nucleus.server.client.io.ClientReader;
-import pl.mrugames.nucleus.server.client.io.ClientWriter;
 import pl.mrugames.nucleus.server.tasks.TaskExecutor;
 
 import java.io.IOException;

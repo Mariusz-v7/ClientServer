@@ -1,4 +1,4 @@
-package pl.mrugames.nucleus.server.client.io;
+package pl.mrugames.nucleus.common.io;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

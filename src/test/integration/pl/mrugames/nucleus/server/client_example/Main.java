@@ -2,12 +2,12 @@ package pl.mrugames.nucleus.server.client_example;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.nucleus.common.io.TextReader;
+import pl.mrugames.nucleus.common.io.TextWriter;
 import pl.mrugames.nucleus.server.client.ClientFactory;
 import pl.mrugames.nucleus.server.client.ClientFactoryBuilder;
 import pl.mrugames.nucleus.server.client.ProtocolFactory;
 import pl.mrugames.nucleus.server.client.filters.FilterProcessor;
-import pl.mrugames.nucleus.server.client.io.TextReader;
-import pl.mrugames.nucleus.server.client.io.TextWriter;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
