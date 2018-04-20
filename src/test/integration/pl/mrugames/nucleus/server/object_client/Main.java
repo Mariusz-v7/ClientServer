@@ -2,12 +2,13 @@ package pl.mrugames.nucleus.server.object_client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.mrugames.nucleus.server.client.io.ObjectReader;
+import pl.mrugames.nucleus.server.client.io.ObjectWriter;
 import pl.mrugames.nucleus.server.object_server.Frame;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 
 public class Main {
     private final static Logger logger = LoggerFactory.getLogger(Main.class);
@@ -30,27 +31,18 @@ public class Main {
             InputStream inputStream = socket.getInputStream();
             OutputStream outputStream = socket.getOutputStream();
 
-            write(outputStream, new Frame("Hello World!"));
+            ObjectWriter<Frame> objectWriter = new ObjectWriter<>(outputStream);
+            objectWriter.write(new Frame("Hello World!"));
 
-            System.out.println(read(inputStream));
+            ObjectReader<Frame> objectReader = new ObjectReader<>(inputStream);
 
-            write(outputStream, new Frame("shutdown"));
+            System.out.println(objectReader.read());
+
+            objectWriter.write(new Frame("shutdown"));
 
         } finally {
             socket.close();
         }
-    }
-
-    static void write(OutputStream outputStream, Frame frame) throws IOException {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-        objectOutputStream.writeObject(frame);
-
-        byte[] bytes = byteArrayOutputStream.toByteArray();
-        byte[] sizeBytes = ByteBuffer.allocate(4).putInt(bytes.length).array();
-
-        outputStream.write(sizeBytes);
-        outputStream.write(bytes);
     }
 
     static Frame read(InputStream inputStream) throws IOException, ClassNotFoundException {

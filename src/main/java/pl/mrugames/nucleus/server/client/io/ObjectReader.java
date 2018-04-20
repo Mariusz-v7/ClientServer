@@ -1,6 +1,7 @@
 package pl.mrugames.nucleus.server.client.io;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -10,6 +11,10 @@ public class ObjectReader<FrameType extends Serializable> implements ClientReade
 
     public ObjectReader(ByteBuffer byteBuffer) {
         this.byteReader = new ByteReader(byteBuffer);
+    }
+
+    public ObjectReader(InputStream inputStream) {
+        this.byteReader = new ByteReader(inputStream);
     }
 
     @Override
