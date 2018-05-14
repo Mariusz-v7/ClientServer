@@ -1,4 +1,4 @@
-module pl.mrugames.client_server {
+module pl.mrugames.nucleus {
     requires metrics.core;
     requires slf4j.api;
     requires jsr305;
